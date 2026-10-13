@@ -237,6 +237,17 @@ body.admin-page .review-only{display:none!important}
 .admin-hero{flex-direction:column;gap:12px}
 .adminlink{margin:0;background:var(--soft);border-radius:8px;padding:10px 14px;font-weight:600}
 .adminlink a,.muted a{color:var(--green)}
+.navbtns{display:flex;gap:8px;flex-wrap:wrap}
+.ratebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ratebar label{position:relative;cursor:pointer;min-width:0}
+.ratebar input{position:absolute;opacity:0;pointer-events:none}
+.ratebar span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:64px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(16px,3.2vw,24px);line-height:1.05;text-wrap:balance}
+.ratebar input:checked+span{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.ratebar input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
+.jres{display:flex;flex-direction:column;gap:6px}
+.jhit{text-align:left;background:var(--soft);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);font-weight:700}
+.jhit.on{box-shadow:inset 0 0 0 2px var(--green);background:var(--panel)}
+.jpick{margin:0;font-size:15px}
 .count{margin:0;font-weight:700;color:var(--green)}
 .bar{height:8px;background:var(--track);border-radius:4px;min-width:60px;overflow:hidden}
 .bar>i{display:block;height:100%;border-radius:4px;background:var(--g)}
@@ -255,7 +266,10 @@ body.admin-page .review-only{display:none!important}
 <div class="wrap">
   <nav class="topnav">
     <a class="brand" href="./">Rate My Year</a>
-    <a class="topbtn review-only" id="myCrewBtn" href="mycrew.html">Create My Crew</a>
+    <span class="navbtns review-only">
+      <a class="topbtn" id="joinCrewBtn" href="#fam">Join A Crew</a>
+      <a class="topbtn ghostbtn" id="myCrewBtn" href="mycrew.html">Create My Crew</a>
+    </span>
     <a class="topbtn ghostbtn admin-only" href="./">&larr; Back to reviews</a>
   </nav>
   <header class="admin-only admin-hero">
@@ -263,6 +277,11 @@ body.admin-page .review-only{display:none!important}
     <h1>My <span>Crew</span></h1>
     <p class="lede">Set up your crew, add the people, send the invite link and see everyone's results. Your crew don't need to sign in: they just open the link, pick their name and start reviewing.</p>
   </header>
+  <div class="ratebar review-only" role="radiogroup" aria-label="Who are you rating?">
+    <label><input type="radio" name="who" id="who-me" value="me"><span>Rate Me</span></label>
+    <label><input type="radio" name="who" id="who-mate" value="mate"><span>Rate My Mates</span></label>
+    <label><input type="radio" name="who" id="who-family" value="family"><span>Rate My Family</span></label>
+  </div>
   <header class="hero review-only">
     <div class="hero-text">
       <div class="eyebrow">Rate My Year · Season 2026</div>
@@ -279,16 +298,6 @@ body.admin-page .review-only{display:none!important}
     <div class="fam-head">
       <h2>My Crew</h2>
       <button id="famLeave" class="ghost sm" type="button" hidden>Leave crew</button>
-    </div>
-    <div class="setup-grid review-only">
-      <fieldset>
-        <legend>Who are you reviewing?</legend>
-        <div class="seg" role="radiogroup">
-          <label><input type="radio" name="who" id="who-me" value="me"><span>Me</span></label>
-          <label><input type="radio" name="who" id="who-mate" value="mate"><span>Mate</span></label>
-          <label><input type="radio" name="who" id="who-family" value="family"><span>Family</span></label>
-        </div>
-      </fieldset>
     </div>
     <div class="namerow review-only">
       <label for="name" id="nameLabel">Your name</label>
@@ -594,7 +603,7 @@ resetBtn.addEventListener("click",()=>{
 /* ---------- Review Crew on Firebase (Google sign-in + Firestore) ---------- */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $=id=>document.getElementById(id);
 const body=$("famBody"), title=$("famTitle"), leaveBtn=$("famLeave");
@@ -613,6 +622,26 @@ let invite=null; // {crew, code} from the link
 let guestTried=false;
 
 /* ---------- helpers ---------- */
+/* Crew names: unique, searchable by their slug. Passwords are stored as a SHA-256 hash of slug + password. */
+const slugify=t=>String(t||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50);
+function sha256hex(str){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const bytes=[...new TextEncoder().encode(str)], l=bytes.length*8;
+  bytes.push(0x80); while(bytes.length%64!==56) bytes.push(0);
+  for(let i=7;i>=0;i--) bytes.push(i>3?0:(l>>>(i*8))&255);
+  let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const r=(x,n)=>(x>>>n)|(x<<(32-n)), w=new Array(64);
+  for(let o=0;o<bytes.length;o+=64){
+    for(let i=0;i<16;i++) w[i]=(bytes[o+4*i]<<24)|(bytes[o+4*i+1]<<16)|(bytes[o+4*i+2]<<8)|bytes[o+4*i+3];
+    for(let i=16;i<64;i++){const s0=r(w[i-15],7)^r(w[i-15],18)^(w[i-15]>>>3), s1=r(w[i-2],17)^r(w[i-2],19)^(w[i-2]>>>10); w[i]=(w[i-16]+s0+w[i-7]+s1)|0}
+    let [a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){const S1=r(e,6)^r(e,11)^r(e,25), ch=(e&f)^(~e&g), t1=(h+S1+ch+K[i]+w[i])|0, S0=r(a,2)^r(a,13)^r(a,22), mj=(a&b)^(a&c)^(b&c), t2=(S0+mj)|0; h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0}
+    H=H.map((v,i)=>(v+[a,b,c,d,e,f,g,h][i])|0);
+  }
+  return H.map(v=>(v>>>0).toString(16).padStart(8,"0")).join("");
+}
+const passHash=(slug,pw)=>sha256hex(slug+":"+pw);
+let afterAuth=null;
 const rid=(n=10)=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(x=>"abcdefghjkmnpqrstuvwxyz23456789"[x%31]).join("")};
 const members=()=>(crew&&Array.isArray(crew.members))?crew.members:[];
 const memberName=id=>(members().find(m=>m.id===id)||{}).name||"Someone";
@@ -752,10 +781,12 @@ function viewSignedOut(msg=""){
     <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Sign in with Google</button></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`:`<div class="stack">
-    <p class="muted">A crew is your family, your mates, or both. Got an invite link from your crew? Just open it: no sign-in needed. Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top. You can also do a review on your own below.</p>
+    <p class="muted">A crew is your family, your mates, or both. To join yours, tap <b>Join A Crew</b>, search for its name and enter the crew password (or just open the invite link). Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a>. You can also do a review on your own below.</p>
+    <div><button type="button" id="joinInline">Join A Crew</button></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
   if($("gSignIn")) $("gSignIn").onclick=googleSignIn;
+  if($("joinInline")) $("joinInline").onclick=startJoin;
 }
 
 function viewLobby(msg=""){
@@ -775,6 +806,8 @@ function viewLobby(msg=""){
     <form class="form" id="createForm" novalidate hidden>
       <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
+      <div class="field"><label for="cPw">Crew password</label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
+      <p class="muted" style="grid-column:1/-1">Your crew search for the crew name and enter this password to join. The name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
       <button type="submit" id="createGo">Create crew</button>
     </form>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
@@ -786,7 +819,7 @@ function viewLobby(msg=""){
   $("tabJoin").onclick=()=>tab("join"); $("tabCreate").onclick=()=>tab("create");
   body.querySelector(".tabs").hidden=true;
   if(ADMIN){tab("create");$("joinForm").hidden=true}
-  else{tab("join");const n=document.createElement("p");n.className="muted";n.innerHTML=`To set up a new crew, tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top.`;$("joinForm").after(n)}
+  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><button type="button" id="lobbyJoin">Join A Crew</button></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top.</p>`;$("joinForm").after(n);$("lobbyJoin").onclick=startJoin}
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const inv=parseInvite($("jLink").value);
@@ -795,17 +828,21 @@ function viewLobby(msg=""){
   });
   $("createForm").addEventListener("submit",async e=>{
     e.preventDefault();
-    const name=$("cName").value.trim().slice(0,60), myName=$("cMe").value.trim().slice(0,40);
-    if(!name) return famErr("Give your crew a name.");
+    const name=$("cName").value.trim().slice(0,60), myName=$("cMe").value.trim().slice(0,40), pw=$("cPw").value, slug=slugify(name);
+    if(!slug) return famErr("Give your crew a name using letters or numbers.");
     if(!myName) return famErr("Enter your name so the crew knows who you are.");
+    if(pw.length<6) return famErr("Use a crew password of at least 6 characters.");
     $("createGo").disabled=true;
     try{
-      const id=rid(10), myId=rid(10);
-      await setDoc(doc(db,"crews",id),{name,ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:"family"}],createdAt:Date.now()});
+      if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
+      const id=rid(10), myId=rid(10), b=writeBatch(db);
+      b.set(doc(db,"crews",id),{name,slug,passHash:passHash(slug,pw),ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:"family"}],createdAt:Date.now()});
+      b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
+      await b.commit();
       await claimMember(id,myId,"");
       await rememberCrew(id,name);
       openCrew(id);
-    }catch(x){famErr(errText(x));const b=$("createGo");if(b)b.disabled=false}
+    }catch(x){famErr(x&&x.code==="permission-denied"?`"${name}" is already taken. Try another name.`:errText(x));const b=$("createGo");if(b)b.disabled=false}
   });
 }
 
@@ -816,6 +853,67 @@ async function rememberCrew(id,name){
 async function forgetCrew(id){
   myCrews=myCrews.filter(c=>c.id!==id);
   await setDoc(doc(db,"users",user.uid),{crews:myCrews},{merge:true});
+}
+
+/* ---------- Join A Crew: search by name, then the crew password ---------- */
+async function startJoin(){
+  $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
+  if(!auth){famErr("Crews aren't connected yet.");return}
+  if(!user){
+    body.innerHTML=`<p class="muted">Getting ready…</p>`;
+    afterAuth=viewJoin;
+    try{await signInAnonymously(auth)}catch(x){afterAuth=null;viewSignedOut(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase.":errText(x))}
+    return;
+  }
+  viewJoin();
+}
+function viewJoin(msg=""){
+  clearCrewSubs(); crew=null; crewId=""; target=null; render();
+  title.textContent="Join a crew"; leaveBtn.hidden=true;
+  body.innerHTML=`<div class="stack">
+    <p class="muted">Search for your crew by name, pick it, then enter the crew password your crew admin gave you.</p>
+    <div class="field"><label for="jq">Crew name</label><input id="jq" type="search" autocomplete="off" placeholder="e.g. Bennetts" enterkeyhint="search"></div>
+    <div class="jres" id="jres" aria-live="polite"></div>
+    <form class="form" id="jpass" novalidate hidden>
+      <p class="jpick" id="jpick" style="grid-column:1/-1"></p>
+      <div class="field"><label for="jpw">Crew password</label><input id="jpw" type="password" autocomplete="off"></div>
+      <button type="submit" id="jgo">Join crew</button>
+    </form>
+    <p class="muted">Got an invite link instead? Just open it and you'll go straight in.</p>
+    <div class="row-btns">${myCrews.length?`<button type="button" class="ghost sm" id="jback">Back to my crew</button>`:""}</div>
+    <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
+  </div>`;
+  let pickId="", pickSlug="", pickName="", t=0, seq=0;
+  const res=$("jres");
+  const search=async()=>{
+    const q=slugify($("jq").value); const my=++seq;
+    if(q.length<2){res.innerHTML=q?`<p class="muted">Keep typing…</p>`:"";return}
+    res.innerHTML=`<p class="muted">Searching…</p>`;
+    try{
+      const snap=await getDocs(query(collection(db,"crewNames"),where("slug",">=",q),where("slug","<=",q+"\uf8ff"),limit(10)));
+      if(my!==seq) return;
+      const hits=snap.docs.map(d=>d.data());
+      res.innerHTML=hits.length?hits.map(h=>`<button type="button" class="jhit" data-id="${esc(h.crewId)}" data-slug="${esc(h.slug)}" data-name="${esc(h.name)}">${esc(h.name)}</button>`).join(""):`<p class="muted">No crew called that yet. Check the spelling with your crew admin.</p>`;
+      res.querySelectorAll(".jhit").forEach(b=>b.onclick=()=>{
+        pickId=b.dataset.id; pickSlug=b.dataset.slug; pickName=b.dataset.name;
+        res.querySelectorAll(".jhit").forEach(x=>x.classList.toggle("on",x===b));
+        $("jpick").innerHTML=`Joining <b>${esc(pickName)}</b>`; $("jpass").hidden=false; famErr(""); $("jpw").value=""; $("jpw").focus();
+      });
+    }catch(x){if(my===seq)res.innerHTML=`<p class="err">${esc(errText(x))}</p>`}
+  };
+  $("jq").addEventListener("input",()=>{clearTimeout(t);t=setTimeout(search,250)});
+  $("jq").focus();
+  if($("jback")) $("jback").onclick=()=>{const last=loadLS();openCrew(myCrews.some(c=>c.id===last)?last:myCrews[0].id)};
+  $("jpass").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const pw=$("jpw").value; if(!pickId) return; if(!pw) return famErr("Enter the crew password.");
+    $("jgo").disabled=true;
+    try{
+      await setDoc(doc(db,"crews",pickId,"joins",user.uid),{pass:passHash(pickSlug,pw),name:user.displayName||"",at:Date.now()});
+      try{await rememberCrew(pickId,pickName)}catch(e){}
+      openCrew(pickId);
+    }catch(x){famErr(x&&x.code==="permission-denied"?"That password isn't right. Check it with your crew admin.":errText(x));$("jgo").disabled=false}
+  });
 }
 
 async function joinCrew(inv){
@@ -910,6 +1008,7 @@ function viewCrewShell(){
       <div class="field"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
       <button type="submit" class="ghost">Add to crew</button>
     </form>
+    <div class="invite" id="passBox" hidden></div>
     <div class="invite" id="inviteBox" hidden>
       <label for="inviteLink">Invite link: send this to your crew so they can join</label>
       <div class="invite-row"><input id="inviteLink" readonly><button type="button" id="shareInvite" hidden>Share</button><button type="button" id="copyInvite">Copy</button><button type="button" class="ghost" id="newInvite">New link</button></div>
@@ -982,6 +1081,41 @@ function viewCrewShell(){
   }
   $("newInvite").onclick=async()=>{try{await updateDoc(doc(db,"crews",crewId),{joinCode:rid(8)});toast("New invite link made. The old one no longer works.")}catch(x){famErr(errText(x))}};
   document.querySelectorAll("#adminArea [data-tab]").forEach(b=>b.onclick=()=>{adminTab=b.dataset.tab;renderAdmin()});
+}
+
+/* ---------- admin: crew name + password ---------- */
+let passBoxKey="";
+function renderPassBox(){
+  const box=$("passBox"), key=`${crew.slug||""}|${!!crew.passHash}|${crew.name}`;
+  if(key===passBoxKey&&box.innerHTML) return; passBoxKey=key;
+  const has=!!(crew.slug&&crew.passHash);
+  box.innerHTML=has?`<label>Joining with the crew name and password</label>
+      <p class="muted">Your crew tap <b>Join A Crew</b>, search for <b>${esc(crew.name)}</b> and enter the crew password.</p>
+      <form class="invite-row" id="pwForm" novalidate><input id="pwNew" type="text" autocomplete="off" placeholder="New crew password (at least 6 characters)"><button type="submit">Change password</button></form>`
+    :`<label>Let your crew find you</label>
+      <p class="muted">Choose a unique crew name and a password. Your crew tap <b>Join A Crew</b>, search for the name and enter the password.</p>
+      <form class="form" id="pwForm" novalidate>
+        <div class="field"><label for="pwName">Crew name</label><input id="pwName" autocomplete="off" value="${esc(crew.name)}"></div>
+        <div class="field"><label for="pwNew">Crew password</label><input id="pwNew" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
+        <button type="submit">Save</button>
+      </form>`;
+  $("pwForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const pw=$("pwNew").value; if(pw.length<6) return famErr("Use a crew password of at least 6 characters.");
+    try{
+      if(has){await updateDoc(doc(db,"crews",crewId),{passHash:passHash(crew.slug,pw)});$("pwNew").value="";toast("Crew password changed. Let your crew know the new one.")}
+      else{
+        const name=$("pwName").value.trim().slice(0,60), slug=slugify(name);
+        if(!slug) return famErr("Give your crew a name using letters or numbers.");
+        if((await getDoc(doc(db,"crewNames",slug))).exists()) return famErr(`"${name}" is already taken. Try adding your suburb or surname.`);
+        const b=writeBatch(db);
+        b.update(doc(db,"crews",crewId),{name,slug,passHash:passHash(slug,pw)});
+        b.set(doc(db,"crewNames",slug),{crewId,name,slug});
+        await b.commit(); passBoxKey=""; toast("Saved. Your crew can now find you with Join A Crew.");
+      }
+      famErr("");
+    }catch(x){famErr(x&&x.code==="permission-denied"?"That name is already taken. Try another.":errText(x))}
+  });
 }
 
 /* ---------- admin: manage one crew member ---------- */
@@ -1071,6 +1205,7 @@ function refresh(){
   const showAdmin=ADMIN&&admin;
   $("inviteBox").hidden=!showAdmin;
   if(showAdmin) $("inviteLink").value=inviteLink();
+  $("passBox").hidden=!showAdmin; if(showAdmin) renderPassBox();
   if($("famResults").innerHTML&&me&&!ADMIN) $("famResults").innerHTML=memberReportHTML(me,false); else if(ADMIN) $("famResults").innerHTML="";
   $("adminArea").hidden=!showAdmin;
   if(showAdmin) renderAdmin();
@@ -1220,6 +1355,7 @@ async function loadConfig(){
   try{const r=await fetch("/__/firebase/init.json");if(r.ok)return await r.json()}catch(e){}
   return null;
 }
+{const jb=document.getElementById("joinCrewBtn"); if(jb) jb.addEventListener("click",e=>{e.preventDefault();startJoin()});}
 (async()=>{
   const p=new URLSearchParams(location.search);
   if(p.get("crew")&&p.get("code")) invite={crew:p.get("crew"),code:p.get("code")};
@@ -1244,6 +1380,7 @@ async function loadConfig(){
     }
     try{const s=await getDoc(doc(db,"users",u.uid));myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
     render();
+    if(afterAuth){const f=afterAuth;afterAuth=null;return f()}
     if(invite&&!ADMIN) return joinCrew(invite);
     const lastCrew=loadLS();
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);

@@ -47,8 +47,10 @@ service cloud.firestore {
       // One doc per account that joined; created only with the current invite code.
       match /joins/{uid} {
         allow read: if isMember(c);
+        // Join with the invite link's code, or with the crew password (stored as a hash).
         allow create, update: if signedIn() && uid == request.auth.uid
-          && request.resource.data.code == crewData(c).joinCode;
+          && (request.resource.data.get('code', '') == crewData(c).joinCode
+              || ('passHash' in crewData(c) && request.resource.data.get('pass', '') == crewData(c).passHash));
         allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
       }
 
@@ -88,6 +90,19 @@ service cloud.firestore {
           && get(docAt(c, 'claims', request.resource.data.reviewer)).data.uid == request.auth.uid;
         allow delete: if isAdmin(c) || (signedIn() && resource.data.reviewerUid == request.auth.uid);
       }
+    }
+
+    // Public list of crew names so people can search for their crew.
+    // The doc id is the crew's unique slug; a crew can only claim its own name.
+    match /crewNames/{slug} {
+      allow get, list: if signedIn();
+      allow create: if signedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && request.resource.data.slug == slug
+        && request.auth.uid in getAfter(crewPath(request.resource.data.crewId)).data.adminUids
+        && getAfter(crewPath(request.resource.data.crewId)).data.slug == slug;
+      allow update: if false;
+      allow delete: if isAdmin(resource.data.crewId);
     }
 
     // Each person's list of crews, private to them.
