@@ -556,7 +556,7 @@ render();
 const toast=$m("toast");
 const say=m=>{toast.textContent=m;setTimeout(()=>toast.textContent="",2500)};
 $m("copy").addEventListener("click",()=>{
-  navigator.clipboard.writeText(window._summary).then(()=>say("Copied")).catch(()=>{
+  (navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(window._summary):Promise.reject()).then(()=>say("Copied")).catch(()=>{
     const r=document.createRange();r.selectNodeContents(document.querySelector(".report-body"));const s=getSelection();s.removeAllRanges();s.addRange(r);say("Selected. Press Ctrl+C or Cmd+C to copy.")});
 });
 const resetBtn=$m("reset");let armed=false;
@@ -788,16 +788,21 @@ async function forgetCrew(id){
 }
 
 async function joinCrew(inv){
+  body.innerHTML=`<p class="muted">Opening your crew…</p>`;
+  const linkText=`${location.origin}${location.pathname}?crew=${inv.crew}&code=${inv.code}`;
   try{
     await setDoc(doc(db,"crews",inv.crew,"joins",user.uid),{code:inv.code,name:user.displayName||"",at:Date.now()});
-    const snap=await getDoc(doc(db,"crews",inv.crew));
-    await rememberCrew(inv.crew,snap.data().name);
-    invite=null; history.replaceState(null,"",location.pathname);
-    openCrew(inv.crew);
   }catch(x){
     invite=null; history.replaceState(null,"",location.pathname);
     viewLobby(x&&x.code==="permission-denied"?"That invite link isn't valid any more. Ask your crew admin for a new one.":errText(x));
+    const j=$("jLink"); if(j) j.value=linkText;
+    return;
   }
+  invite=null; history.replaceState(null,"",location.pathname);
+  let name="Your crew";
+  try{const snap=await getDoc(doc(db,"crews",inv.crew));if(snap.exists())name=snap.data().name||name}catch(e){}
+  try{await rememberCrew(inv.crew,name)}catch(e){}
+  openCrew(inv.crew);
 }
 
 /* ---------- inside a crew ---------- */
@@ -874,8 +879,8 @@ function viewCrewShell(){
     </form>
     <div class="invite" id="inviteBox" hidden>
       <label for="inviteLink">Invite link: send this to your crew so they can join</label>
-      <div class="invite-row"><input id="inviteLink" readonly><button type="button" id="copyInvite">Copy</button><button type="button" class="ghost" id="newInvite">New link</button></div>
-      <p class="muted">Anyone with this link can join the crew without signing in: they open it, pick their name and start reviewing. "New link" stops the old one working.</p>
+      <div class="invite-row"><input id="inviteLink" readonly><button type="button" id="shareInvite" hidden>Share</button><button type="button" id="copyInvite">Copy</button><button type="button" class="ghost" id="newInvite">New link</button></div>
+      <p class="muted">Tap <b>Share</b> to send it by text, WhatsApp or email, or <b>Copy</b> to paste it yourself. Anyone who opens it goes straight into the crew without signing in, picks their name and starts reviewing. "New link" stops the old one working.</p>
     </div>
     <p class="err" id="famErr" hidden></p>
     <div id="famResults"></div>
@@ -921,10 +926,27 @@ function viewCrewShell(){
     try{await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id:rid(10),name:n.slice(0,40),type:$("newType").value}]});inp.value="";famErr("")}
     catch(x){famErr(errText(x))}
   });
-  $("copyInvite").onclick=()=>{
-    const v=inviteLink();
-    navigator.clipboard.writeText(v).then(()=>toast("Invite link copied")).catch(()=>{$("inviteLink").select();toast("Selected. Press Ctrl+C or Cmd+C to copy.")});
+  const inp=$("inviteLink");
+  const selectLink=()=>{inp.focus();inp.setSelectionRange(0,inp.value.length)};
+  inp.addEventListener("focus",()=>setTimeout(()=>inp.setSelectionRange(0,inp.value.length),0));
+  $("copyInvite").onclick=async()=>{
+    const v=inviteLink(); let ok=false;
+    try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(v);ok=true}}catch(e){}
+    if(!ok){
+      inp.removeAttribute("readonly"); selectLink();
+      try{ok=document.execCommand("copy")}catch(e){}
+      inp.setAttribute("readonly","");
+    }
+    if(ok){inp.blur();toast("Invite link copied. Paste it into a text or email.")}
+    else{selectLink();toast("The link is selected. Tap it and choose Copy.",5000)}
   };
+  if(navigator.share){
+    $("shareInvite").hidden=false;
+    $("shareInvite").onclick=async()=>{
+      try{await navigator.share({title:"Rate My Year",text:`Join ${crew?crew.name:"our crew"} on Rate My Year and rate each other's year:`,url:inviteLink()})}
+      catch(x){if(!x||x.name!=="AbortError")toast("Couldn't open sharing. Use Copy instead.")}
+    };
+  }
   $("newInvite").onclick=async()=>{try{await updateDoc(doc(db,"crews",crewId),{joinCode:rid(8)});toast("New invite link made. The old one no longer works.")}catch(x){famErr(errText(x))}};
   document.querySelectorAll("#adminArea [data-tab]").forEach(b=>b.onclick=()=>{adminTab=b.dataset.tab;renderAdmin()});
 }
