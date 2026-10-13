@@ -448,13 +448,19 @@ function startReview(id){
   const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid);
   setSliders(existing);
   state.who=id===me?"me":memberType(id); state.name=target.name;
+  savedSig=sig();
   document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===state.who);
   nameInput.value=target.name;
   save(); render();
   $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 }
 function stopReview(){target=null;render()}
-$("reviewCancel").onclick=stopReview;
+const toTop=()=>$("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
+$("reviewCancel").onclick=toTop;
+function clearReview(){
+  target=null; setSliders({}); state.name=""; nameInput.value=""; pick.value="";
+  save(); render(); toTop();
+}
 
 pick.addEventListener("change",()=>{
   if(!pick.value){stopReview();return}
@@ -482,15 +488,20 @@ function syncPick(){
   }
 }
 
-let last=null;
+let last=null, savedSig="";
+const sig=()=>JSON.stringify([state.v,state.dk]);
+const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
   last={rows,avg};
   syncPick();
   const on=!!(crew&&target&&me);
-  banner.hidden=!on; saveBtn.hidden=!on; soloBtn.hidden=on||!user;
+  banner.hidden=!on; saveBtn.hidden=!on; soloBtn.hidden=on||!user; nextBtn.hidden=!on;
+  document.body.classList.toggle("has-bar",on);
   if(on){
-    const self=target.id===me;
-    bannerText.textContent=self?`Reviewing yourself for ${crew.name}`:`Reviewing ${target.name} for ${crew.name}`;
+    const self=target.id===me, dirty=sig()!==savedSig, g=avg==null?null:grade(avg);
+    bannerText.innerHTML=self?`<b>${esc(memberName(me))}</b> reviewing <b>themselves</b>`:`<b>${esc(memberName(me))}</b> reviewing <b>${esc(target.name)}</b>`;
+    bannerGrade.textContent=g||"–"; bannerGrade.style.setProperty("--g",g?gcol(g):"var(--track)");
+    nextBtn.textContent=dirty&&avg!=null?"Save & review someone else":"Review someone else";
     saveBtn.textContent=self?"Save my review to the crew":`Save review of ${target.name}`;
     if(isAdmin()||self){const n=aggFor(target.id).rs.length;revCount.textContent=`${n} ${n===1?"person has":"people have"} reviewed ${self?"you":target.name} so far`;revCount.hidden=false}
     else revCount.hidden=true;
@@ -506,15 +517,24 @@ const snapshotResult=()=>{
   const cats={};last.rows.forEach(r=>{if(r.avg!=null)cats[r.c.id]=Math.round(r.avg*100)/100});
   return {values,dk,cats,overall:Math.round(last.avg*100)/100,grade:grade(last.avg),year:2026,savedAt:Date.now()};
 };
-saveBtn.addEventListener("click",async()=>{
-  if(!crew||!target||!me||!last) return;
-  if(last.avg==null) return toast("Answer at least one area before saving.");
-  const r=snapshotResult(); saveBtn.disabled=true;
+async function saveReview(){
+  if(!crew||!target||!me||!last) return false;
+  if(last.avg==null){toast("Answer at least one area before saving.");return false}
+  const r=snapshotResult(); saveBtn.disabled=true; nextBtn.disabled=true;
+  let ok=false;
   try{
     await setDoc(doc(db,"crews",crewId,"reviews",`${user.uid}_${target.id}`),{member:target.id,reviewer:me,reviewerUid:user.uid,...r});
+    savedSig=sig(); ok=true;
     toast(`Saved. ${target.name}'s results are updated.`);
   }catch(x){toast(errText(x),6000)}
-  saveBtn.disabled=false;
+  saveBtn.disabled=false; nextBtn.disabled=false; render();
+  return ok;
+}
+saveBtn.addEventListener("click",saveReview);
+nextBtn.addEventListener("click",async()=>{
+  if(!target) return clearReview();
+  if(sig()!==savedSig&&last&&last.avg!=null){if(!(await saveReview()))return}
+  clearReview();
 });
 soloBtn.addEventListener("click",async()=>{
   if(!user||!last) return;
