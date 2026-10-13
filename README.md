@@ -2,6 +2,8 @@
 
 A one-page website for rating yourself, your mates and your family across the areas of life that matter.
 
+**Getting started:** under the wheel on the main page are three buttons. **Rate Me** shows a Your name box to start a review on your own. **Join A Crew** shows the crew search right there: find your crew, enter the crew password, and the crew opens. **Create A Crew** goes to the My Crew page.
+
 **Two question sets:**
 - **Me and family** (8 areas): Self (Self Care, Health), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).
 - **Mates** (7 areas): Them (Vibe, Banter, Generous), Us (Reliable, Loyalty), Life (Adventure, Social).

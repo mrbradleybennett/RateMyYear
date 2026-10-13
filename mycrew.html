@@ -249,6 +249,13 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .ratebar span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:64px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(16px,3.2vw,24px);line-height:1.05;text-wrap:balance}
 .ratebar input:checked+span{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
 .ratebar input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
+.choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.choicebar button,.choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none;cursor:pointer;font-weight:400;text-wrap:balance}
+.choicebar [aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.choicebar button:focus-visible,.choicebar a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+/* Main page entry choice: Rate Me shows the name box; Join A Crew shows crew search. */
+body.entry-rate:not(.crew-ready) .crew-box{display:none}
+body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHint{display:none!important}
 .jres{display:flex;flex-direction:column;gap:6px}
 .jhit{text-align:left;background:var(--soft);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);font-weight:700}
 .jhit.on{box-shadow:inset 0 0 0 2px var(--green);background:var(--panel)}
@@ -303,10 +310,15 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
       <figcaption><span class="wlegend"></span><span>Bars fill as you score. Tap an area to jump to it.</span></figcaption>
     </figure>
   </header>
+  <div class="choicebar review-only" role="group" aria-label="Get started">
+    <button type="button" id="choiceRate" aria-pressed="true">Rate Me</button>
+    <button type="button" id="choiceJoin" aria-pressed="false">Join A Crew</button>
+    <a id="choiceCreate" href="mycrew.html">Create A Crew</a>
+  </div>
 
   <section class="fam" id="fam" aria-live="polite">
     <div class="fam-head">
-      <h2>My Crew</h2>
+      <h2 id="famH2">My Crew</h2>
       <button id="famLeave" class="ghost sm" type="button" hidden>Leave crew</button>
     </div>
     <div class="namerow review-only">
@@ -956,7 +968,7 @@ async function forgetCrew(id){
 
 /* ---------- Join A Crew: search by name, then the crew password ---------- */
 async function startJoin(){
-  if(!JOIN){location.href=JOIN_PATH;return}
+  if(ADMIN){location.href=JOIN_PATH;return}
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   if(!auth){famErr("Crews aren't connected yet.");return}
   if(!user){
@@ -1401,6 +1413,10 @@ const sig=()=>JSON.stringify([state.v,state.dk]);
 const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
   last={rows,avg};
+  if(crew&&entry==="join") entry="rate";
+  document.body.classList.toggle("in-crew",!!crew);
+  document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
+  paintEntry();
   syncPick();
   const on=!!(crew&&target&&me);
   banner.hidden=!on; saveBtn.hidden=!on; soloBtn.hidden=on||!user; nextBtn.hidden=!on;
@@ -1454,6 +1470,28 @@ soloBtn.addEventListener("click",async()=>{
   }catch(x){toast(errText(x),6000)}
   soloBtn.disabled=false;
 });
+
+/* ---------- main page entry: Rate Me / Join A Crew / Create A Crew ---------- */
+let entry="rate";
+const REVIEW_PAGE=!ADMIN&&!JOIN;
+function paintEntry(){
+  if(!REVIEW_PAGE) return;
+  document.body.classList.toggle("entry-rate",entry==="rate");
+  document.body.classList.toggle("entry-join",entry==="join");
+  if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate");
+  if($("choiceJoin")) $("choiceJoin").setAttribute("aria-pressed",entry==="join");
+  if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Rate Me");
+}
+if(REVIEW_PAGE){
+  $("choiceRate").onclick=()=>{
+    const wasJoin=entry==="join"; entry="rate"; paintEntry();
+    const r=$("who-me"); if(!r.checked){r.checked=true;r.dispatchEvent(new Event("change",{bubbles:true}))}
+    if(wasJoin&&!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }
+    $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
+    if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
+  };
+  $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
+}
 
 /* ---------- boot ---------- */
 async function loadConfig(){

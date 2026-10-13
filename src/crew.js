@@ -284,7 +284,7 @@ async function forgetCrew(id){
 
 /* ---------- Join A Crew: search by name, then the crew password ---------- */
 async function startJoin(){
-  if(!JOIN){location.href=JOIN_PATH;return}
+  if(ADMIN){location.href=JOIN_PATH;return}
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   if(!auth){famErr("Crews aren't connected yet.");return}
   if(!user){
@@ -729,6 +729,10 @@ const sig=()=>JSON.stringify([state.v,state.dk]);
 const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
   last={rows,avg};
+  if(crew&&entry==="join") entry="rate";
+  document.body.classList.toggle("in-crew",!!crew);
+  document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
+  paintEntry();
   syncPick();
   const on=!!(crew&&target&&me);
   banner.hidden=!on; saveBtn.hidden=!on; soloBtn.hidden=on||!user; nextBtn.hidden=!on;
@@ -782,6 +786,28 @@ soloBtn.addEventListener("click",async()=>{
   }catch(x){toast(errText(x),6000)}
   soloBtn.disabled=false;
 });
+
+/* ---------- main page entry: Rate Me / Join A Crew / Create A Crew ---------- */
+let entry="rate";
+const REVIEW_PAGE=!ADMIN&&!JOIN;
+function paintEntry(){
+  if(!REVIEW_PAGE) return;
+  document.body.classList.toggle("entry-rate",entry==="rate");
+  document.body.classList.toggle("entry-join",entry==="join");
+  if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate");
+  if($("choiceJoin")) $("choiceJoin").setAttribute("aria-pressed",entry==="join");
+  if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Rate Me");
+}
+if(REVIEW_PAGE){
+  $("choiceRate").onclick=()=>{
+    const wasJoin=entry==="join"; entry="rate"; paintEntry();
+    const r=$("who-me"); if(!r.checked){r.checked=true;r.dispatchEvent(new Event("change",{bubbles:true}))}
+    if(wasJoin&&!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }
+    $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
+    if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
+  };
+  $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
+}
 
 /* ---------- boot ---------- */
 async function loadConfig(){
