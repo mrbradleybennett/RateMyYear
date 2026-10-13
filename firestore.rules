@@ -21,7 +21,9 @@ service cloud.firestore {
     match /crews/{c} {
       allow get: if isMember(c);
 
+      // Only a Google-signed-in crew admin can set up a crew; guests join by invite link.
       allow create: if signedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.adminUids == [request.auth.uid]
         && validCode(request.resource.data)

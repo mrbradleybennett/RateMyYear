@@ -56,15 +56,16 @@ Run `firebase deploy` again whenever you change the files.
 2. Then open **Authentication → Settings → Authorized domains** and add the same domain, or Google sign-in won't work there.
 
 ## How crews work
-- **Set up a crew:** sign in with Google, choose **Set up a new crew**, give it a name and your name. You become the crew's admin.
-- **Invite people:** add everyone's names, then copy the **invite link** from the crew box and send it by text or email. Anyone who opens it and signs in with Google joins the crew.
-- **"I am":** after joining, each person picks their own name from the list (or "I'm not on the list. Add me"). Each Google account can only be one person, and a name someone has already picked can't be taken.
+- **Set up a crew (crew admin only):** tap **Set up a crew with Google**, sign in, choose **Set up a new crew**, and give it a name and your name. You become the crew's admin.
+- **Invite people:** add everyone's names, then copy the **invite link** from the crew box and send it by text or email.
+- **Joining needs no sign-in:** anyone who opens the invite link goes straight into the crew as a guest. They pick their own name under "I am" (or "I'm not on the list. Add me") and can review anyone.
+- **Guests are tied to their device.** If someone changes phone or clears their browser, they just open the invite link again. If their name shows as taken, the admin taps **Free up name** next to it.
 - **Who sees what:**
   - Everyone in the crew sees the list of people and can add more.
   - You see the reviews you've written and the reviews about you.
   - Admins see everyone's reviews, the **All scores** table, **Member reports** and the **Crew report**.
-- **Admin tools:** make other members admins, remove people (which also removes their access), and press **New link** to stop an old invite link from working.
-- **No sign-in needed** to do a review on your own. Signing in lets you save it to your account.
+- **Admin tools:** make other members admins, free up a name, remove people (which also removes their access), and press **New link** to stop an old invite link working.
+- **Firebase settings this needs:** Authentication → Sign-in method → **Google** and **Anonymous** both switched on.
 
 ## Testing locally (optional)
 ```
