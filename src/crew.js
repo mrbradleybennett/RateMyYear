@@ -8,9 +8,12 @@ const body=$("famBody"), title=$("famTitle"), leaveBtn=$("famLeave");
 const banner=$("reviewBanner"), bannerText=$("reviewBannerText"), saveBtn=$("famSave"), soloBtn=$("soloSave");
 const pick=$("famPick"), pickHint=$("famPickHint"), nameInput=$("name"), revCount=$("revCount");
 const LS_CREW="ratemyyear-crew";
-const ADMIN=window.RMY_PAGE==="admin";            // true on the My Crew page
-const REVIEW_PATH=location.pathname.replace(/mycrew(\.html)?$/,"");
+const PAGE=window.RMY_PAGE||"review";
+const ADMIN=PAGE==="admin";                       // My Crew page
+const JOIN=PAGE==="join";                         // Join A Crew page
+const REVIEW_PATH=location.pathname.replace(/(mycrew|join)(\.html)?$/,"");
 const MYCREW_PATH=REVIEW_PATH+"mycrew.html";
+const JOIN_PATH=REVIEW_PATH+"join.html";
 const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
@@ -180,11 +183,10 @@ function viewSignedOut(msg=""){
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`:`<div class="stack">
     <p class="muted">A crew is your family, your mates, or both. To join yours, tap <b>Join A Crew</b>, search for its name and enter the crew password (or just open the invite link). Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a>. You can also do a review on your own below.</p>
-    <div><button type="button" id="joinInline">Join A Crew</button></div>
+    <div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
   if($("gSignIn")) $("gSignIn").onclick=googleSignIn;
-  if($("joinInline")) $("joinInline").onclick=startJoin;
 }
 
 function viewLobby(msg=""){
@@ -217,7 +219,7 @@ function viewLobby(msg=""){
   $("tabJoin").onclick=()=>tab("join"); $("tabCreate").onclick=()=>tab("create");
   body.querySelector(".tabs").hidden=true;
   if(ADMIN){tab("create");$("joinForm").hidden=true}
-  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><button type="button" id="lobbyJoin">Join A Crew</button></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top.</p>`;$("joinForm").after(n);$("lobbyJoin").onclick=startJoin}
+  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top.</p>`;$("joinForm").after(n)}
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const inv=parseInvite($("jLink").value);
@@ -255,6 +257,7 @@ async function forgetCrew(id){
 
 /* ---------- Join A Crew: search by name, then the crew password ---------- */
 async function startJoin(){
+  if(!JOIN){location.href=JOIN_PATH;return}
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   if(!auth){famErr("Crews aren't connected yet.");return}
   if(!user){
@@ -291,17 +294,21 @@ function viewJoin(msg=""){
       const snap=await getDocs(query(collection(db,"crewNames"),where("slug",">=",q),where("slug","<=",q+"\uf8ff"),limit(10)));
       if(my!==seq) return;
       const hits=snap.docs.map(d=>d.data());
-      res.innerHTML=hits.length?hits.map(h=>`<button type="button" class="jhit" data-id="${esc(h.crewId)}" data-slug="${esc(h.slug)}" data-name="${esc(h.name)}">${esc(h.name)}</button>`).join(""):`<p class="muted">No crew called that yet. Check the spelling with your crew admin.</p>`;
+      res.innerHTML=hits.length?hits.map(h=>`<button type="button" class="jhit" data-id="${esc(h.crewId)}" data-slug="${esc(h.slug)}" data-name="${esc(h.name)}">${esc(h.name)}</button>`).join(""):`<p class="muted">No crew found with that name. Check the spelling with your crew admin. If the crew was set up before crew passwords existed, the admin needs to add a crew password on their My Crew page first.</p>`;
       res.querySelectorAll(".jhit").forEach(b=>b.onclick=()=>{
         pickId=b.dataset.id; pickSlug=b.dataset.slug; pickName=b.dataset.name;
         res.querySelectorAll(".jhit").forEach(x=>x.classList.toggle("on",x===b));
         $("jpick").innerHTML=`Joining <b>${esc(pickName)}</b>`; $("jpass").hidden=false; famErr(""); $("jpw").value=""; $("jpw").focus();
       });
-    }catch(x){if(my===seq)res.innerHTML=`<p class="err">${esc(errText(x))}</p>`}
+    }catch(x){
+      if(my!==seq) return;
+      const msg=x&&x.code==="permission-denied"?"Crew search isn't switched on yet. The site owner needs to publish the latest security rules in Firebase.":x&&x.code==="failed-precondition"?"Crew search needs a moment to finish setting up. Try again shortly.":errText(x);
+      res.innerHTML=`<p class="err">${esc(msg)}</p>`;
+    }
   };
   $("jq").addEventListener("input",()=>{clearTimeout(t);t=setTimeout(search,250)});
   $("jq").focus();
-  if($("jback")) $("jback").onclick=()=>{const last=loadLS();openCrew(myCrews.some(c=>c.id===last)?last:myCrews[0].id)};
+  if($("jback")) $("jback").onclick=()=>{if(JOIN){location.href=REVIEW_PATH;return}const last=loadLS();openCrew(myCrews.some(c=>c.id===last)?last:myCrews[0].id)};
   $("jpass").addEventListener("submit",async e=>{
     e.preventDefault();
     const pw=$("jpw").value; if(!pickId) return; if(!pw) return famErr("Enter the crew password.");
@@ -309,6 +316,7 @@ function viewJoin(msg=""){
     try{
       await setDoc(doc(db,"crews",pickId,"joins",user.uid),{pass:passHash(pickSlug,pw),name:user.displayName||"",at:Date.now()});
       try{await rememberCrew(pickId,pickName)}catch(e){}
+      if(JOIN){saveLS(pickId);body.innerHTML=`<p class="muted">You're in! Opening ${esc(pickName)}…</p>`;location.href=REVIEW_PATH;return}
       openCrew(pickId);
     }catch(x){famErr(x&&x.code==="permission-denied"?"That password isn't right. Check it with your crew admin.":errText(x));$("jgo").disabled=false}
   });
@@ -753,7 +761,6 @@ async function loadConfig(){
   try{const r=await fetch("/__/firebase/init.json");if(r.ok)return await r.json()}catch(e){}
   return null;
 }
-{const jb=document.getElementById("joinCrewBtn"); if(jb) jb.addEventListener("click",e=>{e.preventDefault();startJoin()});}
 (async()=>{
   const p=new URLSearchParams(location.search);
   if(p.get("crew")&&p.get("code")) invite={crew:p.get("crew"),code:p.get("code")};
@@ -766,6 +773,16 @@ async function loadConfig(){
   render();
   onAuthStateChanged(auth,async u=>{
     clearCrewSubs(); user=u; crew=null; crewId=""; target=null; myCrews=[];
+    if(JOIN){
+      if(!u){
+        if(guestTried){viewSignedOut();return}
+        guestTried=true; body.innerHTML=`<p class="muted">Getting ready…</p>`;
+        try{await signInAnonymously(auth)}catch(x){body.innerHTML=`<p class="err">${esc(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase (Authentication → Sign-in method).":errText(x))}</p>`}
+        return;
+      }
+      try{const s=await getDoc(doc(db,"users",u.uid));myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
+      render(); viewJoin(); return;
+    }
     if(!u){
       render();
       if(invite&&!guestTried&&!ADMIN){

@@ -9,6 +9,7 @@ It runs on Firebase (Google), which is free at family and friends scale. Firebas
 | File | What it does |
 |---|---|
 | `index.html` | The review page: questions, wheel, report card, joining a crew from the invite link |
+| `join.html` | The **Join A Crew** page: search for a crew by name and enter the crew password |
 | `mycrew.html` | The **My Crew** page for crew admins: set up a crew, people, invite link, Manage, and all the reports |
 | `firebase-config.js` | Leave this alone if you deploy with Firebase Hosting. Fill it in only if you host the page somewhere else |
 | `firestore.rules` | Database security: who can read and write what |
@@ -60,7 +61,7 @@ Run `firebase deploy` again whenever you change the files.
 - **Set up a crew (crew admin only):** tap **Create My Crew** at the top of the site. That opens the **My Crew** page: sign in with Google, then give the crew a name and your name. You become the crew's admin.
 - **My Crew page:** everything an admin does lives here: adding people, the invite link (Share / Copy / New link), **Manage** for each person, and the **All scores**, **Member reports** and **Crew report** tabs. The review page just has a **My Crew** button at the top for admins.
 - **Crew name and password:** every crew has a unique name and a crew password, both set when you create it (change the password any time on **My Crew**).
-- **Joining:** your crew tap **Join A Crew** at the top of the site, search for the crew name, and enter the crew password. Or send them the **invite link** (Share / Copy on My Crew), which takes them straight in with no password.
+- **Joining:** your crew tap **Join A Crew** at the top of the site (it opens the Join A Crew page), search for the crew name, and enter the crew password. They're then taken back to the review page with the crew open. Or send them the **invite link** (Share / Copy on My Crew), which takes them straight in with no password.
 - **Joining needs no sign-in:** anyone who opens the invite link goes straight into the crew as a guest. They pick their own name under "I am" (or "I'm not on the list. Add me") and can review anyone.
 - **Guests are tied to their device.** If someone changes phone or clears their browser, they just open the invite link again. If their name shows as taken, the admin taps **Free up name** next to it.
 - **Who sees what:**
