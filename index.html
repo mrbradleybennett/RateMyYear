@@ -234,6 +234,7 @@ button.danger{background:transparent;color:var(--gE);box-shadow:inset 0 0 0 1.5p
 .admin-only{display:none!important}
 body.admin-page .admin-only{display:flex!important}
 body.admin-page .review-only{display:none!important}
+.set-h{font-family:var(--display);font-weight:400;font-size:22px;margin:18px 0 8px;color:var(--green)}
 .join-only{display:none!important}
 body.join-page .join-only{display:flex!important}
 body.join-page .review-only{display:none!important}
@@ -365,7 +366,8 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 
 <script>
 /* Tokens: {you} {your} {yourself} {are} */
-const CATS=[
+/* Life set: used for Rate Me, Rate My Family and family crew members. */
+const LIFE_CATS=[
  {id:"self",name:"Self Care",line:"How well do {you} look after {yourself}?",lo:"Trainwreck",hi:"Looks after {yourself}",qs:[
   ["How well do {you} keep {your} life in order (money, home, admin)?","Total shambles","Sorted"],
   ["When things go wrong, how do {you} treat {yourself}?","Brutal","Fair go"],
@@ -407,11 +409,56 @@ const CATS=[
   ["Can {you} laugh at {yourself}?","Touchy","Every time"]],
   recs:["Plan one thing each month purely for fun.","Share the funny stuff with someone who needs a laugh.","Be the first to laugh when you stuff up."]}
 ];
-const GROUPS=[
+const LIFE_GROUPS=[
   {id:"me",name:"Self",blurb:"Looking after yourself",ids:["self","health"]},
   {id:"others",name:"Others",blurb:"How you are with people",ids:["mates","others","love"]},
   {id:"life",name:"Life",blurb:"Getting on with it",ids:["action","growth","humour"]}];
-CATS.forEach(c=>{c.group=GROUPS.find(g=>g.ids.includes(c.id))});
+/* Mates set: used for Rate My Mates and mate crew members. Group ids reuse the three group colours. */
+const MATE_CATS=[
+ {id:"vibe",name:"Vibe",line:"What's {your} vibe like?",lo:"Dead weight",hi:"Good energy",qs:[
+  ["Do {you} lift the mood when {you} walk in?","Sucks the air out","Lights it up"],
+  ["How positive {are} {you} to be around?","Whinger","Glass half full"],
+  ["How easy-going {are} {you}?","Highly strung","Chill as"]],
+  recs:["Leave the whinging at the door for the next catch-up and see how it lands.","Bring the energy: be the one who suggests the next plan.","Let the small stuff slide. Not every hill needs dying on."]},
+ {id:"banter",name:"Banter",line:"How good is {your} banter?",lo:"Crickets",hi:"Pure gold",qs:[
+  ["How quick {are} {you} with a comeback?","Thinks of it tomorrow","Razor sharp"],
+  ["Can {you} take a ribbing as well as dish it out?","Spits the dummy","Cops it sweet"],
+  ["Do {you} know where the line is?","Crosses it","Reads the room"]],
+  recs:["Cop the next ribbing with a laugh before firing back.","Keep the group chat alive with one decent message a week.","Read the room. If a mate's having a rough trot, ease off."]},
+ {id:"generous",name:"Generous",line:"How generous {are} {you} with {your} time and money?",lo:"Tight as",hi:"Shouts the round",qs:[
+  ["Do {you} shout {your} round?","Short arms, deep pockets","First to the bar"],
+  ["Do {you} give up {your} time to help a mate out?","Too busy","Drops everything"],
+  ["Do {you} share what {you}'ve got (car, gear, contacts)?","Keeps it to {yourself}","What's mine is yours"]],
+  recs:["Get the first round in next time.","Offer a hand with a mate's move, reno or job hunt before they ask.","Lend the gear, share the contact, pass on the tip."]},
+ {id:"reliable",name:"Reliable",line:"How reliable {are} {you}?",lo:"Flaky",hi:"Rock solid",qs:[
+  ["Do {you} turn up when {you} say {you} will?","Always pikes","Every time"],
+  ["{are} {you} on time?","Always late","Early"],
+  ["Can {your} mates count on {you} in a crisis?","Goes missing","First call"]],
+  recs:["Stop saying maybe. Give a straight yes or no.","Turn up on time to the next three catch-ups.","Be the mate who answers the 2am call."]},
+ {id:"loyal",name:"Loyalty",line:"How loyal {are} {you} to {your} mates?",lo:"Snake",hi:"Ride or die",qs:[
+  ["Do {you} have {your} mates' backs when they're not around?","Talks behind backs","Sticks up for them"],
+  ["Can {you} keep a secret?","Blabbermouth","Locked in the vault"],
+  ["Do {you} stick around through the tough times?","Fair-weather friend","Sticks like glue"]],
+  recs:["Only say things about a mate you'd say to their face.","What's told in confidence stays there.","Check in on the mate who's gone quiet."]},
+ {id:"adventure",name:"Adventure",line:"How up for an adventure {are} {you}?",lo:"Homebody",hi:"Up for anything",qs:[
+  ["Do {you} say yes to new things?","Not for me","Let's go"],
+  ["How often do {you} organise trips or outings?","Never","Always planning one"],
+  ["Do {you} get out of {your} comfort zone?","Same old","Pushes it"]],
+  recs:["Book one trip or weekend away with the crew this year.","Say yes to the next thing you'd normally knock back.","Try something none of you have done before."]},
+ {id:"social",name:"Social",line:"How social {are} {you}?",lo:"Hermit",hi:"Life of the party",qs:[
+  ["How often do {you} turn up to catch-ups?","Never seen","At everything"],
+  ["Do {you} bring people together?","Keeps to {yourself}","Glue of the group"],
+  ["Do {you} make new people feel welcome?","Closed shop","Brings them in"]],
+  recs:["Put a standing monthly catch-up in the calendar.","Introduce two mates who'd get on.","Make the new person in the group feel part of it."]}
+];
+const MATE_GROUPS=[
+  {id:"me",name:"Them",blurb:"What they bring",ids:["vibe","banter","generous"]},
+  {id:"others",name:"Us",blurb:"How they are with their mates",ids:["reliable","loyal"]},
+  {id:"life",name:"Life",blurb:"Getting out there",ids:["adventure","social"]}];
+const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_GROUPS},mates:{key:"mates",label:"Mates",cats:MATE_CATS,groups:MATE_GROUPS}};
+Object.values(SETS).forEach(s=>s.cats.forEach(c=>{c.group=s.groups.find(g=>g.ids.includes(c.id))}));
+const setForType=t=>t==="mate"?"mates":"life";
+let CATS=LIFE_CATS, GROUPS=LIFE_GROUPS, curSet="";
 const VERDICTS={A:"Absolute legend of a year.",B:"Solid year. A few things to polish.",C:"Middle of the ladder. Room to climb.",D:"Tough season. Time for a reset.",E:"Rough one. Next year starts now."};
 const P={me:{you:"you",your:"your",yourself:"yourself",are:"are"},other:{you:"they",your:"their",yourself:"themselves",are:"are"}};
 const KEY="eoy-review-2026";
@@ -431,6 +478,7 @@ const grade=a=>{
 const gcol=g=>`var(--g${g[0]})`;
 const val=(c,i)=>state.v[c+i]??5;
 const isMe=()=>state.who==="me";
+const activeSet=()=>SETS[state.qset]?state.qset:setForType(state.who);
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
 /* The quick (top) question is the master score. Answering detailed questions sets it to their average. */
 const topScore=c=>state.dk[c.id+"t"]?null:val(c.id,"t");
@@ -450,6 +498,8 @@ const qHTML=(key,lo,hi)=>`<div class="q" id="q-${key}"><div class="q-top"><p id=
    <input type="range" id="r-${key}" min="1" max="10" step="1" aria-labelledby="l-${key}">
    <div class="ends"><span>${lo}</span><span id="e-${key}">${hi}</span></div></div>`;
 const host=$m("cats");
+function buildCards(){
+host.innerHTML="";
 CATS.forEach((c,ci)=>{
   if(c.group.ids[0]===c.id){const gh=document.createElement("div");gh.className="group-head g-"+c.group.id;gh.innerHTML=`<h2>${c.group.name}</h2><span>${c.group.blurb}</span>`;host.appendChild(gh)}
   const s=document.createElement("section");s.className="cat";s.id="cat-"+c.id;
@@ -465,14 +515,14 @@ CATS.forEach((c,ci)=>{
     k.addEventListener("change",()=>{if(k.checked)state.dk[key]=true;else{delete state.dk[key];if(state.v[key]==null)state.v[key]=+r.value}if(!isTop)syncTop(c);save();render()});
   });
 });
+}
 /* Every assessment starts in summary mode: detailed questions closed until someone opens them. */
-function applyMode(){CATS.forEach(c=>{$m("d-"+c.id).open=false})}
-applyMode();
+function applyMode(){CATS.forEach(c=>{const d=$m("d-"+c.id);if(d)d.open=false})}
 const nameEl=$m("name");nameEl.value=state.name||"";
 nameEl.addEventListener("input",()=>{state.name=nameEl.value.trim();save();render()});
 document.querySelectorAll('input[name=who]').forEach(r=>{
   r.checked=r.value===state.who;
-  r.addEventListener("change",()=>{state.who=r.value;save();render()});
+  r.addEventListener("change",()=>{state.who=r.value;delete state.qset;save();render()});
 });
 
 /* ---------- wheel (drawn twice: header and report card) ---------- */
@@ -488,12 +538,14 @@ const WHEELS=["wheel","wheel2"];
 function buildWheel(svgId){
   const svg=$m(svgId); let h="";
   [4,7,8.5].forEach(v=>{const r=WH.r0+(WH.R-WH.r0)*(v-1)/9;h+=`<circle class="ring" r="${r}"/>`});
+  const st=360/CATS.length, hs=st/2;
+  svg.setAttribute("aria-label",`Grades for the ${CATS.length} areas`);
   GROUPS.forEach(g=>{
     const i0=CATS.findIndex(c=>c.id===g.ids[0]), i1=CATS.findIndex(c=>c.id===g.ids[g.ids.length-1]);
-    h+=`<path class="garc g-${g.id}" d="${arc(WH.R+6,-90+45*i0-22.5+WH.gap,-90+45*i1+22.5-WH.gap)}"/>`;
+    h+=`<path class="garc g-${g.id}" d="${arc(WH.R+6,-90+st*i0-hs+WH.gap,-90+st*i1+hs-WH.gap)}"/>`;
   });
   CATS.forEach((c,i)=>{
-    const mid=-90+45*i, a0=mid-22.5+WH.gap, a1=mid+22.5-WH.gap;
+    const mid=-90+st*i, a0=mid-hs+WH.gap, a1=mid+hs-WH.gap;
     const lx=(WH.R+17)*Math.cos(rad(mid)), ly=(WH.R+17)*Math.sin(rad(mid));
     const cx=Math.cos(rad(mid)), anchor=cx>0.3?"start":cx<-0.3?"end":"middle";
     const dy=Math.sin(rad(mid))>0.5?"0.9em":Math.sin(rad(mid))<-0.5?"-0.2em":"0.35em";
@@ -512,12 +564,12 @@ function buildWheel(svgId){
     g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
   });
 }
-WHEELS.forEach(buildWheel);
 function drawWheel(rows,overall){
+  const st=360/CATS.length, hs=st/2;
   WHEELS.forEach(id=>{
     const svg=$m(id);
     rows.forEach((r,i)=>{
-      const mid=-90+45*i, a0=mid-22.5+WH.gap, a1=mid+22.5-WH.gap;
+      const mid=-90+st*i, a0=mid-hs+WH.gap, a1=mid+hs-WH.gap;
       const f=svg.querySelector(`[data-f="${r.c.id}"]`), t=svg.querySelector(`[data-s="${r.c.id}"]`);
       if(r.avg==null){f.setAttribute("d",wedge(a0,a1,WH.r0,WH.r0));t.textContent="?";t.setAttribute("class","wscore muted-t");return}
       f.setAttribute("d",wedge(a0,a1,WH.r0,WH.r0+(WH.R-WH.r0)*(r.avg-1)/9));
@@ -526,8 +578,15 @@ function drawWheel(rows,overall){
     svg.querySelector("[data-c]").textContent=overall==null?"–":grade(overall);
   });
 }
-const legendHTML=GROUPS.map(g=>`<span class="lg g-${g.id}"><i></i>${g.name}</span>`).join("");
-document.querySelectorAll(".wlegend").forEach(el=>el.innerHTML=legendHTML);
+/* Switch question set: rebuild the cards, wheels and legend. */
+function useSet(k){
+  if(k===curSet) return;
+  curSet=k; CATS=SETS[k].cats; GROUPS=SETS[k].groups;
+  buildCards(); WHEELS.forEach(buildWheel); applyMode();
+  const legendHTML=GROUPS.map(g=>`<span class="lg g-${g.id}"><i></i>${g.name}</span>`).join("");
+  document.querySelectorAll(".wlegend").forEach(el=>el.innerHTML=legendHTML);
+}
+const NUMW=["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"];
 
 /* ---------- render ---------- */
 function words(){
@@ -535,8 +594,9 @@ function words(){
   return {poss: me?(n?n+"'s":"Your"):(n?n+"'s":"Their")};
 }
 function render(){
+  useSet(activeSet());
   const me=isMe(),w=words();
-  const how="Eight areas, one quick question each. Want more detail? Open the arrow under any area for three more questions, and the quick score moves to match their average.";
+  const how=NUMW[CATS.length]+" areas, one quick question each. Want more detail? Open the arrow under any area for three more questions, and the quick score moves to match their average.";
   $m("lede").textContent=me
     ?`${how} Drag each slider to where you honestly sit right now, or tick Don't know to skip it.`
     :`${how} Drag each slider to where you reckon your ${state.who==="mate"?"mate":"family member"} sits right now, or tick Don't know to skip it. Be honest and fair.`;
@@ -601,7 +661,7 @@ $m("copy").addEventListener("click",()=>{
 const resetBtn=$m("reset");let armed=false;
 resetBtn.addEventListener("click",()=>{
   if(!armed){armed=true;resetBtn.textContent="Tap again to clear";setTimeout(()=>{armed=false;resetBtn.textContent="Start again"},3000);return}
-  state={who:state.who,name:"",v:{},dk:{}};save();nameEl.value="";applyMode();
+  state={who:state.who,name:"",v:{},dk:{}};save();useSet(activeSet());nameEl.value="";applyMode();
   armed=false;resetBtn.textContent="Start again";render();say("Cleared");
 });
 </script>
@@ -692,7 +752,9 @@ function famErr(m){const el=$("famErr");if(!el)return;el.textContent=m;el.hidden
 const toast=(m,ms=3500)=>{$("toast").textContent=m;setTimeout(()=>{if($("toast").textContent===m)$("toast").textContent=""},ms)};
 
 /* ---------- aggregation ---------- */
+const setOf=id=>SETS[setForType(memberType(id))];
 function aggFor(id){
+  const CATS=setOf(id).cats;
   const rs=liveReviews().filter(r=>r.member===id);
   const self=rs.find(r=>r.reviewer===id)||null, others=rs.filter(r=>r.reviewer!==id);
   const pickAvg=(list,get)=>{const vs=list.map(get).filter(v=>v!=null);return vs.length?mean(vs):null};
@@ -704,22 +766,23 @@ function aggFor(id){
   const overall=known.length?mean(known):null;
   return {rs,self,others,sa:self?self.cats:null,fa,all,main,overall,qSelf:self?self.values:null,qFam:qs(others)};
 }
-const ranked=main=>CATS.map((c,i)=>({c,v:main[c.id],i})).filter(x=>x.v!=null).sort((x,y)=>y.v-x.v||x.i-y.i);
-const groupLine=main=>GROUPS.map(g=>{const vs=g.ids.map(id=>main[id]).filter(v=>v!=null);const v=vs.length?mean(vs):null;return `<span class="gl g-${g.id}"><b>${g.name}</b> ${dot(v)}</span>`}).join("");
+const ranked=(main,CATS)=>CATS.map((c,i)=>({c,v:main[c.id],i})).filter(x=>x.v!=null).sort((x,y)=>y.v-x.v||x.i-y.i);
+const groupLine=(main,GROUPS)=>GROUPS.map(g=>{const vs=g.ids.map(id=>main[id]).filter(v=>v!=null);const v=vs.length?mean(vs):null;return `<span class="gl g-${g.id}"><b>${g.name}</b> ${dot(v)}</span>`}).join("");
 const listHTML=rows=>`<ol>${rows.map(r=>`<li style="--g:${gcol(grade(r.v))}"><span class="chip">${grade(r.v)}</span><span class="nm">${r.c.name}</span><span class="sc">${r.v.toFixed(1)}</span></li>`).join("")}</ol>`;
 const recsHTML=rows=>rows.map(r=>`<div class="rec" style="--g:${gcol(grade(r.v))}"><h4>${r.c.name} <span class="tag">${grade(r.v)} · ${r.v.toFixed(1)}</span></h4><ul>${r.c.recs.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`).join("");
 
 /* ---------- report builders ---------- */
 function memberReportHTML(id,detailed){
-  const a=aggFor(id), name=esc(memberName(id));
+  const a=aggFor(id), name=esc(memberName(id)), S=setOf(id), CATS=S.cats;
   if(!a.rs.length||a.overall==null) return `<div class="results"><h3>${name}</h3><p class="muted">${a.rs.length?"Every area was marked don't know so far.":peopleLine(0)+"."}</p></div>`;
-  const r=ranked(a.main), bottom=r.slice(Math.max(3,r.length-3)).reverse();
+  const r=ranked(a.main,CATS), bottom=r.slice(Math.max(3,r.length-3)).reverse();
   const who=a.rs.map(x=>x.reviewer===id?"themselves":esc(memberName(x.reviewer)));
   const gap=c=>a.sa&&a.fa&&a.sa[c.id]!=null&&a.fa[c.id]!=null?(a.sa[c.id]-a.fa[c.id]):null;
   let html=`<div class="results">
     <h3>${name} · ${grade(a.overall)} overall (${a.overall.toFixed(1)})</h3>
     <p class="count">${peopleLine(a.rs.length)}${a.self?" (including a self review)":""}</p>
-    <div class="glines">${groupLine(a.main)}</div>
+    <p class="muted">${S.label} questions</p>
+    <div class="glines">${groupLine(a.main,S.groups)}</div>
     <p class="muted">Reviewed by ${who.join(", ")}.</p>
     <div class="rtable-wrap"><table class="rtable">
       <thead><tr><th>Area</th><th>Self</th><th>Crew</th>${detailed?"<th>Gap</th>":""}</tr></thead>
@@ -736,27 +799,38 @@ function memberReportHTML(id,detailed){
     <div class="recs"><h3>Ideas for the bottom two</h3>${recsHTML(bottom.slice(0,2))}</div></div>`;
   return html;
 }
+const setsInCrew=()=>Object.values(SETS).filter(S=>members().some(m=>setOf(m.id)===S));
 function scoreboardHTML(){
-  const rows=members().map(m=>({m,a:aggFor(m.id)})).sort((x,y)=>(y.a.overall??-1)-(x.a.overall??-1));
-  if(!rows.length) return `<p class="muted">Add people to your crew to see scores.</p>`;
+  if(!members().length) return `<p class="muted">Add people to your crew to see scores.</p>`;
+  const sets=setsInCrew();
+  return sets.map(S=>(sets.length>1?`<h3 class="set-h">${S.label}</h3>`:"")+scoreTableHTML(S)).join("")+`<p class="muted">Scores use the crew's view of each person. Where someone only has a self review, that is used instead.${sets.length>1?" Mates are rated on the mates questions, everyone else on the family and others questions.":""}</p>`;
+}
+function scoreTableHTML(S){
+  const CATS=S.cats, GROUPS=S.groups;
+  const rows=members().filter(m=>setOf(m.id)===S).map(m=>({m,a:aggFor(m.id)})).sort((x,y)=>(y.a.overall??-1)-(x.a.overall??-1));
   const gv=(a,g)=>{if(!a.main)return null;const vs=g.ids.map(id=>a.main[id]).filter(v=>v!=null);return vs.length?mean(vs):null};
   return `<div class="rtable-wrap"><table class="rtable score">
     <thead><tr><th>Member</th><th>Reviews</th><th>Overall</th>${GROUPS.map(g=>`<th>${g.name}</th>`).join("")}${CATS.map(c=>`<th>${c.name}</th>`).join("")}</tr></thead>
     <tbody>${rows.map(({m,a})=>`<tr><td><b>${esc(m.name)}</b></td><td class="n">${a.rs.length}</td><td class="n">${dot(a.overall)}</td>${GROUPS.map(g=>`<td class="n">${dot(gv(a,g))}</td>`).join("")}${CATS.map(c=>`<td class="n">${a.main?dot(a.main[c.id]):"–"}</td>`).join("")}</tr>`).join("")}</tbody>
-  </table></div><p class="muted">Scores use the crew's view of each person. Where someone only has a self review, that is used instead.</p>`;
+  </table></div>`;
 }
 function crewReportHTML(){
-  const ms=members(), withData=ms.map(m=>({m,a:aggFor(m.id)})).filter(x=>x.a.overall!=null);
-  const total=liveReviews().length;
-  if(!withData.length) return `<p class="muted">No reviews yet. Once your crew saves reviews, the crew report appears here.</p>`;
+  const ms=members(), total=liveReviews().length;
+  const all=ms.map(m=>({m,a:aggFor(m.id)})).filter(x=>x.a.overall!=null);
+  if(!all.length) return `<p class="muted">No reviews yet. Once your crew saves reviews, the crew report appears here.</p>`;
+  const sets=setsInCrew().filter(S=>all.some(x=>setOf(x.m.id)===S));
+  return `<p class="count">${total} review${total===1?"":"s"} saved · ${all.length} of ${ms.length} members reviewed</p>`+sets.map(S=>crewSetHTML(S,all.filter(x=>setOf(x.m.id)===S),sets.length>1)).join("");
+}
+function crewSetHTML(S,withData,multi){
+  const CATS=S.cats, ms=members().filter(m=>setOf(m.id)===S);
   const famCat=Object.fromEntries(CATS.map(c=>{const vs=withData.map(x=>x.a.main[c.id]).filter(v=>v!=null);return [c.id,vs.length?mean(vs):null]}));
   const known=CATS.map(c=>famCat[c.id]).filter(v=>v!=null), overall=mean(known);
   const leader=c=>withData.filter(x=>x.a.main[c.id]!=null).reduce((b,x)=>!b||x.a.main[c.id]>b.a.main[c.id]?x:b,null);
-  const r=ranked(famCat), bottom=r.slice(Math.max(3,r.length-3)).reverse();
+  const r=ranked(famCat,CATS), bottom=r.slice(Math.max(3,r.length-3)).reverse();
   return `<div class="results">
-    <h3>${esc(crew.name)} · ${grade(overall)} overall (${overall.toFixed(1)})</h3>
-    <p class="count">${total} review${total===1?"":"s"} saved · ${withData.length} of ${ms.length} members reviewed</p>
-    <div class="glines">${groupLine(famCat)}</div>
+    <h3>${esc(crew.name)}${multi?` · ${S.label}`:""} · ${grade(overall)} overall (${overall.toFixed(1)})</h3>
+    <p class="count">${withData.length} of ${ms.length} ${S.key==="mates"?"mates":"people"} reviewed</p>
+    <div class="glines">${groupLine(famCat,S.groups)}</div>
     <div class="rtable-wrap"><table class="rtable">
       <thead><tr><th>Area</th><th>Crew</th><th></th><th>Leads the crew</th></tr></thead>
       <tbody>${CATS.map(c=>{const v=famCat[c.id],l=leader(c);return `<tr><td><b>${c.name}</b></td><td class="n">${dot(v)}</td><td style="width:30%">${v==null?"":`<div class="bar" style="--g:${gcol(grade(v))}"><i style="width:${(v-1)/9*100}%"></i></div>`}</td><td>${l?`${esc(l.m.name)} (${l.a.main[c.id].toFixed(1)})`:"–"}</td></tr>`}).join("")}</tbody>
@@ -1247,6 +1321,7 @@ function setSliders(rv){
   rv=rv||{};
   state.v=Object.assign({},rv.values||{});
   state.dk=Object.assign({},rv.dk||{});
+  useSet(activeSet());
   CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)});
   applyMode();
 }
@@ -1264,19 +1339,19 @@ function startReview(id){
   if(!me) return needMe(id);
   target={id,name:memberName(id)};
   const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid);
+  state.who=id===me?"me":memberType(id); state.qset=setForType(memberType(id)); state.name=target.name;
   setSliders(existing);
-  state.who=id===me?"me":memberType(id); state.name=target.name;
   savedSig=sig();
   document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===state.who);
   nameInput.value=target.name;
   save(); render();
   $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 }
-function stopReview(){target=null;render()}
+function stopReview(){target=null;delete state.qset;render()}
 const toTop=()=>$("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 $("reviewCancel").onclick=toTop;
 function clearReview(){
-  target=null; setSliders({}); state.name=""; nameInput.value=""; pick.value="";
+  target=null; delete state.qset; setSliders({}); state.name=""; nameInput.value=""; pick.value="";
   save(); render(); toTop();
 }
 
@@ -1333,7 +1408,7 @@ const snapshotResult=()=>{
     else if(state.v[k]!=null)values[k]=state.v[k];
   }));
   const cats={};last.rows.forEach(r=>{if(r.avg!=null)cats[r.c.id]=Math.round(r.avg*100)/100});
-  return {values,dk,cats,overall:Math.round(last.avg*100)/100,grade:grade(last.avg),year:2026,savedAt:Date.now()};
+  return {set:activeSet(),values,dk,cats,overall:Math.round(last.avg*100)/100,grade:grade(last.avg),year:2026,savedAt:Date.now()};
 };
 async function saveReview(){
   if(!crew||!target||!me||!last) return false;

@@ -82,7 +82,9 @@ function famErr(m){const el=$("famErr");if(!el)return;el.textContent=m;el.hidden
 const toast=(m,ms=3500)=>{$("toast").textContent=m;setTimeout(()=>{if($("toast").textContent===m)$("toast").textContent=""},ms)};
 
 /* ---------- aggregation ---------- */
+const setOf=id=>SETS[setForType(memberType(id))];
 function aggFor(id){
+  const CATS=setOf(id).cats;
   const rs=liveReviews().filter(r=>r.member===id);
   const self=rs.find(r=>r.reviewer===id)||null, others=rs.filter(r=>r.reviewer!==id);
   const pickAvg=(list,get)=>{const vs=list.map(get).filter(v=>v!=null);return vs.length?mean(vs):null};
@@ -94,22 +96,23 @@ function aggFor(id){
   const overall=known.length?mean(known):null;
   return {rs,self,others,sa:self?self.cats:null,fa,all,main,overall,qSelf:self?self.values:null,qFam:qs(others)};
 }
-const ranked=main=>CATS.map((c,i)=>({c,v:main[c.id],i})).filter(x=>x.v!=null).sort((x,y)=>y.v-x.v||x.i-y.i);
-const groupLine=main=>GROUPS.map(g=>{const vs=g.ids.map(id=>main[id]).filter(v=>v!=null);const v=vs.length?mean(vs):null;return `<span class="gl g-${g.id}"><b>${g.name}</b> ${dot(v)}</span>`}).join("");
+const ranked=(main,CATS)=>CATS.map((c,i)=>({c,v:main[c.id],i})).filter(x=>x.v!=null).sort((x,y)=>y.v-x.v||x.i-y.i);
+const groupLine=(main,GROUPS)=>GROUPS.map(g=>{const vs=g.ids.map(id=>main[id]).filter(v=>v!=null);const v=vs.length?mean(vs):null;return `<span class="gl g-${g.id}"><b>${g.name}</b> ${dot(v)}</span>`}).join("");
 const listHTML=rows=>`<ol>${rows.map(r=>`<li style="--g:${gcol(grade(r.v))}"><span class="chip">${grade(r.v)}</span><span class="nm">${r.c.name}</span><span class="sc">${r.v.toFixed(1)}</span></li>`).join("")}</ol>`;
 const recsHTML=rows=>rows.map(r=>`<div class="rec" style="--g:${gcol(grade(r.v))}"><h4>${r.c.name} <span class="tag">${grade(r.v)} · ${r.v.toFixed(1)}</span></h4><ul>${r.c.recs.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`).join("");
 
 /* ---------- report builders ---------- */
 function memberReportHTML(id,detailed){
-  const a=aggFor(id), name=esc(memberName(id));
+  const a=aggFor(id), name=esc(memberName(id)), S=setOf(id), CATS=S.cats;
   if(!a.rs.length||a.overall==null) return `<div class="results"><h3>${name}</h3><p class="muted">${a.rs.length?"Every area was marked don't know so far.":peopleLine(0)+"."}</p></div>`;
-  const r=ranked(a.main), bottom=r.slice(Math.max(3,r.length-3)).reverse();
+  const r=ranked(a.main,CATS), bottom=r.slice(Math.max(3,r.length-3)).reverse();
   const who=a.rs.map(x=>x.reviewer===id?"themselves":esc(memberName(x.reviewer)));
   const gap=c=>a.sa&&a.fa&&a.sa[c.id]!=null&&a.fa[c.id]!=null?(a.sa[c.id]-a.fa[c.id]):null;
   let html=`<div class="results">
     <h3>${name} · ${grade(a.overall)} overall (${a.overall.toFixed(1)})</h3>
     <p class="count">${peopleLine(a.rs.length)}${a.self?" (including a self review)":""}</p>
-    <div class="glines">${groupLine(a.main)}</div>
+    <p class="muted">${S.label} questions</p>
+    <div class="glines">${groupLine(a.main,S.groups)}</div>
     <p class="muted">Reviewed by ${who.join(", ")}.</p>
     <div class="rtable-wrap"><table class="rtable">
       <thead><tr><th>Area</th><th>Self</th><th>Crew</th>${detailed?"<th>Gap</th>":""}</tr></thead>
@@ -126,27 +129,38 @@ function memberReportHTML(id,detailed){
     <div class="recs"><h3>Ideas for the bottom two</h3>${recsHTML(bottom.slice(0,2))}</div></div>`;
   return html;
 }
+const setsInCrew=()=>Object.values(SETS).filter(S=>members().some(m=>setOf(m.id)===S));
 function scoreboardHTML(){
-  const rows=members().map(m=>({m,a:aggFor(m.id)})).sort((x,y)=>(y.a.overall??-1)-(x.a.overall??-1));
-  if(!rows.length) return `<p class="muted">Add people to your crew to see scores.</p>`;
+  if(!members().length) return `<p class="muted">Add people to your crew to see scores.</p>`;
+  const sets=setsInCrew();
+  return sets.map(S=>(sets.length>1?`<h3 class="set-h">${S.label}</h3>`:"")+scoreTableHTML(S)).join("")+`<p class="muted">Scores use the crew's view of each person. Where someone only has a self review, that is used instead.${sets.length>1?" Mates are rated on the mates questions, everyone else on the family and others questions.":""}</p>`;
+}
+function scoreTableHTML(S){
+  const CATS=S.cats, GROUPS=S.groups;
+  const rows=members().filter(m=>setOf(m.id)===S).map(m=>({m,a:aggFor(m.id)})).sort((x,y)=>(y.a.overall??-1)-(x.a.overall??-1));
   const gv=(a,g)=>{if(!a.main)return null;const vs=g.ids.map(id=>a.main[id]).filter(v=>v!=null);return vs.length?mean(vs):null};
   return `<div class="rtable-wrap"><table class="rtable score">
     <thead><tr><th>Member</th><th>Reviews</th><th>Overall</th>${GROUPS.map(g=>`<th>${g.name}</th>`).join("")}${CATS.map(c=>`<th>${c.name}</th>`).join("")}</tr></thead>
     <tbody>${rows.map(({m,a})=>`<tr><td><b>${esc(m.name)}</b></td><td class="n">${a.rs.length}</td><td class="n">${dot(a.overall)}</td>${GROUPS.map(g=>`<td class="n">${dot(gv(a,g))}</td>`).join("")}${CATS.map(c=>`<td class="n">${a.main?dot(a.main[c.id]):"–"}</td>`).join("")}</tr>`).join("")}</tbody>
-  </table></div><p class="muted">Scores use the crew's view of each person. Where someone only has a self review, that is used instead.</p>`;
+  </table></div>`;
 }
 function crewReportHTML(){
-  const ms=members(), withData=ms.map(m=>({m,a:aggFor(m.id)})).filter(x=>x.a.overall!=null);
-  const total=liveReviews().length;
-  if(!withData.length) return `<p class="muted">No reviews yet. Once your crew saves reviews, the crew report appears here.</p>`;
+  const ms=members(), total=liveReviews().length;
+  const all=ms.map(m=>({m,a:aggFor(m.id)})).filter(x=>x.a.overall!=null);
+  if(!all.length) return `<p class="muted">No reviews yet. Once your crew saves reviews, the crew report appears here.</p>`;
+  const sets=setsInCrew().filter(S=>all.some(x=>setOf(x.m.id)===S));
+  return `<p class="count">${total} review${total===1?"":"s"} saved · ${all.length} of ${ms.length} members reviewed</p>`+sets.map(S=>crewSetHTML(S,all.filter(x=>setOf(x.m.id)===S),sets.length>1)).join("");
+}
+function crewSetHTML(S,withData,multi){
+  const CATS=S.cats, ms=members().filter(m=>setOf(m.id)===S);
   const famCat=Object.fromEntries(CATS.map(c=>{const vs=withData.map(x=>x.a.main[c.id]).filter(v=>v!=null);return [c.id,vs.length?mean(vs):null]}));
   const known=CATS.map(c=>famCat[c.id]).filter(v=>v!=null), overall=mean(known);
   const leader=c=>withData.filter(x=>x.a.main[c.id]!=null).reduce((b,x)=>!b||x.a.main[c.id]>b.a.main[c.id]?x:b,null);
-  const r=ranked(famCat), bottom=r.slice(Math.max(3,r.length-3)).reverse();
+  const r=ranked(famCat,CATS), bottom=r.slice(Math.max(3,r.length-3)).reverse();
   return `<div class="results">
-    <h3>${esc(crew.name)} · ${grade(overall)} overall (${overall.toFixed(1)})</h3>
-    <p class="count">${total} review${total===1?"":"s"} saved · ${withData.length} of ${ms.length} members reviewed</p>
-    <div class="glines">${groupLine(famCat)}</div>
+    <h3>${esc(crew.name)}${multi?` · ${S.label}`:""} · ${grade(overall)} overall (${overall.toFixed(1)})</h3>
+    <p class="count">${withData.length} of ${ms.length} ${S.key==="mates"?"mates":"people"} reviewed</p>
+    <div class="glines">${groupLine(famCat,S.groups)}</div>
     <div class="rtable-wrap"><table class="rtable">
       <thead><tr><th>Area</th><th>Crew</th><th></th><th>Leads the crew</th></tr></thead>
       <tbody>${CATS.map(c=>{const v=famCat[c.id],l=leader(c);return `<tr><td><b>${c.name}</b></td><td class="n">${dot(v)}</td><td style="width:30%">${v==null?"":`<div class="bar" style="--g:${gcol(grade(v))}"><i style="width:${(v-1)/9*100}%"></i></div>`}</td><td>${l?`${esc(l.m.name)} (${l.a.main[c.id].toFixed(1)})`:"–"}</td></tr>`}).join("")}</tbody>
@@ -637,6 +651,7 @@ function setSliders(rv){
   rv=rv||{};
   state.v=Object.assign({},rv.values||{});
   state.dk=Object.assign({},rv.dk||{});
+  useSet(activeSet());
   CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)});
   applyMode();
 }
@@ -654,19 +669,19 @@ function startReview(id){
   if(!me) return needMe(id);
   target={id,name:memberName(id)};
   const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid);
+  state.who=id===me?"me":memberType(id); state.qset=setForType(memberType(id)); state.name=target.name;
   setSliders(existing);
-  state.who=id===me?"me":memberType(id); state.name=target.name;
   savedSig=sig();
   document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===state.who);
   nameInput.value=target.name;
   save(); render();
   $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 }
-function stopReview(){target=null;render()}
+function stopReview(){target=null;delete state.qset;render()}
 const toTop=()=>$("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 $("reviewCancel").onclick=toTop;
 function clearReview(){
-  target=null; setSliders({}); state.name=""; nameInput.value=""; pick.value="";
+  target=null; delete state.qset; setSliders({}); state.name=""; nameInput.value=""; pick.value="";
   save(); render(); toTop();
 }
 
@@ -723,7 +738,7 @@ const snapshotResult=()=>{
     else if(state.v[k]!=null)values[k]=state.v[k];
   }));
   const cats={};last.rows.forEach(r=>{if(r.avg!=null)cats[r.c.id]=Math.round(r.avg*100)/100});
-  return {values,dk,cats,overall:Math.round(last.avg*100)/100,grade:grade(last.avg),year:2026,savedAt:Date.now()};
+  return {set:activeSet(),values,dk,cats,overall:Math.round(last.avg*100)/100,grade:grade(last.avg),year:2026,savedAt:Date.now()};
 };
 async function saveReview(){
   if(!crew||!target||!me||!last) return false;
@@ -803,3 +818,4 @@ async function loadConfig(){
     else viewLobby();
   });
 })();
+

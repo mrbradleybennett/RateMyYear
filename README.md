@@ -1,6 +1,12 @@
 # Rate My Year: End Of Year Review
 
-A one-page website for rating yourself, your mates and your family across 8 areas of life. People sign in with Google to set up or join a **Review Crew**, then review each other. Crew admins see everyone's reports.
+A one-page website for rating yourself, your mates and your family across the areas of life that matter.
+
+**Two question sets:**
+- **Me and family** (8 areas): Self (Self Care, Health), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).
+- **Mates** (7 areas): Them (Vibe, Banter, Generous), Us (Reliable, Loyalty), Life (Adventure, Social).
+
+Rate My Mates uses the mates questions. In a crew, anyone added as a mate is rated on the mates questions (including their own self review), and everyone else on the me and family questions. Crew reports show a separate table for each set. People sign in with Google to set up or join a **Review Crew**, then review each other. Crew admins see everyone's reports.
 
 It runs on Firebase (Google), which is free at family and friends scale. Firebase hosts the page, handles Google sign-in, and stores the reviews.
 
