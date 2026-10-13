@@ -1,0 +1,102 @@
+rules_version = '2';
+
+// Rate My Year Review Crew security rules.
+// - Only signed-in people can touch crew data.
+// - You join a crew by holding its current invite code.
+// - Crew members see the crew and its people, write their own reviews,
+//   and read reviews they wrote or reviews about the person they claimed.
+// - Crew admins (the creator, plus anyone they promote) read every review.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function crewPath(c) { return /databases/$(database)/documents/crews/$(c); }
+    function crewData(c) { return get(crewPath(c)).data; }
+    function isAdmin(c) { return signedIn() && exists(crewPath(c)) && request.auth.uid in crewData(c).adminUids; }
+    function hasJoined(c) { return signedIn() && exists(/databases/$(database)/documents/crews/$(c)/joins/$(request.auth.uid)); }
+    function isMember(c) { return isAdmin(c) || hasJoined(c); }
+    function docAt(c, sub, id) { return /databases/$(database)/documents/crews/$(c)/$(sub)/$(id); }
+    function validCode(d) { return d.joinCode is string && d.joinCode.size() >= 6; }
+
+    match /crews/{c} {
+      allow get: if isMember(c);
+
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.adminUids == [request.auth.uid]
+        && validCode(request.resource.data)
+        && request.resource.data.members is list;
+
+      // Admins can change anything except who owns the crew, and the owner always stays an admin.
+      // Other members can only add people to the list.
+      allow update: if (isAdmin(c)
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && resource.data.ownerUid in request.resource.data.adminUids
+          && validCode(request.resource.data))
+        || (hasJoined(c)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+          && request.resource.data.members.size() == resource.data.members.size() + 1
+          && request.resource.data.members.hasAll(resource.data.members));
+
+      // Crews are never deleted from the site, so a crew id can't be re-created
+      // by someone else to read leftover data.
+      allow delete: if false;
+
+      // One doc per account that joined; created only with the current invite code.
+      match /joins/{uid} {
+        allow read: if isMember(c);
+        allow create, update: if signedIn() && uid == request.auth.uid
+          && request.resource.data.code == crewData(c).joinCode;
+        allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
+      }
+
+      // Which account is which person in the crew ("I am").
+      // Each account holds at most one claim: the claim and the account's
+      // pointer (accounts/{uid}) are written together, and any earlier claim
+      // must be deleted in the same batch.
+      match /claims/{memberId} {
+        allow read: if isMember(c);
+        allow create: if isMember(c)
+          && request.resource.data.uid == request.auth.uid
+          && getAfter(docAt(c, 'accounts', request.auth.uid)).data.member == memberId
+          && (!exists(docAt(c, 'accounts', request.auth.uid))
+              || get(docAt(c, 'accounts', request.auth.uid)).data.member == memberId
+              || !existsAfter(docAt(c, 'claims', get(docAt(c, 'accounts', request.auth.uid)).data.member)));
+        allow delete: if isAdmin(c) || (signedIn() && resource.data.uid == request.auth.uid);
+      }
+      match /accounts/{uid} {
+        allow read: if isMember(c);
+        allow create, update: if isMember(c) && uid == request.auth.uid
+          && getAfter(docAt(c, 'claims', request.resource.data.member)).data.uid == request.auth.uid;
+        allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
+      }
+
+      match /reviews/{reviewId} {
+        allow read: if isAdmin(c)
+          || (isMember(c) && resource.data.reviewerUid == request.auth.uid)
+          || (isMember(c) && get(/databases/$(database)/documents/crews/$(c)/claims/$(resource.data.member)).data.uid == request.auth.uid);
+        allow create: if isMember(c)
+          && request.resource.data.reviewerUid == request.auth.uid
+          && reviewId == request.auth.uid + '_' + request.resource.data.member
+          && get(docAt(c, 'claims', request.resource.data.reviewer)).data.uid == request.auth.uid;
+        allow update: if isMember(c)
+          && resource.data.reviewerUid == request.auth.uid
+          && request.resource.data.reviewerUid == request.auth.uid
+          && request.resource.data.member == resource.data.member
+          && get(docAt(c, 'claims', request.resource.data.reviewer)).data.uid == request.auth.uid;
+        allow delete: if isAdmin(c) || (signedIn() && resource.data.reviewerUid == request.auth.uid);
+      }
+    }
+
+    // Each person's list of crews, private to them.
+    match /users/{uid} {
+      allow read, write: if signedIn() && uid == request.auth.uid;
+    }
+
+    // Solo reviews saved outside a crew, private to the person who saved them.
+    match /results/{id} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}

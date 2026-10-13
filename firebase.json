@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "**/.*", "README.md", "package.json", "firestore.*", "tests/**", "src/**", "node_modules/**"],
+    "cleanUrls": true,
+    "headers": [{ "source": "**/*.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }]
+  },
+  "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
+  "emulators": { "auth": { "port": 9099 }, "firestore": { "port": 8080 }, "hosting": { "port": 5000 }, "ui": { "enabled": true } }
+}
