@@ -8,7 +8,8 @@ It runs on Firebase (Google), which is free at family and friends scale. Firebas
 
 | File | What it does |
 |---|---|
-| `index.html` | The whole website: questions, wheel, report card, crews and admin reports |
+| `index.html` | The review page: questions, wheel, report card, joining a crew from the invite link |
+| `mycrew.html` | The **My Crew** page for crew admins: set up a crew, people, invite link, Manage, and all the reports |
 | `firebase-config.js` | Leave this alone if you deploy with Firebase Hosting. Fill it in only if you host the page somewhere else |
 | `firestore.rules` | Database security: who can read and write what |
 | `firebase.json`, `.firebaserc` | Firebase project settings |
@@ -56,7 +57,8 @@ Run `firebase deploy` again whenever you change the files.
 2. Then open **Authentication → Settings → Authorized domains** and add the same domain, or Google sign-in won't work there.
 
 ## How crews work
-- **Set up a crew (crew admin only):** tap **Set up a crew with Google**, sign in, choose **Set up a new crew**, and give it a name and your name. You become the crew's admin.
+- **Set up a crew (crew admin only):** tap **Create My Crew** at the top of the site. That opens the **My Crew** page: sign in with Google, then give the crew a name and your name. You become the crew's admin.
+- **My Crew page:** everything an admin does lives here: adding people, the invite link (Share / Copy / New link), **Manage** for each person, and the **All scores**, **Member reports** and **Crew report** tabs. The review page just has a **My Crew** button at the top for admins.
 - **Invite people:** add everyone's names, then copy the **invite link** from the crew box and send it by text or email.
 - **Joining needs no sign-in:** anyone who opens the invite link goes straight into the crew as a guest. They pick their own name under "I am" (or "I'm not on the list. Add me") and can review anyone.
 - **Guests are tied to their device.** If someone changes phone or clears their browser, they just open the invite link again. If their name shows as taken, the admin taps **Free up name** next to it.

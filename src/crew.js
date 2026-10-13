@@ -8,6 +8,9 @@ const body=$("famBody"), title=$("famTitle"), leaveBtn=$("famLeave");
 const banner=$("reviewBanner"), bannerText=$("reviewBannerText"), saveBtn=$("famSave"), soloBtn=$("soloSave");
 const pick=$("famPick"), pickHint=$("famPickHint"), nameInput=$("name"), revCount=$("revCount");
 const LS_CREW="ratemyyear-crew";
+const ADMIN=window.RMY_PAGE==="admin";            // true on the My Crew page
+const REVIEW_PATH=location.pathname.replace(/mycrew(\.html)?$/,"");
+const MYCREW_PATH=REVIEW_PATH+"mycrew.html";
 const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
@@ -36,7 +39,7 @@ const errText=x=>{
   if(c==="auth/popup-closed-by-user"||c==="auth/cancelled-popup-request") return "Sign-in was cancelled.";
   return "Something went wrong. Try again in a moment.";
 };
-const inviteLink=()=>crew?`${location.origin}${location.pathname}?crew=${crewId}&code=${crew.joinCode}`:"";
+const inviteLink=()=>crew?`${location.origin}${REVIEW_PATH}?crew=${crewId}&code=${crew.joinCode}`:"";
 const parseInvite=s=>{
   s=(s||"").trim(); if(!s) return null;
   try{const u=new URL(s);const c=u.searchParams.get("crew"),k=u.searchParams.get("code");if(c&&k)return {crew:c,code:k}}catch(e){}
@@ -151,12 +154,15 @@ const whoRow=extra=>`<div class="who-row"><span>${isGuest()?"You're in as a gues
 /* ---------- screens ---------- */
 function viewSignedOut(msg=""){
   title.textContent="Your crew"; leaveBtn.hidden=true;
-  body.innerHTML=`<div class="stack">
-    <p class="muted">A crew is your family, your mates, or both. Got an invite link? Just open it: no sign-in needed. Setting up a new crew? The crew admin signs in with Google once. You can also do a review on your own below without joining anything.</p>
-    <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Set up a crew with Google</button></div>
+  body.innerHTML=ADMIN?`<div class="stack">
+    <p class="muted">Sign in with Google to set up your crew and manage it. You'll be the crew admin: you add the people, send the invite link, and see everyone's reports. Your crew don't need to sign in at all.</p>
+    <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Sign in with Google</button></div>
+    <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
+  </div>`:`<div class="stack">
+    <p class="muted">A crew is your family, your mates, or both. Got an invite link from your crew? Just open it: no sign-in needed. Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top. You can also do a review on your own below.</p>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
-  $("gSignIn").onclick=googleSignIn;
+  if($("gSignIn")) $("gSignIn").onclick=googleSignIn;
 }
 
 function viewLobby(msg=""){
@@ -185,6 +191,9 @@ function viewLobby(msg=""){
   body.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openCrew(b.dataset.open));
   const tab=t=>{$("tabJoin").setAttribute("aria-selected",t==="join");$("tabCreate").setAttribute("aria-selected",t==="create");$("joinForm").hidden=t!=="join";$("createForm").hidden=t!=="create"||isGuest();$("createGuest").hidden=t!=="create"||!isGuest();famErr("")};
   $("tabJoin").onclick=()=>tab("join"); $("tabCreate").onclick=()=>tab("create");
+  body.querySelector(".tabs").hidden=true;
+  if(ADMIN){tab("create");$("joinForm").hidden=true}
+  else{tab("join");const n=document.createElement("p");n.className="muted";n.innerHTML=`To set up a new crew, tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top.`;$("joinForm").after(n)}
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const inv=parseInvite($("jLink").value);
@@ -218,7 +227,7 @@ async function forgetCrew(id){
 
 async function joinCrew(inv){
   body.innerHTML=`<p class="muted">Opening your crew…</p>`;
-  const linkText=`${location.origin}${location.pathname}?crew=${inv.crew}&code=${inv.code}`;
+  const linkText=`${location.origin}${REVIEW_PATH}?crew=${inv.crew}&code=${inv.code}`;
   try{
     await setDoc(doc(db,"crews",inv.crew,"joins",user.uid),{code:inv.code,name:user.displayName||"",at:Date.now()});
   }catch(x){
@@ -288,11 +297,13 @@ leaveBtn.onclick=async()=>{
 };
 
 function viewCrewShell(){
-  leaveBtn.hidden=false;
+  leaveBtn.hidden=ADMIN;
   body.innerHTML=`<div class="stack">
     ${whoRow(myCrews.length>1?`<select id="crewSwitch" aria-label="Switch crew">${myCrews.map(c=>`<option value="${esc(c.id)}"${c.id===crewId?" selected":""}>${esc(c.name)}</option>`).join("")}<option value="__lobby">Join or set up another crew…</option></select>`:`<button type="button" class="ghost sm" id="toLobby">Other crews</button>`)}
+    <p class="menote" id="notAdmin" hidden>Only the crew admin can manage this crew. <a href="${REVIEW_PATH}">Go to the reviews</a> to review your crew.</p>
+    <p class="adminlink" id="toMyCrew" hidden>You're the crew admin. <a href="${MYCREW_PATH}">Open My Crew</a> to add people, send the invite link and see all the reports.</p>
     <p class="menote" id="meNote" hidden></p>
-    <div class="form">
+    <div class="form" id="meWrap">
       <div class="field" id="meField"><label for="meSel">I am</label><select id="meSel"></select></div>
     </div>
     <form class="form" id="addMeForm" novalidate hidden>
@@ -439,32 +450,37 @@ function refresh(){
   title.textContent=`Your crew: ${crew.name}`;
   const ms=members(), admin=isAdmin();
   const taken=id=>claims[id]&&claims[id]!==user.uid;
+  $("meWrap").hidden=ADMIN; $("addMeForm").hidden=ADMIN||$("addMeForm").hidden;
+  $("notAdmin").hidden=!(ADMIN&&!admin); $("toMyCrew").hidden=ADMIN||!admin;
+  $("addForm").hidden=!(ADMIN&&admin); $("memList").hidden=ADMIN&&!admin;
+  const tb=document.getElementById("myCrewBtn"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create My Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
-  if(me){$("meNote").hidden=true;$("meField").classList.remove("attention")}
+  if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
   $("memList").innerHTML=ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
-    const canSee=admin||m.id===me;
+    const canSee=ADMIN?admin:m.id===me;
     const joined=!!claims[m.id], isAdm=joined&&crew.adminUids.includes(claims[m.id]);
     return `<div class="member"${g&&canSee?` style="--g:${gcol(g)}"`:""}>
       <span class="chip${g&&canSee?"":" none"}">${g&&canSee?g:"–"}</span>
       <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${memberType(m.id)==="mate"?"Mate":"Family"}${joined?" · joined":""}${isAdm?" · admin":""}${canSee?` · ${a.rs.length} review${a.rs.length===1?"":"s"}`:""}${mine?" · you've reviewed":""}</small></span>
       <span class="btns">
-        <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
-        ${m.id===me&&!admin?`<button type="button" class="ghost" data-results="${m.id}"${a.rs.length?"":" disabled"}>My results</button>`:""}
-        ${admin?`<button type="button" class="ghost" data-manage="${m.id}" aria-expanded="${managing===m.id}">${managing===m.id?"Close":"Manage"}</button>`:""}
-      </span></div>${admin&&managing===m.id?managePanel(m,joined,isAdm,a):""}`}).join("")
+        ${ADMIN?"":`<button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>`}
+        ${!ADMIN&&m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${a.rs.length?"":" disabled"}>My results</button>`:""}
+        ${ADMIN&&admin?`<button type="button" class="ghost" data-manage="${m.id}" aria-expanded="${managing===m.id}">${managing===m.id?"Close":"Manage"}</button>`:""}
+      </span></div>${ADMIN&&admin&&managing===m.id?managePanel(m,joined,isAdm,a):""}`}).join("")
     :`<p class="muted">No one in the crew yet. Add everyone below.</p>`;
   $("memList").querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>startReview(b.dataset.review));
   $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{const box=$("famResults");box.innerHTML=box.innerHTML?"":memberReportHTML(me,false)});
   $("memList").querySelectorAll("[data-manage]").forEach(b=>b.onclick=()=>{managing=managing===b.dataset.manage?"":b.dataset.manage;removeArmed="";refresh()});
   $("memList").querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>manageAction(b.dataset.act,b.dataset.id));
-  $("inviteBox").hidden=!admin;
-  if(admin) $("inviteLink").value=inviteLink();
-  if($("famResults").innerHTML&&me&&!admin) $("famResults").innerHTML=memberReportHTML(me,false); else if(admin) $("famResults").innerHTML="";
-  $("adminArea").hidden=!admin;
-  if(admin) renderAdmin();
+  const showAdmin=ADMIN&&admin;
+  $("inviteBox").hidden=!showAdmin;
+  if(showAdmin) $("inviteLink").value=inviteLink();
+  if($("famResults").innerHTML&&me&&!ADMIN) $("famResults").innerHTML=memberReportHTML(me,false); else if(ADMIN) $("famResults").innerHTML="";
+  $("adminArea").hidden=!showAdmin;
+  if(showAdmin) renderAdmin();
   if(target&&!isMember(target.id)) target=null;
   render();
 }
@@ -625,7 +641,7 @@ async function loadConfig(){
     clearCrewSubs(); user=u; crew=null; crewId=""; target=null; myCrews=[];
     if(!u){
       render();
-      if(invite&&!guestTried){
+      if(invite&&!guestTried&&!ADMIN){
         guestTried=true;
         body.innerHTML=`<p class="muted">Joining the crew…</p>`;
         try{await signInAnonymously(auth)}catch(x){viewSignedOut(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Guest joining isn't switched on yet. Ask the crew admin to turn on Anonymous sign-in in Firebase.":errText(x))}
@@ -635,7 +651,7 @@ async function loadConfig(){
     }
     try{const s=await getDoc(doc(db,"users",u.uid));myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
     render();
-    if(invite) return joinCrew(invite);
+    if(invite&&!ADMIN) return joinCrew(invite);
     const lastCrew=loadLS();
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);
     else if(myCrews.length===1) openCrew(myCrews[0].id);
