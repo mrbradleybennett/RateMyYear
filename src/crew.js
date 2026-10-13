@@ -59,9 +59,22 @@ const errText=x=>{
   const c=x&&x.code||"";
   if(c==="permission-denied") return "You don't have access to do that. Check you're in this crew, or ask the crew admin for a new invite link.";
   if(c==="unavailable") return "Can't reach the database. Check your connection and try again.";
+  if(c==="timeout") return "The database took too long to answer (over 12 seconds).";
   if(c==="auth/popup-closed-by-user"||c==="auth/cancelled-popup-request") return "Sign-in was cancelled.";
-  return "Something went wrong. Try again in a moment.";
+  return `Something went wrong. Try again in a moment.${c?` (${c})`:(x&&x.message?` (${String(x.message).slice(0,120)})`:"")}`;
 };
+/* Boot status and safety nets: the crew box never sits on a loading message forever. */
+const BUSY=/^(Loading|Connecting|Signing you in|Loading your crews|Getting ready|Joining the crew)/;
+const status=m=>{body.innerHTML=`<p class="muted">${m}</p>`};
+const stillBusy=()=>BUSY.test(body.textContent.trim());
+function showFatal(x){
+  if(!stillBusy()) return;
+  body.innerHTML=`<p class="err">The crew tools hit a problem while loading${x?`: ${esc(x.code||x.message||String(x)).slice(0,200)}`:""}.</p><p class="muted">Reload the page to try again. If it keeps happening, send a screenshot of this message.</p><div class="row-btns"><button type="button" id="bootReload">Reload</button></div>`;
+  $("bootReload").onclick=()=>location.reload();
+}
+window.addEventListener("error",e=>showFatal(e.error||e.message));
+window.addEventListener("unhandledrejection",e=>showFatal(e.reason));
+const withTimeout=(pr,ms,what)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error(`${what} took too long`),{code:"timeout"})),ms))]);
 const inviteLink=()=>crew?`${location.origin}${REVIEW_PATH}?crew=${crewId}&code=${crew.joinCode}`:"";
 const parseInvite=s=>{
   s=(s||"").trim(); if(!s) return null;
@@ -776,7 +789,8 @@ async function loadConfig(){
   try{const r=await fetch("/__/firebase/init.json");if(r.ok)return await r.json()}catch(e){}
   return null;
 }
-(async()=>{
+(async()=>{ try{
+  status("Connecting…");
   const p=new URLSearchParams(location.search);
   if(p.get("crew")&&p.get("code")) invite={crew:p.get("crew"),code:p.get("code")};
   const cfg=await loadConfig();
@@ -785,8 +799,9 @@ async function loadConfig(){
   auth=getAuth(app); db=getFirestore(app);
   if(p.get("emulator")==="1"){connectAuthEmulator(auth,"http://127.0.0.1:9099",{disableWarnings:true});connectFirestoreEmulator(db,"127.0.0.1",8080)}
   getRedirectResult(auth).catch(()=>{});
-  render();
-  onAuthStateChanged(auth,async u=>{
+  try{render()}catch(x){console.error(x)}
+  const authWatch=setTimeout(()=>{if(stillBusy())showFatal({code:"sign-in check timed out. Check your connection, or turn off content blockers for this site"})},15000);
+  onAuthStateChanged(auth,async u=>{ clearTimeout(authWatch); try{
     clearCrewSubs(); user=u; crew=null; crewId=""; target=null; myCrews=[];
     if(JOIN){
       if(!u){
@@ -795,7 +810,8 @@ async function loadConfig(){
         try{await signInAnonymously(auth)}catch(x){body.innerHTML=`<p class="err">${esc(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase (Authentication → Sign-in method).":errText(x))}</p>`}
         return;
       }
-      try{const s=await getDoc(doc(db,"users",u.uid));myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
+      status("Loading your crews…");
+      try{const s=await withTimeout(getDoc(doc(db,"users",u.uid)),12000,"Loading your crews");myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
       render(); viewJoin(); return;
     }
     if(!u){
@@ -808,14 +824,17 @@ async function loadConfig(){
       }
       viewSignedOut();return;
     }
-    try{const s=await getDoc(doc(db,"users",u.uid));myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
-    render();
+    status("Loading your crews…");
+    let loadErr=null;
+    try{const s=await withTimeout(getDoc(doc(db,"users",u.uid)),12000,"Loading your crews");myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[];loadErr=e}
+    try{render()}catch(x){console.error(x)}
+    if(loadErr&&loadErr.code!=="permission-denied"&&!myCrews.length){body.innerHTML=`<p class="err">Couldn't load your crews: ${esc(errText(loadErr))}</p><p class="muted">Check your connection and reload. If it keeps happening, send a screenshot of this message.</p><div class="row-btns"><button type="button" id="bootReload">Reload</button></div>`;$("bootReload").onclick=()=>location.reload();return}
     if(afterAuth){const f=afterAuth;afterAuth=null;return f()}
     if(invite&&!ADMIN) return joinCrew(invite);
     const lastCrew=loadLS();
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);
     else if(myCrews.length===1) openCrew(myCrews[0].id);
     else viewLobby();
-  });
-})();
+  }catch(x){console.error(x);showFatal(x)} });
+}catch(x){console.error(x);showFatal(x)} })();
 
