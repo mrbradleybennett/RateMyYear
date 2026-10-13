@@ -221,6 +221,11 @@ details.more{border-top:1px dashed var(--line);padding-top:12px}
 .gl{display:inline-flex;align-items:center;gap:8px;background:var(--soft);border-radius:8px;padding:6px 10px;border-left:4px solid var(--grp);font-family:var(--mono);font-size:13px}
 .gl b{font-family:var(--body)}
 .results .list h3,.results .recs h3{font-size:12px}
+.manage{margin:-4px 0 4px;padding:12px 14px;border:1.5px solid var(--line);border-top:0;border-radius:0 0 10px 10px;background:var(--panel);display:flex;flex-direction:column;gap:10px}
+.mrow{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;font-size:14px;color:var(--muted)}
+.mrow button{width:100%}
+button.danger{background:transparent;color:var(--gE);box-shadow:inset 0 0 0 1.5px var(--gE)}
+@media (max-width:520px){.mrow{grid-template-columns:1fr;gap:4px}}
 .count{margin:0;font-weight:700;color:var(--green)}
 .bar{height:8px;background:var(--track);border-radius:4px;min-width:60px;overflow:hidden}
 .bar>i{display:block;height:100%;border-radius:4px;background:var(--g)}
@@ -578,7 +583,7 @@ const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
 let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
-let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", myCrews=[];
+let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
 let invite=null; // {crew, code} from the link
 let guestTried=false;
 
@@ -924,13 +929,68 @@ function viewCrewShell(){
   document.querySelectorAll("#adminArea [data-tab]").forEach(b=>b.onclick=()=>{adminTab=b.dataset.tab;renderAdmin()});
 }
 
+/* ---------- admin: manage one crew member ---------- */
+function managePanel(m,joined,isAdm,a){
+  const uid=claims[m.id], isMe=m.id===me, isOwnerSeat=uid&&uid===crew.ownerUid;
+  const byThem=reviews().filter(r=>r.reviewer===m.id).length, aboutThem=a.rs.length;
+  const arm=k=>removeArmed===k;
+  const nm=esc(m.name);
+  const row=(act,label,desc,danger)=>`<div class="mrow"><button type="button" class="${danger?"danger":"ghost"} sm" data-act="${act}" data-id="${m.id}">${arm(act+":"+m.id)?"Tap again to confirm":label}</button><span>${desc}</span></div>`;
+  return `<div class="manage" role="group" aria-label="Manage ${nm}">
+    ${joined&&!isMe?row("free","Free up name",`For when ${nm} changes phone or clears their browser. They pick their name again from the invite link. Their reviews are kept.`):""}
+    ${joined&&!isMe&&!isOwnerSeat?row("admin",isAdm?"Remove admin":"Make admin",isAdm?`${nm} goes back to seeing only their own results.`:`${nm} will see everyone's reports and can manage the crew.`):""}
+    ${row("reset","Reset",`Deletes the ${aboutThem} review${aboutThem===1?"":"s"} about ${nm} and the ${byThem} they wrote${joined&&!isMe?", and frees up their name":""}. ${isMe?"You stay":"They stay"} in the crew to start again.`,true)}
+    ${!isMe&&!isOwnerSeat?row("delete","Delete",`Removes ${nm} from the crew, along with every review by and about them. This can't be undone.`,true):""}
+  </div>`;
+}
+async function deleteReviewsFor(id){
+  const docs=reviews().filter(r=>r.member===id||r.reviewer===id);
+  for(let i=0;i<docs.length;i+=400){
+    const b=writeBatch(db);
+    docs.slice(i,i+400).forEach(r=>b.delete(doc(db,"crews",crewId,"reviews",r.id)));
+    await b.commit();
+  }
+  return docs.length;
+}
+async function manageAction(act,id){
+  const m=members().find(x=>x.id===id); if(!m) return;
+  const uid=claims[id];
+  if((act==="reset"||act==="delete")&&removeArmed!==act+":"+id){
+    removeArmed=act+":"+id;refresh();
+    setTimeout(()=>{if(removeArmed===act+":"+id){removeArmed="";refresh()}},4000);return;
+  }
+  removeArmed="";
+  try{
+    if(act==="free"){await deleteDoc(doc(db,"crews",crewId,"claims",id));toast(`${m.name}'s name is free. They can pick it again from the invite link.`)}
+    else if(act==="admin"){if(!uid)return;await updateDoc(doc(db,"crews",crewId),{adminUids:crew.adminUids.includes(uid)?arrayRemove(uid):arrayUnion(uid)})}
+    else if(act==="reset"){
+      const n=await deleteReviewsFor(id);
+      if(uid&&id!==me) await deleteDoc(doc(db,"crews",crewId,"claims",id));
+      managing=""; toast(`${m.name} has been reset. ${n} review${n===1?"":"s"} deleted.`);
+    }else if(act==="delete"){
+      const n=await deleteReviewsFor(id);
+      const upd={members:members().filter(x=>x.id!==id)};
+      if(uid&&uid!==crew.ownerUid&&crew.adminUids.includes(uid)) upd.adminUids=arrayRemove(uid);
+      await updateDoc(doc(db,"crews",crewId),upd);
+      if(uid){
+        await deleteDoc(doc(db,"crews",crewId,"claims",id));
+        if(uid!==crew.ownerUid) await deleteDoc(doc(db,"crews",crewId,"joins",uid));
+      }
+      managing=""; if(target&&target.id===id) target=null;
+      toast(`${m.name} has been deleted from the crew, with ${n} review${n===1?"":"s"}.`);
+    }
+  }catch(x){famErr(errText(x))}
+  refresh();
+}
+
 function refresh(){
   if(!crew||!$("memList")) return;
   title.textContent=`Your crew: ${crew.name}`;
   const ms=members(), admin=isAdmin();
   const taken=id=>claims[id]&&claims[id]!==user.uid;
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
-  if(!me&&ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
+  if(me){$("meNote").hidden=true;$("meField").classList.remove("attention")}
+  else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
   $("memList").innerHTML=ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
@@ -942,32 +1002,13 @@ function refresh(){
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me&&!admin?`<button type="button" class="ghost" data-results="${m.id}"${a.rs.length?"":" disabled"}>My results</button>`:""}
-        ${admin&&joined&&claims[m.id]!==crew.ownerUid&&claims[m.id]!==user.uid?`<button type="button" class="ghost" data-admin="${m.id}">${isAdm?"Remove admin":"Make admin"}</button>`:""}
-        ${admin&&joined&&claims[m.id]!==user.uid?`<button type="button" class="ghost" data-free="${m.id}">Free up name</button>`:""}
-        ${admin&&m.id!==me?`<button type="button" class="ghost" data-remove="${m.id}">${removeArmed===m.id?"Tap to confirm":"Remove"}</button>`:""}
-      </span></div>`}).join("")
+        ${admin?`<button type="button" class="ghost" data-manage="${m.id}" aria-expanded="${managing===m.id}">${managing===m.id?"Close":"Manage"}</button>`:""}
+      </span></div>${admin&&managing===m.id?managePanel(m,joined,isAdm,a):""}`}).join("")
     :`<p class="muted">No one in the crew yet. Add everyone below.</p>`;
   $("memList").querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>startReview(b.dataset.review));
   $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{const box=$("famResults");box.innerHTML=box.innerHTML?"":memberReportHTML(me,false)});
-  $("memList").querySelectorAll("[data-free]").forEach(b=>b.onclick=async()=>{try{await deleteDoc(doc(db,"crews",crewId,"claims",b.dataset.free));toast("Name freed up. They can pick it again from their device.")}catch(x){famErr(errText(x))}});
-  $("memList").querySelectorAll("[data-admin]").forEach(b=>b.onclick=async()=>{
-    const uid=claims[b.dataset.admin]; if(!uid) return;
-    try{await updateDoc(doc(db,"crews",crewId),{adminUids:crew.adminUids.includes(uid)?arrayRemove(uid):arrayUnion(uid)})}catch(x){famErr(errText(x))}
-  });
-  $("memList").querySelectorAll("[data-remove]").forEach(b=>b.onclick=async()=>{
-    const id=b.dataset.remove;
-    if(removeArmed!==id){removeArmed=id;refresh();setTimeout(()=>{if(removeArmed===id){removeArmed="";refresh()}},3000);return}
-    removeArmed="";
-    try{
-      const uid=claims[id], upd={members:members().filter(m=>m.id!==id)};
-      if(uid&&uid!==crew.ownerUid&&crew.adminUids.includes(uid)) upd.adminUids=arrayRemove(uid);
-      await updateDoc(doc(db,"crews",crewId),upd);
-      if(uid){
-        await deleteDoc(doc(db,"crews",crewId,"claims",id));
-        if(uid!==crew.ownerUid) await deleteDoc(doc(db,"crews",crewId,"joins",uid));
-      }
-    }catch(x){famErr(errText(x))}
-  });
+  $("memList").querySelectorAll("[data-manage]").forEach(b=>b.onclick=()=>{managing=managing===b.dataset.manage?"":b.dataset.manage;removeArmed="";refresh()});
+  $("memList").querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>manageAction(b.dataset.act,b.dataset.id));
   $("inviteBox").hidden=!admin;
   if(admin) $("inviteLink").value=inviteLink();
   if($("famResults").innerHTML&&me&&!admin) $("famResults").innerHTML=memberReportHTML(me,false); else if(admin) $("famResults").innerHTML="";

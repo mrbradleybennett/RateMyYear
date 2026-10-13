@@ -64,7 +64,13 @@ Run `firebase deploy` again whenever you change the files.
   - Everyone in the crew sees the list of people and can add more.
   - You see the reviews you've written and the reviews about you.
   - Admins see everyone's reviews, the **All scores** table, **Member reports** and the **Crew report**.
-- **Admin tools:** make other members admins, free up a name, remove people (which also removes their access), and press **New link** to stop an old invite link working.
+- **Admin tools:** tap **Manage** next to anyone in the crew to:
+  - **Free up name:** they pick their name again on a new device. Their reviews are kept.
+  - **Make admin / Remove admin**
+  - **Reset:** deletes every review by and about them and frees up their name. They stay in the crew.
+  - **Delete:** removes them from the crew with all reviews by and about them.
+  
+  Reset and Delete ask you to tap twice. Press **New link** in the invite box to stop an old invite link working.
 - **Firebase settings this needs:** Authentication → Sign-in method → **Google** and **Anonymous** both switched on.
 
 ## Testing locally (optional)
