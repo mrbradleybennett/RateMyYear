@@ -613,7 +613,7 @@ function refresh(){
   $("meWrap").hidden=ADMIN; $("addMeForm").hidden=ADMIN||$("addMeForm").hidden;
   $("notAdmin").hidden=!(ADMIN&&!admin); $("toMyCrew").hidden=ADMIN||!admin;
   $("addForm").hidden=!(ADMIN&&admin); $("memList").hidden=ADMIN&&!admin;
-  const tb=document.getElementById("myCrewBtn"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create My Crew";
+  const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
@@ -735,13 +735,12 @@ window.afterRender=function(rows,avg){
   paintEntry();
   syncPick();
   const on=!!(crew&&target&&me);
-  banner.hidden=!on; saveBtn.hidden=!on; soloBtn.hidden=on||!user; nextBtn.hidden=!on;
+  banner.hidden=!on; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
   document.body.classList.toggle("has-bar",on);
   if(on){
     const self=target.id===me, dirty=sig()!==savedSig, g=avg==null?null:grade(avg);
     bannerText.innerHTML=self?`<b>${esc(memberName(me))}</b> reviewing <b>themselves</b>`:`<b>${esc(memberName(me))}</b> reviewing <b>${esc(target.name)}</b>`;
     bannerGrade.textContent=g||"–"; bannerGrade.style.setProperty("--g",g?gcol(g):"var(--track)");
-    nextBtn.textContent=dirty&&avg!=null?"Save & review someone else":"Review someone else";
     saveBtn.textContent=self?"Save my review to the crew":`Save review of ${target.name}`;
     if(isAdmin()||self){const n=aggFor(target.id).rs.length;revCount.textContent=`${n} ${n===1?"person has":"people have"} reviewed ${self?"you":target.name} so far`;revCount.hidden=false}
     else revCount.hidden=true;
@@ -796,6 +795,7 @@ function paintEntry(){
   document.body.classList.toggle("entry-join",entry==="join");
   if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate");
   if($("choiceJoin")) $("choiceJoin").setAttribute("aria-pressed",entry==="join");
+  if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate"&&state.who==="me");
   if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Rate Me");
 }
 if(REVIEW_PAGE){
@@ -807,6 +807,33 @@ if(REVIEW_PAGE){
     if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
   };
   $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
+  $("endJoin").onclick=()=>$("choiceJoin").click();
+  /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
+  ["who-family","who-mate"].forEach(id=>$(id).addEventListener("change",()=>{
+    if(entry!=="join") return;
+    entry="rate"; paintEntry();
+    if(!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }
+  }));
+  /* Share Results: record who the report card went to (shares collection), then open the email app. */
+  const shareBox=$("shareBox"), shareBtn=$("shareBtn");
+  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);if(!shareBox.hidden)$("shareEmail").focus()};
+  shareBox.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const email=$("shareEmail").value.trim(), note=$("shareNote");
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){note.textContent="Enter a valid email address.";note.className="err";return}
+    if(!last||last.avg==null){note.textContent="Answer at least one area first, so there's a report card to share.";note.className="err";return}
+    $("shareGo").disabled=true; note.className="muted"; note.textContent="Saving…";
+    const who=state.name||(state.who==="me"?"My":"Their");
+    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
+    const text=`${window._summary}\n\nDo your own at ${location.origin}${REVIEW_PATH}`;
+    try{
+      if(auth&&!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
+      if(auth&&auth.currentUser) await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,email:email.toLowerCase().slice(0,200),subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
+    }catch(x){console.warn("share not recorded",x)}
+    $("shareGo").disabled=false;
+    note.textContent="Opening your email app… If nothing opens, use Copy summary below and paste it into an email.";
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+  });
 }
 
 /* ---------- boot ---------- */

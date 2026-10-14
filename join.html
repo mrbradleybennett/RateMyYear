@@ -101,6 +101,16 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 .rec h4 .tag{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;background:var(--g);border-radius:4px;padding:2px 7px}
 .rec ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.endbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.endbtn{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px 16px;border-radius:12px;border:2px solid var(--green);background:var(--panel);color:var(--green);text-decoration:none;font-weight:400;box-shadow:none}
+.endbtn b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.05}
+.endbtn small{font-size:14px;color:var(--muted);line-height:1.35}
+.endbtn:first-child{background:var(--green);color:var(--panel)}.endbtn:first-child small{color:var(--panel);opacity:.85}
+.endbtn[hidden]{display:none}
+.endbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
+.sharebox[hidden]{display:none}.sharebox label{font-weight:700}.sharebox p{margin:0}
+.sharerow{display:flex;gap:8px}.sharerow input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:var(--gold);color:#14231b}
 button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
@@ -243,10 +253,13 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .adminlink{margin:0;background:var(--soft);border-radius:8px;padding:10px 14px;font-weight:600}
 .adminlink a,.muted a{color:var(--green)}
 .navbtns{display:flex;gap:8px;flex-wrap:wrap}
-.ratebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ratebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
 .ratebar label{position:relative;cursor:pointer;min-width:0}
 .ratebar input{position:absolute;opacity:0;pointer-events:none}
-.ratebar span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:64px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(16px,3.2vw,24px);line-height:1.05;text-wrap:balance}
+.ratebar span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:84px;padding:12px 14px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);line-height:1.05;text-wrap:balance}
+.ratebar span b{font-family:var(--display);font-weight:400;font-size:clamp(17px,3.2vw,24px)}
+.ratebar span small{font-size:14px;line-height:1.3;opacity:.85}
 .ratebar input:checked+span{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
 .ratebar input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
 .choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -255,6 +268,7 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .choicebar button:focus-visible,.choicebar a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 /* Main page entry choice: Rate Me shows the name box; Join A Crew shows crew search. */
 body.entry-rate:not(.crew-ready) .crew-box{display:none}
+body.in-crew #endJoin,body.in-crew #endCreate{display:none}
 body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHint{display:none!important}
 .jres{display:flex;flex-direction:column;gap:6px}
 .jhit{text-align:left;background:var(--soft);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);font-weight:700}
@@ -278,10 +292,6 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
 <div class="wrap">
   <nav class="topnav">
     <a class="brand" href="./">Rate My Year</a>
-    <span class="navbtns review-only">
-      <a class="topbtn" id="joinCrewBtn" href="join.html">Join A Crew</a>
-      <a class="topbtn ghostbtn" id="myCrewBtn" href="mycrew.html">Create My Crew</a>
-    </span>
     <a class="topbtn ghostbtn admin-only join-only" href="./">&larr; Back to reviews</a>
   </nav>
   <header class="admin-only admin-hero">
@@ -289,10 +299,15 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
     <h1>My <span>Crew</span></h1>
     <p class="lede">Set up your crew, add the people, send the invite link and see everyone's results. Your crew don't need to sign in: they just open the link, pick their name and start reviewing.</p>
   </header>
+  <div class="choicebar review-only" role="group" aria-label="Get started">
+    <button type="button" id="choiceRate" aria-pressed="true">Rate Me</button>
+    <button type="button" id="choiceJoin" aria-pressed="false">Join A Crew</button>
+    <a id="choiceCreate" href="mycrew.html">Create A Crew</a>
+  </div>
   <div class="ratebar review-only" role="radiogroup" aria-label="Who are you rating?">
-    <label><input type="radio" name="who" id="who-me" value="me"><span>Rate Me</span></label>
-    <label><input type="radio" name="who" id="who-mate" value="mate"><span>Rate My Mates</span></label>
-    <label><input type="radio" name="who" id="who-family" value="family"><span>Rate My Family</span></label>
+    <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
+    <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>See how well your family is functioning</small></span></label>
+    <label><input type="radio" name="who" id="who-mate" value="mate"><span><b>Rate My Mates</b><small>Make a leaderboard and see who your top mates are</small></span></label>
   </div>
   <header class="join-only admin-hero">
     <div class="eyebrow">Rate My Year · Join a crew</div>
@@ -310,11 +325,6 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <figcaption><span class="wlegend"></span><span>Bars fill as you score. Tap an area to jump to it.</span></figcaption>
     </figure>
   </header>
-  <div class="choicebar review-only" role="group" aria-label="Get started">
-    <button type="button" id="choiceRate" aria-pressed="true">Rate Me</button>
-    <button type="button" id="choiceJoin" aria-pressed="false">Join A Crew</button>
-    <a id="choiceCreate" href="mycrew.html">Create A Crew</a>
-  </div>
 
   <section class="fam" id="fam" aria-live="polite">
     <div class="fam-head">
@@ -362,12 +372,22 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
         <h3 id="recsTitle">How to lift the bottom two</h3>
         <div id="recs" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
+      <div class="endbar">
+        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send your report card to someone by email</small></button>
+        <button type="button" class="endbtn" id="endJoin"><b>Join A Crew</b><small>Search for your crew and join it</small></button>
+        <a class="endbtn" id="endCreate" href="mycrew.html"><b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small></a>
+        <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
+      </div>
+      <form class="sharebox" id="shareBox" novalidate hidden>
+        <label for="shareEmail">Send report card to</label>
+        <div class="sharerow"><input id="shareEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com"><button type="submit" id="shareGo">Send</button></div>
+        <p class="muted" id="shareNote">Opens your email app with the report card ready to send.</p>
+      </form>
       <div class="actions">
         <button id="famSave" type="button" hidden>Save to crew</button>
-        <button id="reviewNext" class="ghost" type="button" hidden>Review someone else</button>
         <button id="soloSave" type="button" hidden>Save result</button>
-        <button id="copy" type="button">Copy summary</button>
-        <button id="reset" class="ghost" type="button">Start again</button>
+        <button id="copy" class="ghost sm" type="button">Copy summary</button>
+        <button id="reset" class="ghost sm" type="button">Start again</button>
         <span class="toast" id="toast" role="status"></span>
       </div>
     </div>
@@ -1297,7 +1317,7 @@ function refresh(){
   $("meWrap").hidden=ADMIN; $("addMeForm").hidden=ADMIN||$("addMeForm").hidden;
   $("notAdmin").hidden=!(ADMIN&&!admin); $("toMyCrew").hidden=ADMIN||!admin;
   $("addForm").hidden=!(ADMIN&&admin); $("memList").hidden=ADMIN&&!admin;
-  const tb=document.getElementById("myCrewBtn"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create My Crew";
+  const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
@@ -1419,13 +1439,12 @@ window.afterRender=function(rows,avg){
   paintEntry();
   syncPick();
   const on=!!(crew&&target&&me);
-  banner.hidden=!on; saveBtn.hidden=!on; soloBtn.hidden=on||!user; nextBtn.hidden=!on;
+  banner.hidden=!on; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
   document.body.classList.toggle("has-bar",on);
   if(on){
     const self=target.id===me, dirty=sig()!==savedSig, g=avg==null?null:grade(avg);
     bannerText.innerHTML=self?`<b>${esc(memberName(me))}</b> reviewing <b>themselves</b>`:`<b>${esc(memberName(me))}</b> reviewing <b>${esc(target.name)}</b>`;
     bannerGrade.textContent=g||"–"; bannerGrade.style.setProperty("--g",g?gcol(g):"var(--track)");
-    nextBtn.textContent=dirty&&avg!=null?"Save & review someone else":"Review someone else";
     saveBtn.textContent=self?"Save my review to the crew":`Save review of ${target.name}`;
     if(isAdmin()||self){const n=aggFor(target.id).rs.length;revCount.textContent=`${n} ${n===1?"person has":"people have"} reviewed ${self?"you":target.name} so far`;revCount.hidden=false}
     else revCount.hidden=true;
@@ -1480,6 +1499,7 @@ function paintEntry(){
   document.body.classList.toggle("entry-join",entry==="join");
   if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate");
   if($("choiceJoin")) $("choiceJoin").setAttribute("aria-pressed",entry==="join");
+  if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate"&&state.who==="me");
   if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Rate Me");
 }
 if(REVIEW_PAGE){
@@ -1491,6 +1511,33 @@ if(REVIEW_PAGE){
     if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
   };
   $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
+  $("endJoin").onclick=()=>$("choiceJoin").click();
+  /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
+  ["who-family","who-mate"].forEach(id=>$(id).addEventListener("change",()=>{
+    if(entry!=="join") return;
+    entry="rate"; paintEntry();
+    if(!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }
+  }));
+  /* Share Results: record who the report card went to (shares collection), then open the email app. */
+  const shareBox=$("shareBox"), shareBtn=$("shareBtn");
+  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);if(!shareBox.hidden)$("shareEmail").focus()};
+  shareBox.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const email=$("shareEmail").value.trim(), note=$("shareNote");
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){note.textContent="Enter a valid email address.";note.className="err";return}
+    if(!last||last.avg==null){note.textContent="Answer at least one area first, so there's a report card to share.";note.className="err";return}
+    $("shareGo").disabled=true; note.className="muted"; note.textContent="Saving…";
+    const who=state.name||(state.who==="me"?"My":"Their");
+    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
+    const text=`${window._summary}\n\nDo your own at ${location.origin}${REVIEW_PATH}`;
+    try{
+      if(auth&&!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
+      if(auth&&auth.currentUser) await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,email:email.toLowerCase().slice(0,200),subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
+    }catch(x){console.warn("share not recorded",x)}
+    $("shareGo").disabled=false;
+    note.textContent="Opening your email app… If nothing opens, use Copy summary below and paste it into an email.";
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+  });
 }
 
 /* ---------- boot ---------- */
