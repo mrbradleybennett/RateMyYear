@@ -6,6 +6,10 @@ A one-page website for rating yourself, your mates and your family across the ar
 
 **End of the report card:** outside a crew it offers **Share Results**, **Join A Crew** and **Create A Crew**. In a crew it offers **Share Results** and **Save & Review Another** (saves the review and starts a clean one for the next person). Share Results makes a picture of the report card. On https, **Send picture** opens the phone's share sheet (Messages, WhatsApp and so on) with the picture attached. **WhatsApp** and **Text message** send a summary with an optional mobile number, **Save picture** downloads it, and email opens the mail app. Each send is recorded in the `shares` collection (channel, plus the email or mobile if given).
 
+**Crews:** every new crew is a **Family** crew or a **Mates** crew, and everyone in it is rated on that crew's questions. (Older crews without a type: the admin is asked to pick one on My Crew.) Once you've joined, the crew box shows **Review My Crew**, your crew's name, the **I am** dropdown and the **Crew leaderboard**, with a Review button next to each person. The leaderboard is stored in `crews/{id}/board`, one anonymous entry per review, so the crew sees everyone's scores but not who gave which.
+
+**Headings:** Rate My Family shows "End Of Year Family Review" and Rate My Mates shows "End Of Year Mate Review", each with its own tagline.
+
 **Two question sets:**
 - **Me and family** (8 areas): Self (Self Care, Health), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).
 - **Mates** (7 areas): Them (Vibe, Banter, Generous), Us (Reliable, Loyalty), Life (Adventure, Social).

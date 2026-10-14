@@ -18,6 +18,7 @@ const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
 let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
+let boardById={}, boardSyncT=0;
 let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
 let invite=null; // {crew, code} from the link
 let guestTried=false;
@@ -46,7 +47,9 @@ let afterAuth=null;
 const rid=(n=10)=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(x=>"abcdefghjkmnpqrstuvwxyz23456789"[x%31]).join("")};
 const members=()=>(crew&&Array.isArray(crew.members))?crew.members:[];
 const memberName=id=>(members().find(m=>m.id===id)||{}).name||"Someone";
-const memberType=id=>((members().find(m=>m.id===id)||{}).type)||"family";
+/* A crew is either a Family crew or a Mates crew. Older crews without a type keep each person's own type. */
+const crewMemberType=()=>crew&&crew.type==="mates"?"mate":"family";
+const memberType=id=>crew&&crew.type?crewMemberType():(((members().find(m=>m.id===id)||{}).type)||"family");
 const isMember=id=>members().some(m=>m.id===id);
 const isAdmin=()=>!!(crew&&user&&Array.isArray(crew.adminUids)&&crew.adminUids.includes(user.uid));
 const isOwner=()=>!!(crew&&user&&crew.ownerUid===user.uid);
@@ -232,6 +235,7 @@ function viewLobby(msg=""){
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
       <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
+      <div class="field"><label for="cType">Crew type</label><select id="cType"><option value="family">Family: see how well your family is functioning</option><option value="mates">Mates: a leaderboard of your top mates</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
       <div class="field"><label for="cPw">Crew password</label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
       <p class="muted" style="grid-column:1/-1">Your crew search for the crew name and enter this password to join. The name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
@@ -263,7 +267,8 @@ function viewLobby(msg=""){
     try{
       if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
-      b.set(doc(db,"crews",id),{name,slug,passHash:passHash(slug,pw),ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:"family"}],createdAt:Date.now()});
+      const ctype=$("cType").value==="mates"?"mates":"family";
+      b.set(doc(db,"crews",id),{name,slug,type:ctype,passHash:passHash(slug,pw),ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:ctype==="mates"?"mate":"family"}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
       await b.commit();
       await claimMember(id,myId,"");
@@ -378,6 +383,10 @@ function openCrew(id){
     if(!s.exists()){leaveLocal("That crew no longer exists.");return}
     crew=s.data(); syncReviewSubs(); refresh();
   },x=>{leaveLocal(x&&x.code==="permission-denied"?"You're no longer in that crew.":errText(x))}));
+  boardById={};
+  unsubs.push(onSnapshot(collection(db,"crews",id,"board"),s=>{
+    boardById={}; s.docs.forEach(d=>boardById[d.id]=d.data()); refresh();
+  },()=>{boardById=null;refresh()}));
   unsubs.push(onSnapshot(collection(db,"crews",id,"claims"),s=>{
     claims={}; s.docs.forEach(d=>claims[d.id]=d.data().uid);
     me=Object.keys(claims).find(k=>claims[k]===user.uid)||"";
@@ -432,13 +441,16 @@ function viewCrewShell(){
     </div>
     <form class="form" id="addMeForm" novalidate hidden>
       <div class="field"><label for="addMeName">Your name</label><input id="addMeName" autocomplete="off" placeholder="e.g. Dave"></div>
-      <div class="field"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
+      <div class="field" id="addMeTypeF"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
       <button type="submit">Add me</button>
     </form>
+    <div class="typebox" id="typeBox" hidden></div>
+    <h3 class="board-h" id="boardTitle" hidden>Crew leaderboard</h3>
+    <p class="muted" id="boardNote" hidden></p>
     <div class="members" id="memList"></div>
     <form class="form" id="addForm" novalidate>
       <div class="field"><label for="newMem">Add someone to the crew</label><input id="newMem" autocomplete="off" placeholder="e.g. Nikki or Dave"></div>
-      <div class="field"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
+      <div class="field" id="newTypeF"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
       <button type="submit" class="ghost">Add to crew</button>
     </form>
     <div class="invite" id="passBox" hidden></div>
@@ -464,7 +476,7 @@ function viewCrewShell(){
     e.preventDefault();
     const n=$("addMeName").value.trim().slice(0,40); if(!n) return famErr("Type your name first.");
     if(members().some(m=>m.name.toLowerCase()===n.toLowerCase())) return famErr(`${n} is already on the list. Pick it under "I am".`);
-    try{const id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name:n,type:$("addMeType").value}]});await claimMember(crewId,id,me);$("addMeForm").hidden=true;$("addMeName").value="";famErr("");$("meNote").hidden=true;$("meField").classList.remove("attention");if(pending){const pid=pending;pending="";setTimeout(()=>startReview(pid),300)}}
+    try{const id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name:n,type:crew.type?crewMemberType():$("addMeType").value}]});await claimMember(crewId,id,me);$("addMeForm").hidden=true;$("addMeName").value="";famErr("");$("meNote").hidden=true;$("meField").classList.remove("attention");if(pending){const pid=pending;pending="";setTimeout(()=>startReview(pid),300)}}
     catch(x){famErr(errText(x))}
   });
   if($("toLobby")) $("toLobby").onclick=()=>{clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()};
@@ -488,7 +500,7 @@ function viewCrewShell(){
     e.preventDefault();
     const inp=$("newMem"), n=inp.value.trim(); if(!n||!crew) return;
     if(members().some(m=>m.name.toLowerCase()===n.toLowerCase())) return famErr(`${n} is already in the crew.`);
-    try{await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id:rid(10),name:n.slice(0,40),type:$("newType").value}]});inp.value="";famErr("")}
+    try{await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id:rid(10),name:n.slice(0,40),type:crew.type?crewMemberType():$("newType").value}]});inp.value="";famErr("")}
     catch(x){famErr(errText(x))}
   });
   const inp=$("inviteLink");
@@ -605,6 +617,33 @@ async function manageAction(act,id){
   refresh();
 }
 
+/* ---------- crew leaderboard ----------
+   board/{memberId} = {by:{<key>:{o:overall,self:bool}}}. Each reviewer writes one entry per person under a random key
+   kept in their (private) review, so everyone in the crew sees the scores but not who gave which. */
+const legacyKey=reviewId=>"L"+sha256hex("rmy-board:"+reviewId).slice(0,19);
+function boardScore(id){
+  const by=(boardById&&boardById[id]&&boardById[id].by)||{}, es=Object.values(by).filter(e=>e&&typeof e.o==="number");
+  const others=es.filter(e=>!e.self), use=others.length?others:es;
+  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length};
+}
+/* Crew admins can read every review, so their device keeps the leaderboard in step: it adds older reviews
+   that were saved before the leaderboard existed and removes entries for deleted reviews or people. */
+function syncBoardSoon(){clearTimeout(boardSyncT);boardSyncT=setTimeout(syncBoard,1200)}
+async function syncBoard(){
+  if(!crew||!isAdmin()||boardById===null) return;
+  const want={};
+  liveReviews().forEach(r=>{if(typeof r.overall!=="number")return;(want[r.member]=want[r.member]||{})[r.boardKey||legacyKey(r.id)]={o:r.overall,self:r.reviewer===r.member}});
+  const ids=new Set([...Object.keys(want),...Object.keys(boardById||{})]);
+  const b=writeBatch(db); let n=0;
+  ids.forEach(mid=>{
+    const have=JSON.stringify(Object.entries((boardById[mid]||{}).by||{}).sort()), next=JSON.stringify(Object.entries(want[mid]||{}).sort());
+    if(have===next) return;
+    if(want[mid]) b.set(doc(db,"crews",crewId,"board",mid),{by:want[mid]}); else b.delete(doc(db,"crews",crewId,"board",mid));
+    n++;
+  });
+  if(n) try{await b.commit()}catch(x){console.warn("leaderboard sync",x)}
+}
+
 function refresh(){
   if(!crew||!$("memList")) return;
   title.textContent=`Your crew: ${crew.name}`;
@@ -613,11 +652,29 @@ function refresh(){
   $("meWrap").hidden=ADMIN; $("addMeForm").hidden=ADMIN||$("addMeForm").hidden;
   $("notAdmin").hidden=!(ADMIN&&!admin); $("toMyCrew").hidden=ADMIN||!admin;
   $("addForm").hidden=!(ADMIN&&admin); $("memList").hidden=ADMIN&&!admin;
+  $("newTypeF").hidden=!!crew.type; $("addMeTypeF").hidden=!!crew.type;
+  const tbx=$("typeBox"); tbx.hidden=!(ADMIN&&admin&&!crew.type);
+  if(!tbx.hidden&&!tbx.innerHTML){tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews use the family questions, Mates crews use the mates questions and get a leaderboard. You can only set this once.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
+    tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=async()=>{try{const t=b.dataset.ctype;await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});tbx.innerHTML=""}catch(x){famErr(errText(x))}})}
+  if(tbx.hidden) tbx.innerHTML="";
+  $("boardTitle").hidden=ADMIN; $("boardNote").hidden=true;
+  if(!ADMIN&&boardById===null){$("boardNote").textContent="The leaderboard isn't switched on yet. The crew admin needs to publish the latest security rules.";$("boardNote").hidden=false}
   const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
-  $("memList").innerHTML=ms.length?ms.map(m=>{
+  const board=ADMIN?null:ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  $("memList").innerHTML=!ADMIN&&ms.length?board.map(({m,b},i)=>{
+    const g=b.v==null?null:grade(b.v), mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
+    return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}>
+      <span class="rank">${b.v==null?"–":i+1}</span>
+      <span class="chip${g?"":" none"}">${g||"–"}</span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}${mine?" · you've reviewed":""}</small></span>
+      <span class="btns">
+        <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
+        ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
+      </span></div>`}).join("")
+    :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
     const canSee=ADMIN?admin:m.id===me;
@@ -642,6 +699,7 @@ function refresh(){
   if($("famResults").innerHTML&&me&&!ADMIN) $("famResults").innerHTML=memberReportHTML(me,false); else if(ADMIN) $("famResults").innerHTML="";
   $("adminArea").hidden=!showAdmin;
   if(showAdmin) renderAdmin();
+  if(admin) syncBoardSoon();
   if(target&&!isMember(target.id)) target=null;
   render();
 }
@@ -763,7 +821,13 @@ async function saveReview(){
   const r=snapshotResult(); saveBtn.disabled=true; nextBtn.disabled=true;
   let ok=false;
   try{
-    await setDoc(doc(db,"crews",crewId,"reviews",`${user.uid}_${target.id}`),{member:target.id,reviewer:me,reviewerUid:user.uid,...r});
+    const rid0=`${user.uid}_${target.id}`, old=reviews().find(x=>x.id===rid0);
+    const boardKey=old?(old.boardKey||legacyKey(rid0)):rid(16);
+    const b=writeBatch(db);
+    b.set(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey});
+    b.set(doc(db,"crews",crewId,"board",target.id),{by:{[boardKey]:{o:r.overall,self:target.id===me}}},{merge:true});
+    try{await b.commit()}
+    catch(x){ if(x&&x.code==="permission-denied"){ await setDoc(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey}); } else throw x; }
     savedSig=sig(); ok=true;
     toast(`Saved. ${target.name}'s results are updated.`);
   }catch(x){toast(errText(x),6000)}

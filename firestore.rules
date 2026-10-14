@@ -27,6 +27,7 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.adminUids == [request.auth.uid]
         && validCode(request.resource.data)
+        && request.resource.data.get('type', 'family') in ['family', 'mates']
         && request.resource.data.members is list;
 
       // Admins can change anything except who owns the crew, and the owner always stays an admin.
@@ -87,8 +88,33 @@ service cloud.firestore {
           && resource.data.reviewerUid == request.auth.uid
           && request.resource.data.reviewerUid == request.auth.uid
           && request.resource.data.member == resource.data.member
+          && (!('boardKey' in resource.data) || request.resource.data.get('boardKey', '') == resource.data.boardKey)
           && get(docAt(c, 'claims', request.resource.data.reviewer)).data.uid == request.auth.uid;
-        allow delete: if isAdmin(c) || (signedIn() && resource.data.reviewerUid == request.auth.uid);
+        // Only crew admins delete reviews, so nobody can delete and re-add to stack the leaderboard.
+        allow delete: if isAdmin(c);
+      }
+
+      // Crew leaderboard: board/{memberId} = {by: {<key>: {o: overall, self: bool}}}.
+      // Each reviewer adds or updates only the entry under the private key stored in their own review,
+      // and its score must match that review. Everyone in the crew can read it; admins can tidy it.
+      match /board/{memberId} {
+        function myReview() { return getAfter(docAt(c, 'reviews', request.auth.uid + '_' + memberId)).data; }
+        function entryOk(k) {
+          return k is string && k.size() >= 12
+            && request.resource.data.by[k].keys().hasOnly(['o', 'self'])
+            && request.resource.data.by[k].o == myReview().overall
+            && request.resource.data.by[k].self == (myReview().reviewer == memberId);
+        }
+        allow read: if isMember(c);
+        allow create: if isAdmin(c)
+          || (isMember(c) && request.resource.data.keys().hasOnly(['by'])
+              && request.resource.data.by.keys().hasOnly([myReview().boardKey])
+              && entryOk(myReview().boardKey));
+        allow update: if isAdmin(c)
+          || (isMember(c) && request.resource.data.keys().hasOnly(['by'])
+              && request.resource.data.by.diff(resource.data.by).affectedKeys().hasOnly([myReview().boardKey])
+              && entryOk(myReview().boardKey));
+        allow delete: if isAdmin(c);
       }
     }
 
