@@ -105,14 +105,16 @@ service cloud.firestore {
       allow delete: if isAdmin(resource.data.crewId);
     }
 
-    // Share Results: a record of each report card sent and the email it went to.
+    // Share Results: a record of each report card sent (channel, plus the email or mobile if given).
     // Anyone can add one for their own session; only the site owner reads them (Firebase console).
     match /shares/{id} {
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email is string
-        && request.resource.data.email.size() > 3
-        && request.resource.data.email.size() <= 200;
+        && request.resource.data.channel in ['email', 'whatsapp', 'sms', 'picture', 'saved']
+        && request.resource.data.get('email', '') is string
+        && request.resource.data.get('email', '').size() <= 200
+        && request.resource.data.get('phone', '') is string
+        && request.resource.data.get('phone', '').size() <= 30;
       allow read, update, delete: if false;
     }
 

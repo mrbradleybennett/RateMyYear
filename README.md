@@ -4,7 +4,7 @@ A one-page website for rating yourself, your mates and your family across the ar
 
 **Getting started:** the top of the main page has **Rate Me**, **Join A Crew** (crew search right on the page) and **Create A Crew** (goes to My Crew). Under them, **Rate My Family** and **Rate My Mates** switch to the matching questions and wheel.
 
-**End of the report card:** outside a crew it offers **Share Results**, **Join A Crew** and **Create A Crew**. In a crew it offers **Share Results** and **Save & Review Another** (saves the review and starts a clean one for the next person). Share Results saves the email address to the `shares` collection in Firestore, then opens the person's email app with the report card ready to send.
+**End of the report card:** outside a crew it offers **Share Results**, **Join A Crew** and **Create A Crew**. In a crew it offers **Share Results** and **Save & Review Another** (saves the review and starts a clean one for the next person). Share Results makes a picture of the report card. On https, **Send picture** opens the phone's share sheet (Messages, WhatsApp and so on) with the picture attached. **WhatsApp** and **Text message** send a summary with an optional mobile number, **Save picture** downloads it, and email opens the mail app. Each send is recorded in the `shares` collection (channel, plus the email or mobile if given).
 
 **Two question sets:**
 - **Me and family** (8 areas): Self (Self Care, Health), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).

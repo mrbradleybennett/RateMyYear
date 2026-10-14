@@ -110,6 +110,10 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 .endbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
 .sharebox[hidden]{display:none}.sharebox label{font-weight:700}.sharebox p{margin:0}
+.sharebox .field{display:flex;flex-direction:column;gap:4px}.sharebox .field input{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.cardwrap{display:flex;justify-content:center}.cardwrap img{width:100%;max-width:360px;height:auto;border-radius:10px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+.sharebtns{display:flex;gap:8px;flex-wrap:wrap}
+.btnlike{display:inline-flex;align-items:center;font-weight:700;text-decoration:none;border-radius:6px;padding:10px 16px;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
 .sharerow{display:flex;gap:8px}.sharerow input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:var(--gold);color:#14231b}
 button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
@@ -373,16 +377,24 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
         <div id="recs" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
       <div class="endbar">
-        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send your report card to someone by email</small></button>
+        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send your report card by WhatsApp, text or email</small></button>
         <button type="button" class="endbtn" id="endJoin"><b>Join A Crew</b><small>Search for your crew and join it</small></button>
         <a class="endbtn" id="endCreate" href="mycrew.html"><b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small></a>
         <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
       </div>
-      <form class="sharebox" id="shareBox" novalidate hidden>
-        <label for="shareEmail">Send report card to</label>
-        <div class="sharerow"><input id="shareEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com"><button type="submit" id="shareGo">Send</button></div>
-        <p class="muted" id="shareNote">Opens your email app with the report card ready to send.</p>
-      </form>
+      <div class="sharebox" id="shareBox" hidden>
+        <div class="cardwrap"><img id="cardImg" alt="Your report card as a picture" hidden><p class="muted" id="cardMaking">Making your report card picture…</p></div>
+        <div class="sharebtns">
+          <button type="button" id="shareImg" hidden>Send picture…</button>
+          <button type="button" id="shareWa" class="ghost">WhatsApp</button>
+          <button type="button" id="shareSms" class="ghost">Text message</button>
+          <a id="saveImg" class="ghost btnlike" download="rate-my-year-report-card.png" href="#">Save picture</a>
+        </div>
+        <p class="muted" id="shareHint"></p>
+        <div class="field"><label for="sharePhone">Their mobile <span class="muted">(optional, for WhatsApp or text)</span></label><input id="sharePhone" type="tel" inputmode="tel" autocomplete="off" placeholder="e.g. 0412 345 678"></div>
+        <form class="sharerow" id="shareForm" novalidate><input id="shareEmail" type="email" inputmode="email" autocomplete="email" placeholder="Or email it: name@example.com" aria-label="Email address"><button type="submit" id="shareGo">Email</button></form>
+        <p class="muted" id="shareNote"></p>
+      </div>
       <div class="actions">
         <button id="famSave" type="button" hidden>Save to crew</button>
         <button id="soloSave" type="button" hidden>Save result</button>
@@ -683,6 +695,66 @@ function render(){
   window._summary=g?`${w.poss} 2026 review: ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${w.poss} 2026 review: not enough answers yet.`;
 }
 render();
+
+/* ---------- report card picture (PNG drawn on a canvas, always in the light palette) ---------- */
+const PAL={bg:"#eef1ec",panel:"#ffffff",ink:"#14231b",muted:"#5a6b60",line:"#d5ddd6",green:"#0f4d32",gold:"#f2b705",blue:"#3f5fb5",track:"#dfe6e0",soft:"#e4ece6",A:"#1d7a46",B:"#5a9a2d",C:"#b88a00",D:"#d0661b",E:"#c2362b"};
+const FD='"Bowlby One","Arial Black",Impact,sans-serif', FB='"Figtree",system-ui,-apple-system,sans-serif', FM='"JetBrains Mono",Menlo,monospace';
+async function makeCard(){
+  try{await document.fonts.ready}catch(e){}
+  const W=1080,H=1440,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+  const rows=CATS.map((c,i)=>{const avg=catScore(c);return {c,avg,g:avg==null?null:grade(avg),i}});
+  const sc=rows.filter(r=>r.avg!=null), avg=sc.length?mean(sc.map(r=>r.avg)):null, G=avg==null?null:grade(avg);
+  const gc=g=>g?PAL[g[0]]:PAL.track;
+  const rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()};
+  const fit=(t,max)=>{if(x.measureText(t).width<=max)return t;while(t.length>1&&x.measureText(t+"…").width>max)t=t.slice(0,-1);return t+"…"};
+  // page + card
+  x.fillStyle=PAL.bg;x.fillRect(0,0,W,H);
+  rr(30,30,W-60,H-60,28);x.fillStyle=PAL.panel;x.fill();
+  x.save();rr(30,30,W-60,300,28);x.clip();x.fillStyle=PAL.green;x.fillRect(30,30,W-60,300);x.restore();
+  // header
+  const w=words(), poss=w.poss;
+  x.fillStyle=PAL.gold;x.font=`700 24px ${FM}`;x.textBaseline="alphabetic";x.fillText("RATE MY YEAR · 2026"+(curSet==="mates"?" · MATES":""),80,100);
+  x.fillStyle="#fff";x.font=`64px ${FD}`;x.fillText(fit(`${poss} 2026`,700),80,180);
+  x.font=`500 30px ${FB}`;x.fillText(fit(G?VERDICTS[G[0]]:"Not enough answers yet.",700),80,232);
+  x.font=`500 26px ${FM}`;x.globalAlpha=.85;x.fillText(G?`Overall ${G} · ${avg.toFixed(1)} / 10`:"",80,280);x.globalAlpha=1;
+  x.save();x.translate(900,180);x.rotate(-3*Math.PI/180);rr(-95,-95,190,190,22);x.fillStyle=PAL.gold;x.fill();
+  x.fillStyle=PAL.ink;x.font=`96px ${FD}`;x.textAlign="center";x.textBaseline="middle";x.fillText(G||"–",0,6);x.restore();
+  // wheel
+  const cx=540,cy=640,k=2.35,r0=WH.r0*k,R=WH.R*k,n=rows.length,st=2*Math.PI/n,gap=WH.gap*Math.PI/180;
+  const ang=i=>-Math.PI/2+st*i;
+  const wedgeP=(i,ra,rb)=>{const a0=ang(i)-st/2+gap,a1=ang(i)+st/2-gap;x.beginPath();x.arc(cx,cy,rb,a0,a1);x.arc(cx,cy,ra,a1,a0,true);x.closePath()};
+  rows.forEach((r,i)=>{wedgeP(i,r0,R);x.fillStyle=PAL.track;x.fill();
+    if(r.avg!=null){wedgeP(i,r0,r0+(R-r0)*(r.avg-1)/9);x.fillStyle=gc(r.g);x.fill()}});
+  x.setLineDash([4,6]);x.strokeStyle=PAL.line;x.lineWidth=2;[4,7,8.5].forEach(v=>{x.beginPath();x.arc(cx,cy,r0+(R-r0)*(v-1)/9,0,2*Math.PI);x.stroke()});x.setLineDash([]);
+  const gcols={me:PAL.green,others:PAL.gold,life:PAL.blue};
+  GROUPS.forEach(g=>{const i0=CATS.findIndex(c=>c.id===g.ids[0]),i1=CATS.findIndex(c=>c.id===g.ids[g.ids.length-1]);
+    x.beginPath();x.arc(cx,cy,R+14,ang(i0)-st/2+gap,ang(i1)+st/2-gap);x.strokeStyle=gcols[g.id];x.lineWidth=9;x.lineCap="round";x.stroke()});
+  rows.forEach((r,i)=>{const a=ang(i),c=Math.cos(a),s=Math.sin(a);
+    x.font=`700 27px ${FB}`;x.fillStyle=PAL.ink;x.textAlign=c>0.3?"left":c<-0.3?"right":"center";x.textBaseline=s>0.5?"top":s<-0.5?"bottom":"middle";
+    x.fillText(r.c.name,cx+(R+34)*c,cy+(R+34)*s);
+    x.font=`26px ${FD}`;x.textAlign="center";x.textBaseline="middle";const t=r.g||"?";const tx=cx+(R-32)*c,ty=cy+(R-32)*s;
+    x.lineWidth=7;x.strokeStyle=PAL.panel;x.strokeText(t,tx,ty);x.fillStyle=r.g?PAL.ink:PAL.muted;x.fillText(t,tx,ty)});
+  x.beginPath();x.arc(cx,cy,r0-6,0,2*Math.PI);x.fillStyle=PAL.panel;x.fill();x.strokeStyle=PAL.line;x.lineWidth=2;x.stroke();
+  x.fillStyle=PAL.green;x.font=`44px ${FD}`;x.textAlign="center";x.textBaseline="middle";x.fillText(G||"–",cx,cy+3);
+  // group scores
+  const gy=990,gw=(W-160-2*24)/3;
+  GROUPS.forEach((g,j)=>{const vs=g.ids.map(id=>rows.find(r=>r.c.id===id).avg).filter(v=>v!=null),v=vs.length?mean(vs):null,gg=v==null?null:grade(v),X=80+j*(gw+24);
+    rr(X,gy,gw,140,16);x.fillStyle=PAL.soft;x.fill();x.save();rr(X,gy,gw,140,16);x.clip();x.fillStyle=gcols[g.id];x.fillRect(X,gy,gw,8);x.restore();
+    x.textAlign="left";x.textBaseline="alphabetic";x.fillStyle=PAL.ink;x.font=`34px ${FD}`;x.fillText(g.name,X+20,gy+60);
+    x.font=`700 38px ${FM}`;const vt=v==null?"–":v.toFixed(1),vw=x.measureText(vt).width;x.fillText(vt,X+20,gy+115);if(v!=null){x.font=`500 22px ${FM}`;x.fillStyle=PAL.muted;x.fillText(" / 10",X+20+vw,gy+115)}
+    x.beginPath();x.arc(X+gw-42,gy+50,28,0,2*Math.PI);x.fillStyle=gc(gg);x.fill();x.fillStyle="#fff";x.font=`22px ${FD}`;x.textAlign="center";x.textBaseline="middle";x.fillText(gg||"?",X+gw-42,gy+52)});
+  // top 3 / bottom 3
+  const sorted=[...sc].sort((a,b)=>b.avg-a.avg||a.i-b.i), top=sorted.slice(0,3), bot=sorted.slice(Math.max(3,sorted.length-3)).reverse();
+  const list=(title,items,X)=>{x.textAlign="left";x.textBaseline="alphabetic";x.fillStyle=PAL.muted;x.font=`700 22px ${FM}`;x.fillText(title,X,1180);
+    items.forEach((r,k)=>{const Y=1200+k*58;rr(X,Y,440,50,10);x.fillStyle=PAL.soft;x.fill();
+      x.beginPath();x.arc(X+26,Y+25,17,0,2*Math.PI);x.fillStyle=gc(r.g);x.fill();x.fillStyle="#fff";x.font=`15px ${FD}`;x.textAlign="center";x.textBaseline="middle";x.fillText(r.g,X+26,Y+26);
+      x.textAlign="left";x.fillStyle=PAL.ink;x.font=`700 25px ${FB}`;x.fillText(fit(r.c.name,300),X+56,Y+26);
+      x.textAlign="right";x.font=`700 24px ${FM}`;x.fillText(r.avg.toFixed(1),X+424,Y+26)})};
+  list("TOP 3",top,80);list("BOTTOM 3",bot,560);
+  x.textAlign="center";x.textBaseline="alphabetic";x.fillStyle=PAL.muted;x.font=`600 26px ${FB}`;x.fillText("Rate yours at ratemyyear.com",W/2,1395);
+  return await new Promise(res=>cv.toBlob(res,"image/png"));
+}
+window.makeCard=makeCard;
 setTimeout(()=>{const b=$m("famBody");if(b&&/^Loading…$/.test(b.textContent.trim()))b.innerHTML=`<p class="err">The crew tools didn't load.</p><p class="muted">This usually means the connection to Google Firebase was blocked. Check your internet, turn off any content blocker or private relay for this site, then reload. You can still do a review on your own below.</p>`},15000);
 
 const toast=$m("toast");
@@ -1434,6 +1506,7 @@ const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
   last={rows,avg};
   if(crew&&entry==="join") entry="rate";
+  if(REVIEW_PAGE&&!$("shareBox").hidden){clearTimeout(window.__cardT);window.__cardT=setTimeout(()=>$("shareBtn")&&$("shareBox")&&!$("shareBox").hidden&&window.__rebuildCard&&window.__rebuildCard(),400)}
   document.body.classList.toggle("in-crew",!!crew);
   document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
   paintEntry();
@@ -1518,25 +1591,69 @@ if(REVIEW_PAGE){
     entry="rate"; paintEntry();
     if(!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }
   }));
-  /* Share Results: record who the report card went to (shares collection), then open the email app. */
-  const shareBox=$("shareBox"), shareBtn=$("shareBtn");
-  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);if(!shareBox.hidden)$("shareEmail").focus()};
-  shareBox.addEventListener("submit",async e=>{
-    e.preventDefault();
-    const email=$("shareEmail").value.trim(), note=$("shareNote");
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){note.textContent="Enter a valid email address.";note.className="err";return}
-    if(!last||last.avg==null){note.textContent="Answer at least one area first, so there's a report card to share.";note.className="err";return}
-    $("shareGo").disabled=true; note.className="muted"; note.textContent="Saving…";
-    const who=state.name||(state.who==="me"?"My":"Their");
-    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
-    const text=`${window._summary}\n\nDo your own at ${location.origin}${REVIEW_PATH}`;
+  /* Share Results: a picture of the report card, sent by the share sheet, WhatsApp, text or email.
+     Each send is recorded in the shares collection (channel plus email or mobile if given). */
+  const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote"), hint=$("shareHint");
+  let cardBlob=null, cardUrl="";
+  const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
+  const shareText=()=>{
+    if(!last||last.avg==null) return "";
+    const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
+    const who=state.who==="me"?(state.name?state.name+"'s":"My"):(state.name?state.name+"'s":"Their");
+    return `${who} Rate My Year report card: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
+  };
+  const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
+  async function record(channel,extra){
     try{
-      if(auth&&!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
-      if(auth&&auth.currentUser) await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,email:email.toLowerCase().slice(0,200),subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
+      if(!auth) return;
+      if(!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
+      await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,channel,...extra,subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
     }catch(x){console.warn("share not recorded",x)}
+  }
+  const ready=()=>{if(!last||last.avg==null){say2("Answer at least one area first, so there's a report card to share.",true);return false}return true};
+  const phone=()=>$("sharePhone").value.replace(/[^\d+]/g,"");
+  const intl=p=>p.startsWith("+")?p.slice(1):p.startsWith("0")?"61"+p.slice(1):p;   // Australian numbers by default
+  async function buildCard(){
+    $("cardMaking").hidden=false; $("cardImg").hidden=true;
+    try{
+      cardBlob=await window.makeCard(); if(cardUrl) URL.revokeObjectURL(cardUrl); cardUrl=URL.createObjectURL(cardBlob);
+      $("cardImg").src=cardUrl; $("cardImg").hidden=false; $("cardMaking").hidden=true; $("saveImg").href=cardUrl;
+    }catch(x){$("cardMaking").textContent="Couldn't make the picture on this device. You can still send the summary by WhatsApp, text or email."}
+    const files=canShareFiles();
+    $("shareImg").hidden=!files;
+    hint.textContent=files?"Tap Send picture to pick Messages, WhatsApp or any app. WhatsApp and Text message send the summary as words."
+      :"Your browser can't attach the picture directly"+(window.isSecureContext?"":" until the site is on https")+". Tap Save picture (or press and hold the picture and choose Save to Photos), then attach it in your message. WhatsApp and Text message send the summary as words.";
+  }
+  window.__rebuildCard=buildCard;
+  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})}};
+  $("shareImg").onclick=async()=>{
+    if(!ready()||!cardBlob) return;
+    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],text:shareText()});record("picture",{})}
+    catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
+  };
+  $("shareWa").onclick=()=>{
+    if(!ready()) return; const p=phone();
+    record("whatsapp",p?{phone:p.slice(0,30)}:{});
+    const u=`https://wa.me/${p?intl(p):""}?text=${encodeURIComponent(shareText())}`;
+    if(!window.open(u,"_blank")) location.href=u;
+  };
+  $("shareSms").onclick=()=>{
+    if(!ready()) return; const p=phone(), apple=/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    record("sms",p?{phone:p.slice(0,30)}:{});
+    location.href=`sms:${p}${apple?"&":"?"}body=${encodeURIComponent(shareText())}`;
+  };
+  $("saveImg").addEventListener("click",e=>{if(!cardBlob){e.preventDefault();return}record("saved",{})});
+  $("shareForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const email=$("shareEmail").value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return say2("Enter a valid email address.",true);
+    if(!ready()) return;
+    $("shareGo").disabled=true; say2("Saving…");
+    await record("email",{email:email.toLowerCase().slice(0,200)});
     $("shareGo").disabled=false;
-    note.textContent="Opening your email app… If nothing opens, use Copy summary below and paste it into an email.";
-    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+    say2("Opening your email app… To include the picture, save it first and attach it.");
+    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+REVIEW_PATH)}`;
   });
 }
 

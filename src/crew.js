@@ -730,6 +730,7 @@ const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
   last={rows,avg};
   if(crew&&entry==="join") entry="rate";
+  if(REVIEW_PAGE&&!$("shareBox").hidden){clearTimeout(window.__cardT);window.__cardT=setTimeout(()=>$("shareBtn")&&$("shareBox")&&!$("shareBox").hidden&&window.__rebuildCard&&window.__rebuildCard(),400)}
   document.body.classList.toggle("in-crew",!!crew);
   document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
   paintEntry();
@@ -814,25 +815,69 @@ if(REVIEW_PAGE){
     entry="rate"; paintEntry();
     if(!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }
   }));
-  /* Share Results: record who the report card went to (shares collection), then open the email app. */
-  const shareBox=$("shareBox"), shareBtn=$("shareBtn");
-  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);if(!shareBox.hidden)$("shareEmail").focus()};
-  shareBox.addEventListener("submit",async e=>{
-    e.preventDefault();
-    const email=$("shareEmail").value.trim(), note=$("shareNote");
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){note.textContent="Enter a valid email address.";note.className="err";return}
-    if(!last||last.avg==null){note.textContent="Answer at least one area first, so there's a report card to share.";note.className="err";return}
-    $("shareGo").disabled=true; note.className="muted"; note.textContent="Saving…";
-    const who=state.name||(state.who==="me"?"My":"Their");
-    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
-    const text=`${window._summary}\n\nDo your own at ${location.origin}${REVIEW_PATH}`;
+  /* Share Results: a picture of the report card, sent by the share sheet, WhatsApp, text or email.
+     Each send is recorded in the shares collection (channel plus email or mobile if given). */
+  const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote"), hint=$("shareHint");
+  let cardBlob=null, cardUrl="";
+  const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
+  const shareText=()=>{
+    if(!last||last.avg==null) return "";
+    const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
+    const who=state.who==="me"?(state.name?state.name+"'s":"My"):(state.name?state.name+"'s":"Their");
+    return `${who} Rate My Year report card: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
+  };
+  const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
+  async function record(channel,extra){
     try{
-      if(auth&&!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
-      if(auth&&auth.currentUser) await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,email:email.toLowerCase().slice(0,200),subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
+      if(!auth) return;
+      if(!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
+      await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,channel,...extra,subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
     }catch(x){console.warn("share not recorded",x)}
+  }
+  const ready=()=>{if(!last||last.avg==null){say2("Answer at least one area first, so there's a report card to share.",true);return false}return true};
+  const phone=()=>$("sharePhone").value.replace(/[^\d+]/g,"");
+  const intl=p=>p.startsWith("+")?p.slice(1):p.startsWith("0")?"61"+p.slice(1):p;   // Australian numbers by default
+  async function buildCard(){
+    $("cardMaking").hidden=false; $("cardImg").hidden=true;
+    try{
+      cardBlob=await window.makeCard(); if(cardUrl) URL.revokeObjectURL(cardUrl); cardUrl=URL.createObjectURL(cardBlob);
+      $("cardImg").src=cardUrl; $("cardImg").hidden=false; $("cardMaking").hidden=true; $("saveImg").href=cardUrl;
+    }catch(x){$("cardMaking").textContent="Couldn't make the picture on this device. You can still send the summary by WhatsApp, text or email."}
+    const files=canShareFiles();
+    $("shareImg").hidden=!files;
+    hint.textContent=files?"Tap Send picture to pick Messages, WhatsApp or any app. WhatsApp and Text message send the summary as words."
+      :"Your browser can't attach the picture directly"+(window.isSecureContext?"":" until the site is on https")+". Tap Save picture (or press and hold the picture and choose Save to Photos), then attach it in your message. WhatsApp and Text message send the summary as words.";
+  }
+  window.__rebuildCard=buildCard;
+  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})}};
+  $("shareImg").onclick=async()=>{
+    if(!ready()||!cardBlob) return;
+    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],text:shareText()});record("picture",{})}
+    catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
+  };
+  $("shareWa").onclick=()=>{
+    if(!ready()) return; const p=phone();
+    record("whatsapp",p?{phone:p.slice(0,30)}:{});
+    const u=`https://wa.me/${p?intl(p):""}?text=${encodeURIComponent(shareText())}`;
+    if(!window.open(u,"_blank")) location.href=u;
+  };
+  $("shareSms").onclick=()=>{
+    if(!ready()) return; const p=phone(), apple=/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    record("sms",p?{phone:p.slice(0,30)}:{});
+    location.href=`sms:${p}${apple?"&":"?"}body=${encodeURIComponent(shareText())}`;
+  };
+  $("saveImg").addEventListener("click",e=>{if(!cardBlob){e.preventDefault();return}record("saved",{})});
+  $("shareForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const email=$("shareEmail").value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return say2("Enter a valid email address.",true);
+    if(!ready()) return;
+    $("shareGo").disabled=true; say2("Saving…");
+    await record("email",{email:email.toLowerCase().slice(0,200)});
     $("shareGo").disabled=false;
-    note.textContent="Opening your email app… If nothing opens, use Copy summary below and paste it into an email.";
-    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+    say2("Opening your email app… To include the picture, save it first and attach it.");
+    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+REVIEW_PATH)}`;
   });
 }
 
