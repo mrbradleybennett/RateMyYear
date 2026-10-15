@@ -25,9 +25,10 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
 .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:22px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.menu{display:flex;gap:8px;flex-wrap:wrap}
-.menu a{font-family:var(--display);font-weight:400;font-size:clamp(16px,2.6vw,20px);line-height:1;text-decoration:none;color:var(--green);padding:10px 18px;border-radius:999px;border:2px solid var(--green);background:var(--panel)}
-.menu a[aria-current="page"],.menu a[aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -4px 0 var(--gold)}
+.menu{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
+.menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:4px 0;border-bottom:3px solid transparent}
+.menu a:hover{border-bottom-color:var(--line)}
+.menu a[aria-current="page"],.menu a[aria-pressed="true"]{border-bottom-color:var(--gold)}
 .menu a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .brand{font-family:var(--display);color:var(--green);text-decoration:none}
 h1{font-family:var(--display);font-weight:400;color:var(--green);margin:0;font-size:clamp(30px,6vw,46px);line-height:1}
