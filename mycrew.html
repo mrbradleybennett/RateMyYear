@@ -927,7 +927,7 @@ resetBtn.addEventListener("click",()=>{
 <script type="module">
 /* ---------- Review Crew on Firebase (Google sign-in + Firestore) ---------- */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {signInWithCredential,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $=id=>document.getElementById(id);
@@ -1129,12 +1129,24 @@ async function googleSignIn(){
   try{
     if(auth.currentUser&&auth.currentUser.isAnonymous){
       try{await linkWithPopup(auth.currentUser,prov,browserPopupRedirectResolver);location.reload();return}
-      catch(x){if(x&&x.code==="auth/credential-already-in-use"){await signInWithPopup(auth,prov,browserPopupRedirectResolver);return}throw x}
+      catch(x){
+        // This Google account already exists: sign straight into it with the sign-in just done.
+        // (Opening a second Google window here gets blocked by Safari.)
+        if(x&&x.code==="auth/credential-already-in-use"){
+          const cred=GoogleAuthProvider.credentialFromError(x);
+          if(cred){await signInWithCredential(auth,cred);return}
+        }
+        throw x;
+      }
     }
     await signInWithPopup(auth,prov,browserPopupRedirectResolver);
   }catch(x){
-    if(x&&(x.code==="auth/popup-blocked"||x.code==="auth/operation-not-supported-in-this-environment")){try{try{sessionStorage.setItem("rmy-redirect","1")}catch(e){}await signInWithRedirect(auth,prov,browserPopupRedirectResolver);return}catch(y){x=y}}
-    famErr(errText(x));
+    const c=x&&x.code||"";
+    if(c==="auth/popup-closed-by-user"||c==="auth/cancelled-popup-request") return famErr("Google sign-in was closed before it finished. Tap Sign in with Google to try again.");
+    if(c==="auth/popup-blocked") return famErr("Your browser blocked the Google sign-in window. Tap Sign in with Google again. If it keeps happening, turn off Block Pop-ups for this site (on iPad: Settings → Apps → Safari).");
+    if(c==="auth/unauthorized-domain") return famErr(`Google sign-in isn't allowed on ${location.hostname} yet. In Firebase → Authentication → Settings → Authorized domains, add ${location.hostname}.`);
+    if(c==="auth/operation-not-supported-in-this-environment"){try{try{sessionStorage.setItem("rmy-redirect","1")}catch(e){}await signInWithRedirect(auth,prov,browserPopupRedirectResolver);return}catch(y){x=y}}
+    famErr(`Google sign-in didn't work. ${errText(x)}`);
   }
 }
 const GOOGLE_SVG=`<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>`;
