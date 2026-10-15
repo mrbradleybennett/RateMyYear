@@ -94,6 +94,8 @@ async function claimMember(cid,memberId,oldMemberId){
 }
 const loadLS=()=>{try{return localStorage.getItem(LS_CREW)||""}catch(e){return ""}};
 const saveLS=v=>{try{v?localStorage.setItem(LS_CREW,v):localStorage.removeItem(LS_CREW)}catch(e){}};
+let crewNoteT=0;
+function crewNote(html,warn){const el=$("crewNote");if(!el)return;el.innerHTML=html;el.className="crewnote"+(warn?" warn":"");el.hidden=false;clearTimeout(crewNoteT);crewNoteT=setTimeout(()=>{el.hidden=true},9000)}
 function famErr(m){const el=$("famErr");if(!el)return;el.textContent=m;el.hidden=!m}
 const toast=(m,ms=3500)=>{$("toast").textContent=m;setTimeout(()=>{if($("toast").textContent===m)$("toast").textContent=""},ms)};
 
@@ -436,6 +438,7 @@ function viewCrewShell(){
     <p class="menote" id="notAdmin" hidden>Only the crew admin can manage this crew. <a href="${REVIEW_PATH}">Go to the reviews</a> to review your crew.</p>
     <p class="adminlink" id="toMyCrew" hidden>You're the crew admin. <a href="${MYCREW_PATH}">Open My Crew</a> to add people, send the invite link and see all the reports.</p>
     <p class="menote" id="meNote" hidden></p>
+    <p class="crewnote" id="crewNote" hidden></p>
     <div class="form" id="meWrap">
       <div class="field" id="meField"><label for="meSel">I am</label><select id="meSel"></select></div>
     </div>
@@ -747,7 +750,7 @@ function needMe(id){
   pending=id;
   const n=$("meNote"), f=$("meField"), s=$("meSel");
   if(!n) return;
-  n.textContent=`First, pick your own name in "I am". Then ${memberName(id)}'s review opens.`;
+  n.textContent=id?`First, pick your own name in "I am". Then ${memberName(id)}'s review opens.`:`First, pick your own name in "I am", then tap Review next to who you're reviewing.`;
   n.hidden=false; f.classList.add("attention");
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   s.focus();
@@ -755,11 +758,15 @@ function needMe(id){
 function startReview(id){
   if(!crew) return;
   if(!me) return needMe(id);
+  const wasTarget=!!target;
   target={id,name:memberName(id)};
   const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid);
+  const carry=!wasTarget&&!existing&&(Object.keys(state.v).length||Object.keys(state.dk).length)&&setForType(memberType(id))===activeSet();
   state.who=id===me?"me":memberType(id); state.qset=setForType(memberType(id)); state.name=target.name;
-  setSliders(existing);
-  savedSig=sig();
+  if(carry){useSet(activeSet());CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)})}
+  else setSliders(existing);
+  const el=$("crewNote"); if(el) el.hidden=true;
+  savedSig=carry?"":sig();
   document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===state.who);
   nameInput.value=target.name;
   save(); render();
@@ -861,9 +868,11 @@ window.afterRender=function(rows,avg){
   document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
   paintEntry();
   syncPick();
-  const on=!!(crew&&target&&me);
-  banner.hidden=!on; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
-  document.body.classList.toggle("has-bar",on);
+  const on=!!(crew&&target&&me), pickFirst=!!(crew&&!target&&REVIEW_PAGE);
+  banner.hidden=!on&&!pickFirst;
+  if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":"<b>Pick your name</b> under I am first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
+  else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
+  document.body.classList.toggle("has-bar",on||pickFirst);
   if(on){
     const self=target.id===me, dirty=sig()!==savedSig, g=avg==null?null:grade(avg);
     bannerText.innerHTML=self?`<b>${esc(memberName(me))}</b> reviewing <b>themselves</b>`:`<b>${esc(memberName(me))}</b> reviewing <b>${esc(target.name)}</b>`;
@@ -904,8 +913,12 @@ async function saveReview(){
 }
 saveBtn.addEventListener("click",saveReview);
 nextBtn.addEventListener("click",async()=>{
-  if(!target) return clearReview();
-  if(sig()!==savedSig&&last&&last.avg!=null){if(!(await saveReview()))return}
+  if(!target){
+    if(!me){needMe("");return}
+    if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in the leaderboard. Your answers are kept.`,true);toTop();return}
+    return clearReview();
+  }
+  if(last&&last.avg!=null){if(!(await saveReview()))return; crewNote(`Saved your review of <b>${esc(target.name)}</b>. Pick the next person below.`)}
   clearReview();
 });
 soloBtn.addEventListener("click",async()=>{
@@ -977,8 +990,8 @@ if(REVIEW_PAGE){
     }catch(x){$("cardMaking").textContent="Couldn't make the picture on this device. You can still send the summary by WhatsApp, text or email."}
     const files=canShareFiles();
     $("shareImg").hidden=!files;
-    hint.textContent=files?"Tap Send picture to pick Messages, WhatsApp or any app. WhatsApp and Text message send the summary as words."
-      :"Your browser can't attach the picture directly"+(window.isSecureContext?"":" until the site is on https")+". Tap Save picture (or press and hold the picture and choose Save to Photos), then attach it in your message. WhatsApp and Text message send the summary as words.";
+    hint.textContent=files?"WhatsApp and Text message send the picture and the summary: choose WhatsApp or Messages in the list that pops up."
+      :(window.isSecureContext?"This browser can't attach the picture to a message directly.":"The picture can't go straight into WhatsApp or Messages until the site is on https (the padlock in the address bar).")+" For now WhatsApp and Text message send the words. To add the picture, tap Save picture (or press and hold it and choose Save to Photos), then attach it in the message.";
   }
   window.__rebuildCard=buildCard;
   shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})}};
@@ -987,14 +1000,22 @@ if(REVIEW_PAGE){
     try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],text:shareText()});record("picture",{})}
     catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
   };
-  $("shareWa").onclick=()=>{
-    if(!ready()) return; const p=phone();
+  /* Where the device can share files (https on iPhone/iPad/Android), WhatsApp and Text message open the
+     share sheet with the picture AND the words; pick WhatsApp or Messages there. Otherwise they send words only. */
+  const sharePic=async channel=>{
+    if(!canShareFiles()||!cardBlob) return false;
+    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],text:shareText()});record(channel,phone()?{phone:phone().slice(0,30)}:{});}
+    catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
+    return true;
+  };
+  $("shareWa").onclick=async()=>{
+    if(!ready()) return; if(await sharePic("whatsapp")) return; const p=phone();
     record("whatsapp",p?{phone:p.slice(0,30)}:{});
     const u=`https://wa.me/${p?intl(p):""}?text=${encodeURIComponent(shareText())}`;
     if(!window.open(u,"_blank")) location.href=u;
   };
-  $("shareSms").onclick=()=>{
-    if(!ready()) return; const p=phone(), apple=/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+  $("shareSms").onclick=async()=>{
+    if(!ready()) return; if(await sharePic("sms")) return; const p=phone(), apple=/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
     record("sms",p?{phone:p.slice(0,30)}:{});
     location.href=`sms:${p}${apple?"&":"?"}body=${encodeURIComponent(shareText())}`;
   };
