@@ -781,7 +781,7 @@ function render(){
   $m("recs").innerHTML=two.length?two.map(r=>{
     const qs=r.c.qs.map((q,i)=>({q,i,v:state.dk[r.c.id+i]?null:state.v[r.c.id+i]})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
     const body=qs.length
-      ?`<ul class="qtips">${qs.slice(0,2).map(x=>`<li><span class="qlow">${esc(fill(x.q[0]))} <b>${x.v}/10</b></span>${esc(r.c.tips[x.i])}</li>`).join("")}</ul>`
+      ?`<ul>${qs.slice(0,2).map(x=>`<li>${esc(r.c.tips[x.i])}</li>`).join("")}</ul>`
       :`<ul>${r.c.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul><p class="muted qnote">Open <b>Detailed questions</b> on ${esc(r.c.name)} to get ideas aimed at the exact things to work on.</p>`;
     return `<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4>${body}</div>`}).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
 
