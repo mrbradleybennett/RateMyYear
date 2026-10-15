@@ -10,11 +10,15 @@ A one-page website for rating yourself, your mates and your family across the ar
 
 **Self vs crew:** in a crew, the report card shows the **Self assessment** and **Crew assessment** overall ratings side by side, and a **Biggest gaps** summary above the Top 3: the overall gap plus up to three areas that differ by a point or more. The area-by-area gaps show for your own review, and for crew admins. Everyone else sees the overall gap, taken from the leaderboard. Solo Rate Me shows the self rating with a prompt to join or create a crew.
 
+**Leaderboard:** the crew leaderboard sits at the very bottom of the main page. It stays blurred out until the crew admin ticks **Make leaderboard visible** on My Crew (`showBoard` on the crew, enforced in the security rules). The crew box lists everyone with a Review button and a **To do** or **✓ Reviewed** tag, plus "You've reviewed X of Y" and who's still to review.
+
+**Ideas for the bottom two:** each detailed question has its own tip. The report card shows the tips for the two lowest-scoring detailed questions in each bottom area. If no detailed questions were answered, it shows all three tips and suggests opening the detailed questions.
+
 **Headings:** Rate My Family shows "End Of Year Family Review" and Rate My Mates shows "End Of Year Mate Review", each with its own tagline.
 
 **Two question sets:**
-- **Me and family** (8 areas): Self (Self Care, Health), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).
-- **Mates** (7 areas): Them (Vibe, Banter, Generous), Us (Reliable, Loyalty), Life (Adventure, Social).
+- **Me and family** (9 areas): Self (Self Care, Health, Cleanliness), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).
+- **Mates** (8 areas): Them (Vibe, Banter, Generous, Cleanliness), Us (Reliable, Loyalty), Life (Adventure, Social).
 
 Rate My Mates uses the mates questions. In a crew, anyone added as a mate is rated on the mates questions (including their own self review), and everyone else on the me and family questions. Crew reports show a separate table for each set. People sign in with Google to set up or join a **Review Crew**, then review each other. Crew admins see everyone's reports.
 

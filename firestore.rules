@@ -105,7 +105,8 @@ service cloud.firestore {
             && request.resource.data.by[k].o == myReview().overall
             && request.resource.data.by[k].self == (myReview().reviewer == memberId);
         }
-        allow read: if isMember(c);
+        // The crew sees the leaderboard only once the admin switches it on (showBoard); admins always can.
+        allow read: if isAdmin(c) || (isMember(c) && crewData(c).get('showBoard', false) == true);
         allow create: if isAdmin(c)
           || (isMember(c) && request.resource.data.keys().hasOnly(['by'])
               && request.resource.data.by.keys().hasOnly([myReview().boardKey])

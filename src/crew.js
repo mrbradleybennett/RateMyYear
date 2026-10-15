@@ -18,7 +18,7 @@ const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
 let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
-let boardById={}, boardSyncT=0, typeArmed="";
+let boardById={}, boardSyncT=0, typeArmed="", boardUnsub=null, boardSubOn=false;
 let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
 let invite=null; // {crew, code} from the link
 let guestTried=false;
@@ -375,7 +375,16 @@ async function joinCrew(inv){
 }
 
 /* ---------- inside a crew ---------- */
-function clearCrewSubs(){unsubs.forEach(u=>u());unsubs=[];revUnsubs.forEach(u=>u());revUnsubs=[];revKey=""}
+function clearCrewSubs(){unsubs.forEach(u=>u());unsubs=[];revUnsubs.forEach(u=>u());revUnsubs=[];revKey="";if(boardUnsub){boardUnsub();boardUnsub=null}boardSubOn=false}
+/* The leaderboard is only readable by the crew when the admin switches it on (admins can always read it). */
+const boardOpen=()=>!!(crew&&(isAdmin()||crew.showBoard));
+function syncBoardSub(){
+  const want=boardOpen();
+  if(want===boardSubOn) return;
+  if(boardUnsub){boardUnsub();boardUnsub=null}
+  boardSubOn=want; boardById={};
+  if(want) boardUnsub=onSnapshot(collection(db,"crews",crewId,"board"),s=>{boardById={};s.docs.forEach(d=>boardById[d.id]=d.data());refresh()},()=>{boardById=null;refresh()});
+}
 function openCrew(id){
   clearCrewSubs();
   crewId=id; crew=null; claims={}; reviewsById={}; me=""; target=null;
@@ -383,12 +392,9 @@ function openCrew(id){
   viewCrewShell();
   unsubs.push(onSnapshot(doc(db,"crews",id),s=>{
     if(!s.exists()){leaveLocal("That crew no longer exists.");return}
-    crew=s.data(); syncReviewSubs(); refresh();
+    crew=s.data(); syncReviewSubs(); syncBoardSub(); refresh();
   },x=>{leaveLocal(x&&x.code==="permission-denied"?"You're no longer in that crew.":errText(x))}));
-  boardById={};
-  unsubs.push(onSnapshot(collection(db,"crews",id,"board"),s=>{
-    boardById={}; s.docs.forEach(d=>boardById[d.id]=d.data()); refresh();
-  },()=>{boardById=null;refresh()}));
+  boardById={}; boardSubOn=false;
   unsubs.push(onSnapshot(collection(db,"crews",id,"claims"),s=>{
     claims={}; s.docs.forEach(d=>claims[d.id]=d.data().uid);
     me=Object.keys(claims).find(k=>claims[k]===user.uid)||"";
@@ -413,7 +419,7 @@ function syncReviewSubs(){
   }
 }
 function leaveLocal(msg){
-  clearCrewSubs(); crewId=""; crew=null; claims={}; reviewsById={}; me=""; target=null; saveLS("");
+  clearCrewSubs(); if($("boardSec")) $("boardSec").hidden=true; crewId=""; crew=null; claims={}; reviewsById={}; me=""; target=null; saveLS("");
   render(); if(user) viewLobby(msg||""); else viewSignedOut();
 }
 leaveBtn.onclick=async()=>{
@@ -448,7 +454,8 @@ function viewCrewShell(){
       <button type="submit">Add me</button>
     </form>
     <div class="typebox" id="typeBox" hidden></div>
-    <h3 class="board-h" id="boardTitle" hidden>Crew leaderboard</h3>
+    <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">Tick to show the crew leaderboard to everyone in the crew. When it's off, they see it blurred out. You can always see the scores here under All scores.</span></label>
+    <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
     <p class="muted" id="boardNote" hidden></p>
     <div class="members" id="memList"></div>
     <form class="form" id="addForm" novalidate>
@@ -647,6 +654,30 @@ async function syncBoard(){
   if(n) try{await b.commit()}catch(x){console.warn("leaderboard sync",x)}
 }
 
+function renderBoard(){
+  const sec=$("boardSec"); if(!sec) return;
+  if(ADMIN||!crew){sec.hidden=true;return}
+  sec.hidden=false;
+  const ms=members(), open=boardOpen(), mates=crew.type==="mates";
+  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":"Ranked by what the rest of the crew thinks.";
+  const wrap=$("boardWrap"), lock=$("boardLock"), list=$("boardList");
+  if(!open){
+    const fake=["A","B+","B","C+","C","D"];
+    list.innerHTML=(ms.length?ms:[{name:"Crew member"},{name:"Crew member"},{name:"Crew member"}]).map((m,i)=>`<div class="member board-row" style="--g:${gcol(fake[i%fake.length])}"><span class="rank">${i+1}</span><span class="chip">${fake[i%fake.length]}</span><span class="nm">${"●".repeat(4+(i*3)%5)}<small>${(9.1-i*0.7).toFixed(1)} / 10</small></span><span class="btns"></span></div>`).join("");
+    wrap.classList.add("locked"); lock.hidden=false;
+    lock.innerHTML=`<b>Leaderboard locked</b><span>${isAdmin()?`You're the crew admin. Switch it on in <a href="${MYCREW_PATH}">My Crew</a> to show everyone the rankings.`:"The crew admin hasn't switched on the leaderboard yet."}</span>`;
+    return;
+  }
+  wrap.classList.remove("locked"); lock.hidden=true;
+  if(boardById===null){list.innerHTML=`<p class="muted">The leaderboard can't load yet. The crew admin needs to publish the latest security rules.</p>`;return}
+  const rows=ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  list.innerHTML=rows.map(({m,b},i)=>{const g=b.v==null?null:grade(b.v);
+    return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}><span class="rank">${b.v==null?"–":i+1}</span><span class="chip${g?"":" none"}">${g||"–"}</span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}</small></span>
+      <span class="btns"><button type="button" class="ghost" data-review2="${m.id}">${m.id===me?"Review myself":"Review"}</button></span></div>`}).join("");
+  list.querySelectorAll("[data-review2]").forEach(b=>b.onclick=()=>startReview(b.dataset.review2));
+}
+
 function refresh(){
   if(!crew||!$("memList")) return;
   title.textContent=`Your crew: ${crew.name}`;
@@ -677,19 +708,23 @@ function refresh(){
     }
   }
   if(tbx.hidden){tbx.innerHTML="";tbx.dataset.k=""}
-  $("boardTitle").hidden=ADMIN; $("boardNote").hidden=true;
-  if(!ADMIN&&boardById===null){$("boardNote").textContent="The leaderboard isn't switched on yet. The crew admin needs to publish the latest security rules.";$("boardNote").hidden=false}
+  $("boardTitle").hidden=ADMIN;
+  const bt=$("boardToggle"); bt.hidden=!(ADMIN&&admin);
+  if(!bt.hidden){$("boardOn").checked=!!crew.showBoard;$("boardOn").onchange=async e=>{try{await updateDoc(doc(db,"crews",crewId),{showBoard:e.target.checked});toast(e.target.checked?"Leaderboard switched on for the crew.":"Leaderboard hidden from the crew.")}catch(x){e.target.checked=!e.target.checked;famErr(errText(x))}}}
+  renderBoard();
   const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
-  const board=ADMIN?null:ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
-  $("memList").innerHTML=!ADMIN&&ms.length?board.map(({m,b},i)=>{
-    const g=b.v==null?null:grade(b.v), mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
-    return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}>
-      <span class="rank">${b.v==null?"–":i+1}</span>
-      <span class="chip${g?"":" none"}">${g||"–"}</span>
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}${mine?" · you've reviewed":""}</small></span>
+  const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid).map(r=>r.member));
+  const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
+  $("boardTitle").textContent=ADMIN?"":me?`You've reviewed ${done.length} of ${ms.length}`:"Who are you reviewing?";
+  $("boardNote").hidden=ADMIN||!me||!ms.length;
+  if(!$("boardNote").hidden) $("boardNote").innerHTML=todo.length?`Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work.";
+  $("memList").innerHTML=!ADMIN&&ms.length?[...todo,...done].map(m=>{
+    const mine=doneIds.has(m.id);
+    return `<div class="member pick-row${mine?" done":""}">
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small><span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -834,8 +869,9 @@ function selfVsCrew(rows,avg){
   let gaps=null;
   if(selfCats&&crewCats&&(isSelf?otherRevs.length:true)) gaps=CATS.filter(c=>selfCats[c.id]!=null&&crewCats[c.id]!=null).map(c=>({c,s:selfCats[c.id],k:crewCats[c.id],d:selfCats[c.id]-crewCats[c.id]})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
   const n=crewVals.length;
+  const hiddenSelf=!isSelf&&selfV==null&&!boardOpen();
   return {self:selfV,crew:crewV,crewN:n,isSelf,nm,gaps,
-    selfNote:isSelf?"How you rate yourself":(selfV==null?`${esc(nm)} hasn't done a self review yet`:`How ${esc(nm)} rates themselves`),
+    selfNote:isSelf?"How you rate yourself":(hiddenSelf?"Shows once the crew admin switches on the leaderboard":selfV==null?`${esc(nm)} hasn't done a self review yet`:`How ${esc(nm)} rates themselves`),
     crewNote:n?`Average of ${n} review${n===1?"":"s"} from the crew${isSelf?"":" (including yours)"}`:(isSelf?"No one in the crew has reviewed you yet":"")};
 }
 function paintViews(rows,avg){
@@ -915,7 +951,7 @@ saveBtn.addEventListener("click",saveReview);
 nextBtn.addEventListener("click",async()=>{
   if(!target){
     if(!me){needMe("");return}
-    if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in the leaderboard. Your answers are kept.`,true);toTop();return}
+    if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in your crew list. Your answers are kept.`,true);toTop();return}
     return clearReview();
   }
   if(last&&last.avg!=null){if(!(await saveReview()))return; crewNote(`Saved your review of <b>${esc(target.name)}</b>. Pick the next person below.`)}

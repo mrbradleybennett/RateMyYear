@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Rate yourself, your mates and your family across 8 areas of life, and see how your crew sees you.">
+<meta name="description" content="Rate yourself, your mates and your family across the areas of life that matter, and see how your crew sees you.">
 <title>Join A Crew · Rate My Year</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -110,6 +110,7 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 .rec h4 .tag{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;background:var(--g);border-radius:4px;padding:2px 7px}
 .rec ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#copy,#reset{display:none!important}
 .endbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .endbtn{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px 16px;border-radius:12px;border:2px solid var(--green);background:var(--panel);color:var(--green);text-decoration:none;font-weight:400;box-shadow:none}
 .endbtn b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.05}
@@ -267,6 +268,8 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .adminlink a,.muted a{color:var(--green)}
 .navbtns{display:flex;gap:8px;flex-wrap:wrap}
 .rkind{display:inline-block;align-self:flex-start;background:var(--gold);color:#14231b;font-family:var(--display);font-size:15px;letter-spacing:.02em;padding:4px 10px;border-radius:999px;margin-bottom:8px}
+.qtips{display:flex;flex-direction:column;gap:10px}.qtips li{display:flex;flex-direction:column;gap:2px}
+.qlow{font-size:14px;color:var(--muted)}.qlow b{color:var(--ink);font-family:var(--mono)}.qnote{margin:6px 0 0;font-size:14px}
 .herotag{font-weight:700;font-size:19px;line-height:1.35;color:var(--green);margin:12px 0 0;max-width:34ch}
 .herotag[hidden]{display:none}
 .ratebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -286,7 +289,14 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 body.entry-rate:not(.crew-ready) .crew-box{display:none}
 body.in-crew #endJoin,body.in-crew #endCreate{display:none}
 body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHint,body.in-crew .ratebar{display:none!important}
+.boardsec{background:var(--panel);border:2px solid var(--green);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.boardsec[hidden]{display:none}.boardsec h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0;color:var(--green)}.boardsec>p{margin:0}
+.boardwrap{position:relative}.boardwrap.locked .members{filter:blur(7px);pointer-events:none;user-select:none}
+.boardlock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px}
+.boardlock[hidden]{display:none}.boardlock b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}.boardlock span{max-width:36ch}
 .board-h{margin:6px 0 0;font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}
+.member.pick-row{grid-template-columns:1fr auto}.member.pick-row.done{opacity:.8}
+.rstat{display:inline-block;font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;margin-top:2px}.rstat.ok{background:#e3f1e8;color:#14532d}.boardtoggle{cursor:pointer}.boardtoggle input{width:18px;height:18px;vertical-align:-3px}
 .member.board-row{grid-template-columns:auto auto 1fr auto}
 .board-row .rank{font-family:var(--display);font-size:20px;color:var(--muted);min-width:22px;text-align:center;flex:none}
 .typebox{border:1.5px dashed var(--gold);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.typebox p{margin:0}
@@ -421,14 +431,20 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <div class="actions">
         <button id="famSave" type="button" hidden>Save to crew</button>
         <button id="soloSave" type="button" hidden>Save result</button>
-        <button id="copy" class="ghost sm" type="button">Copy summary</button>
-        <button id="reset" class="ghost sm" type="button">Start again</button>
+        <button id="copy" class="ghost sm" type="button" hidden>Copy summary</button>
+        <button id="reset" class="ghost sm" type="button" hidden>Start again</button>
         <span class="toast" id="toast" role="status"></span>
       </div>
     </div>
   </section>
 
   <p class="foot review-only">Scores: A 8.5+ · B 7+ · C 5.5+ · D 4+ · E under 4, out of 10. Each area's grade comes from its quick question, which moves to the average of any detailed questions you answer. Don't know answers are left out. A + means the top third of that band and a − the bottom third, so B+ is 8.0–8.4 and B− is 7.0–7.4.</p>
+
+  <section class="boardsec review-only" id="boardSec" hidden>
+    <h2>Crew leaderboard</h2>
+    <p class="muted" id="boardSub"></p>
+    <div class="boardwrap" id="boardWrap"><div class="members" id="boardList"></div><div class="boardlock" id="boardLock" hidden></div></div>
+  </section>
 </div>
 
 <script>
@@ -445,6 +461,11 @@ const LIFE_CATS=[
   ["How are {your} eating and drinking?","Fast food junkie","Macros counter"],
   ["How are {your} sleep and recovery?","Running on fumes","Well rested"]],
   recs:["Aim for a 30 minute walk or session most days.","Swap a few takeaway meals or drinks each week for something decent.","Set a bedtime and keep the phone out of the bedroom."]},
+ {id:"clean",name:"Cleanliness",line:"How clean and tidy {are} {you}?",lo:"Pigsty",hi:"Spotless",qs:[
+  ["Do {you} clean up after {yourself}?","Leaves a trail","Every time"],
+  ["How tidy do {you} keep {your} room and space?","Bomb site","Neat as a pin"],
+  ["Do {you} pitch in with the chores?","Never lifts a finger","First to help"]],
+  recs:["Clean up as you go: dishes away, clothes off the floor.","Pick one room or space each week and give it a proper tidy.","Do a chore before anyone has to ask."]},
  {id:"mates",name:"Mates",line:"How good a mate {are} {you}?",lo:"Negative Nelly",hi:"Top bloke, good laugh",qs:[
   ["How often do {you} show up for {your} mates?","Ghost","Always there"],
   ["{are} {you} good company to be around?","A drain","Lifts the mood"],
@@ -477,7 +498,7 @@ const LIFE_CATS=[
   recs:["Plan one thing each month purely for fun.","Share the funny stuff with someone who needs a laugh.","Be the first to laugh when you stuff up."]}
 ];
 const LIFE_GROUPS=[
-  {id:"me",name:"Self",blurb:"Looking after yourself",ids:["self","health"]},
+  {id:"me",name:"Self",blurb:"Looking after yourself",ids:["self","health","clean"]},
   {id:"others",name:"Others",blurb:"How you are with people",ids:["mates","others","love"]},
   {id:"life",name:"Life",blurb:"Getting on with it",ids:["action","growth","humour"]}];
 /* Mates set: used for Rate My Mates and mate crew members. Group ids reuse the three group colours. */
@@ -497,6 +518,11 @@ const MATE_CATS=[
   ["Do {you} give up {your} time to help a mate out?","Too busy","Drops everything"],
   ["Do {you} share what {you}'ve got (car, gear, contacts)?","Keeps it to {yourself}","What's mine is yours"]],
   recs:["Get the first round in next time.","Offer a hand with a mate's move, reno or job hunt before they ask.","Lend the gear, share the contact, pass on the tip."]},
+ {id:"mclean",name:"Cleanliness",line:"How clean and tidy {are} {you}?",lo:"Feral",hi:"Fresh as",qs:[
+  ["How's {your} personal hygiene?","On the nose","Fresh as a daisy"],
+  ["What state {are} {your} car and place in?","Pigsty","Spotless"],
+  ["Do {you} clean up after {yourself} at a mate's place?","Leaves a mess","Leaves it better"]],
+  recs:["Shower, deodorant, clean clothes: every time you head out.","Give the car and your place a proper clean once a week.","At a mate's place, clean up before you leave."]},
  {id:"reliable",name:"Reliable",line:"How reliable {are} {you}?",lo:"Flaky",hi:"Rock solid",qs:[
   ["Do {you} turn up when {you} say {you} will?","Always pikes","Every time"],
   ["{are} {you} on time?","Always late","Early"],
@@ -519,11 +545,30 @@ const MATE_CATS=[
   recs:["Put a standing monthly catch-up in the calendar.","Introduce two mates who'd get on.","Make the new person in the group feel part of it."]}
 ];
 const MATE_GROUPS=[
-  {id:"me",name:"Them",blurb:"What they bring",ids:["vibe","banter","generous"]},
+  {id:"me",name:"Them",blurb:"What they bring",ids:["vibe","banter","generous","mclean"]},
   {id:"others",name:"Us",blurb:"How they are with their mates",ids:["reliable","loyal"]},
   {id:"life",name:"Life",blurb:"Getting out there",ids:["adventure","social"]}];
 const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_GROUPS},mates:{key:"mates",label:"Mates",cats:MATE_CATS,groups:MATE_GROUPS}};
-Object.values(SETS).forEach(s=>s.cats.forEach(c=>{c.group=s.groups.find(g=>g.ids.includes(c.id))}));
+/* One tip per detailed question (same order as the questions), so ideas can target the lowest-scoring ones. */
+const TIPS={
+ self:["Block out one hour a week for bills, appointments and the admin that keeps getting put off.","After a stuff-up, talk to yourself the way you'd talk to a mate.","Pick one thing to say no to next year and stick to it."],
+ health:["Aim for a 30 minute walk or session most days.","Swap a few takeaway meals or drinks each week for something decent.","Set a bedtime and keep the phone out of the bedroom."],
+ clean:["Clean up as you go: dishes away, clothes off the floor.","Pick one room or space each week and give it a proper tidy.","Do a chore before anyone has to ask."],
+ mates:["Put a regular catch-up in the calendar with your closest two or three mates.","Bring good energy: ask how they're really going, listen, and leave the whinging at home.","Be the one who sends the first message."],
+ others:["Help out with one family, community or charity thing each quarter.","Leave every place a bit better than you found it.","When something's off, say so early and calmly."],
+ love:["Tell the people you love that you do, out loud, this week.","Have one phone-free night a week with family or partner.","Count to five before snapping at home."],
+ action:["Only say yes to what you'll really do, then write it down and tick it off.","Do the worst job first thing each morning.","Pick one piece of work each week and give it your absolute best."],
+ growth:["Pick one skill, course or book to get through each quarter.","When someone gives feedback, say \"fair point\" before defending yourself.","Write down one good thing at the end of each day."],
+ humour:["Plan one thing each month purely for fun.","Share the funny stuff with someone who needs a laugh.","Be the first to laugh when you stuff up."],
+ vibe:["Bring the energy: be the one who suggests the next plan.","Leave the whinging at the door for the next catch-up and see how it lands.","Let the small stuff slide. Not every hill needs dying on."],
+ banter:["Keep the group chat alive with one decent message a week.","Cop the next ribbing with a laugh before firing back.","Read the room. If a mate's having a rough trot, ease off."],
+ generous:["Get the first round in next time.","Offer a hand with a mate's move, reno or job hunt before they ask.","Lend the gear, share the contact, pass on the tip."],
+ mclean:["Shower, deodorant, clean clothes: every time you head out.","Give the car and your place a proper clean once a week.","At a mate's place, clean up before you leave."],
+ reliable:["Stop saying maybe. Give a straight yes or no.","Turn up on time to the next three catch-ups.","Be the mate who answers the 2am call."],
+ loyal:["Only say things about a mate you'd say to their face.","What's told in confidence stays there.","Check in on the mate who's gone quiet."],
+ adventure:["Say yes to the next thing you'd normally knock back.","Book one trip or weekend away with the crew this year.","Try something none of you have done before."],
+ social:["Put a standing monthly catch-up in the calendar.","Introduce two mates who'd get on.","Make the new person in the group feel part of it."]};
+Object.values(SETS).forEach(s=>s.cats.forEach(c=>{c.group=s.groups.find(g=>g.ids.includes(c.id));c.tips=TIPS[c.id]||c.recs;c.recs=c.tips}));
 const setForType=t=>t==="mate"?"mates":"life";
 let CATS=LIFE_CATS, GROUPS=LIFE_GROUPS, curSet="";
 const VERDICTS={A:"Absolute legend of a year.",B:"Solid year. A few things to polish.",C:"Middle of the ladder. Room to climb.",D:"Tough season. Time for a reset.",E:"Rough one. Next year starts now."};
@@ -722,7 +767,13 @@ function render(){
 
   const two=bottom.slice(0,2);
   $m("recsTitle").textContent=me?"How to lift your bottom two":`Ideas to suggest to ${state.name||"them"} for the bottom two`;
-  $m("recs").innerHTML=two.length?two.map(r=>`<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4><ul>${r.c.recs.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
+  /* Ideas aim at the lowest-scoring detailed questions in each of the bottom two areas. */
+  $m("recs").innerHTML=two.length?two.map(r=>{
+    const qs=r.c.qs.map((q,i)=>({q,i,v:state.dk[r.c.id+i]?null:state.v[r.c.id+i]})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
+    const body=qs.length
+      ?`<ul class="qtips">${qs.slice(0,2).map(x=>`<li><span class="qlow">${esc(fill(x.q[0]))} <b>${x.v}/10</b></span>${esc(r.c.tips[x.i])}</li>`).join("")}</ul>`
+      :`<ul>${r.c.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul><p class="muted qnote">Open <b>Detailed questions</b> on ${esc(r.c.name)} to get ideas aimed at the exact things to work on.</p>`;
+    return `<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4>${body}</div>`}).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
 
   if(window.afterRender) window.afterRender(rows,avg,g);
   window._summary=g?`${w.poss} 2026 ${KIND_LABEL[reviewKind()]}: ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${w.poss} 2026 review: not enough answers yet.`;
@@ -828,7 +879,7 @@ const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
 let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
-let boardById={}, boardSyncT=0, typeArmed="";
+let boardById={}, boardSyncT=0, typeArmed="", boardUnsub=null, boardSubOn=false;
 let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
 let invite=null; // {crew, code} from the link
 let guestTried=false;
@@ -1185,7 +1236,16 @@ async function joinCrew(inv){
 }
 
 /* ---------- inside a crew ---------- */
-function clearCrewSubs(){unsubs.forEach(u=>u());unsubs=[];revUnsubs.forEach(u=>u());revUnsubs=[];revKey=""}
+function clearCrewSubs(){unsubs.forEach(u=>u());unsubs=[];revUnsubs.forEach(u=>u());revUnsubs=[];revKey="";if(boardUnsub){boardUnsub();boardUnsub=null}boardSubOn=false}
+/* The leaderboard is only readable by the crew when the admin switches it on (admins can always read it). */
+const boardOpen=()=>!!(crew&&(isAdmin()||crew.showBoard));
+function syncBoardSub(){
+  const want=boardOpen();
+  if(want===boardSubOn) return;
+  if(boardUnsub){boardUnsub();boardUnsub=null}
+  boardSubOn=want; boardById={};
+  if(want) boardUnsub=onSnapshot(collection(db,"crews",crewId,"board"),s=>{boardById={};s.docs.forEach(d=>boardById[d.id]=d.data());refresh()},()=>{boardById=null;refresh()});
+}
 function openCrew(id){
   clearCrewSubs();
   crewId=id; crew=null; claims={}; reviewsById={}; me=""; target=null;
@@ -1193,12 +1253,9 @@ function openCrew(id){
   viewCrewShell();
   unsubs.push(onSnapshot(doc(db,"crews",id),s=>{
     if(!s.exists()){leaveLocal("That crew no longer exists.");return}
-    crew=s.data(); syncReviewSubs(); refresh();
+    crew=s.data(); syncReviewSubs(); syncBoardSub(); refresh();
   },x=>{leaveLocal(x&&x.code==="permission-denied"?"You're no longer in that crew.":errText(x))}));
-  boardById={};
-  unsubs.push(onSnapshot(collection(db,"crews",id,"board"),s=>{
-    boardById={}; s.docs.forEach(d=>boardById[d.id]=d.data()); refresh();
-  },()=>{boardById=null;refresh()}));
+  boardById={}; boardSubOn=false;
   unsubs.push(onSnapshot(collection(db,"crews",id,"claims"),s=>{
     claims={}; s.docs.forEach(d=>claims[d.id]=d.data().uid);
     me=Object.keys(claims).find(k=>claims[k]===user.uid)||"";
@@ -1223,7 +1280,7 @@ function syncReviewSubs(){
   }
 }
 function leaveLocal(msg){
-  clearCrewSubs(); crewId=""; crew=null; claims={}; reviewsById={}; me=""; target=null; saveLS("");
+  clearCrewSubs(); if($("boardSec")) $("boardSec").hidden=true; crewId=""; crew=null; claims={}; reviewsById={}; me=""; target=null; saveLS("");
   render(); if(user) viewLobby(msg||""); else viewSignedOut();
 }
 leaveBtn.onclick=async()=>{
@@ -1258,7 +1315,8 @@ function viewCrewShell(){
       <button type="submit">Add me</button>
     </form>
     <div class="typebox" id="typeBox" hidden></div>
-    <h3 class="board-h" id="boardTitle" hidden>Crew leaderboard</h3>
+    <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">Tick to show the crew leaderboard to everyone in the crew. When it's off, they see it blurred out. You can always see the scores here under All scores.</span></label>
+    <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
     <p class="muted" id="boardNote" hidden></p>
     <div class="members" id="memList"></div>
     <form class="form" id="addForm" novalidate>
@@ -1457,6 +1515,30 @@ async function syncBoard(){
   if(n) try{await b.commit()}catch(x){console.warn("leaderboard sync",x)}
 }
 
+function renderBoard(){
+  const sec=$("boardSec"); if(!sec) return;
+  if(ADMIN||!crew){sec.hidden=true;return}
+  sec.hidden=false;
+  const ms=members(), open=boardOpen(), mates=crew.type==="mates";
+  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":"Ranked by what the rest of the crew thinks.";
+  const wrap=$("boardWrap"), lock=$("boardLock"), list=$("boardList");
+  if(!open){
+    const fake=["A","B+","B","C+","C","D"];
+    list.innerHTML=(ms.length?ms:[{name:"Crew member"},{name:"Crew member"},{name:"Crew member"}]).map((m,i)=>`<div class="member board-row" style="--g:${gcol(fake[i%fake.length])}"><span class="rank">${i+1}</span><span class="chip">${fake[i%fake.length]}</span><span class="nm">${"●".repeat(4+(i*3)%5)}<small>${(9.1-i*0.7).toFixed(1)} / 10</small></span><span class="btns"></span></div>`).join("");
+    wrap.classList.add("locked"); lock.hidden=false;
+    lock.innerHTML=`<b>Leaderboard locked</b><span>${isAdmin()?`You're the crew admin. Switch it on in <a href="${MYCREW_PATH}">My Crew</a> to show everyone the rankings.`:"The crew admin hasn't switched on the leaderboard yet."}</span>`;
+    return;
+  }
+  wrap.classList.remove("locked"); lock.hidden=true;
+  if(boardById===null){list.innerHTML=`<p class="muted">The leaderboard can't load yet. The crew admin needs to publish the latest security rules.</p>`;return}
+  const rows=ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  list.innerHTML=rows.map(({m,b},i)=>{const g=b.v==null?null:grade(b.v);
+    return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}><span class="rank">${b.v==null?"–":i+1}</span><span class="chip${g?"":" none"}">${g||"–"}</span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}</small></span>
+      <span class="btns"><button type="button" class="ghost" data-review2="${m.id}">${m.id===me?"Review myself":"Review"}</button></span></div>`}).join("");
+  list.querySelectorAll("[data-review2]").forEach(b=>b.onclick=()=>startReview(b.dataset.review2));
+}
+
 function refresh(){
   if(!crew||!$("memList")) return;
   title.textContent=`Your crew: ${crew.name}`;
@@ -1487,19 +1569,23 @@ function refresh(){
     }
   }
   if(tbx.hidden){tbx.innerHTML="";tbx.dataset.k=""}
-  $("boardTitle").hidden=ADMIN; $("boardNote").hidden=true;
-  if(!ADMIN&&boardById===null){$("boardNote").textContent="The leaderboard isn't switched on yet. The crew admin needs to publish the latest security rules.";$("boardNote").hidden=false}
+  $("boardTitle").hidden=ADMIN;
+  const bt=$("boardToggle"); bt.hidden=!(ADMIN&&admin);
+  if(!bt.hidden){$("boardOn").checked=!!crew.showBoard;$("boardOn").onchange=async e=>{try{await updateDoc(doc(db,"crews",crewId),{showBoard:e.target.checked});toast(e.target.checked?"Leaderboard switched on for the crew.":"Leaderboard hidden from the crew.")}catch(x){e.target.checked=!e.target.checked;famErr(errText(x))}}}
+  renderBoard();
   const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
-  const board=ADMIN?null:ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
-  $("memList").innerHTML=!ADMIN&&ms.length?board.map(({m,b},i)=>{
-    const g=b.v==null?null:grade(b.v), mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
-    return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}>
-      <span class="rank">${b.v==null?"–":i+1}</span>
-      <span class="chip${g?"":" none"}">${g||"–"}</span>
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}${mine?" · you've reviewed":""}</small></span>
+  const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid).map(r=>r.member));
+  const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
+  $("boardTitle").textContent=ADMIN?"":me?`You've reviewed ${done.length} of ${ms.length}`:"Who are you reviewing?";
+  $("boardNote").hidden=ADMIN||!me||!ms.length;
+  if(!$("boardNote").hidden) $("boardNote").innerHTML=todo.length?`Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work.";
+  $("memList").innerHTML=!ADMIN&&ms.length?[...todo,...done].map(m=>{
+    const mine=doneIds.has(m.id);
+    return `<div class="member pick-row${mine?" done":""}">
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small><span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -1644,8 +1730,9 @@ function selfVsCrew(rows,avg){
   let gaps=null;
   if(selfCats&&crewCats&&(isSelf?otherRevs.length:true)) gaps=CATS.filter(c=>selfCats[c.id]!=null&&crewCats[c.id]!=null).map(c=>({c,s:selfCats[c.id],k:crewCats[c.id],d:selfCats[c.id]-crewCats[c.id]})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
   const n=crewVals.length;
+  const hiddenSelf=!isSelf&&selfV==null&&!boardOpen();
   return {self:selfV,crew:crewV,crewN:n,isSelf,nm,gaps,
-    selfNote:isSelf?"How you rate yourself":(selfV==null?`${esc(nm)} hasn't done a self review yet`:`How ${esc(nm)} rates themselves`),
+    selfNote:isSelf?"How you rate yourself":(hiddenSelf?"Shows once the crew admin switches on the leaderboard":selfV==null?`${esc(nm)} hasn't done a self review yet`:`How ${esc(nm)} rates themselves`),
     crewNote:n?`Average of ${n} review${n===1?"":"s"} from the crew${isSelf?"":" (including yours)"}`:(isSelf?"No one in the crew has reviewed you yet":"")};
 }
 function paintViews(rows,avg){
@@ -1725,7 +1812,7 @@ saveBtn.addEventListener("click",saveReview);
 nextBtn.addEventListener("click",async()=>{
   if(!target){
     if(!me){needMe("");return}
-    if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in the leaderboard. Your answers are kept.`,true);toTop();return}
+    if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in your crew list. Your answers are kept.`,true);toTop();return}
     return clearReview();
   }
   if(last&&last.avg!=null){if(!(await saveReview()))return; crewNote(`Saved your review of <b>${esc(target.name)}</b>. Pick the next person below.`)}
