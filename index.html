@@ -860,7 +860,7 @@ resetBtn.addEventListener("click",()=>{
 <script type="module">
 /* ---------- Review Crew on Firebase (Google sign-in + Firestore) ---------- */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $=id=>document.getElementById(id);
@@ -1150,14 +1150,25 @@ async function forgetCrew(id){
 }
 
 /* ---------- Join A Crew: search by name, then the crew password ---------- */
+function guestFail(x,retry){
+  const c=x&&x.code||"";
+  const msg=c==="auth/operation-not-allowed"||c==="auth/admin-restricted-operation"?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase (Authentication → Sign-in method)."
+    :c==="timeout"?"Couldn't reach the sign-in service (it took too long). Check your connection, or turn off content blockers and iCloud Private Relay for this site, then try again."
+    :c==="auth/network-request-failed"?"Couldn't reach the sign-in service. Check your connection and try again."
+    :errText(x);
+  body.innerHTML=`<div class="stack"><p class="err">${esc(msg)}</p><div class="row-btns"><button type="button" id="guestRetry">Try again</button></div></div>`;
+  $("guestRetry").onclick=retry;
+}
 async function startJoin(){
   if(ADMIN){location.href=JOIN_PATH;return}
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   if(!auth){famErr("Crews aren't connected yet.");return}
+  if(!user&&auth.currentUser) user=auth.currentUser;
   if(!user){
     body.innerHTML=`<p class="muted">Getting ready…</p>`;
-    afterAuth=viewJoin;
-    try{await signInAnonymously(auth)}catch(x){afterAuth=null;viewSignedOut(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase.":errText(x))}
+    afterAuth=()=>{if(!$("jq"))viewJoin()};
+    try{const c=await withTimeout(signInAnonymously(auth),15000,"Getting ready");user=c.user;if(!$("jq"))viewJoin()}
+    catch(x){afterAuth=null;guestFail(x,startJoin)}
     return;
   }
   viewJoin();
@@ -1942,22 +1953,39 @@ async function loadConfig(){
   if(p.get("crew")&&p.get("code")) invite={crew:p.get("crew"),code:p.get("code")};
   const cfg=await loadConfig();
   if(!cfg){body.innerHTML=`<p class="muted">Crews aren't connected yet. Follow the setup guide to link this site to Firebase. You can still do a review on your own below.</p>`;render();return}
-  const app=initializeApp(cfg);
-  /* No popup/redirect helper at start-up: Safari often blocks the hidden firebaseapp.com frame it loads,
-     which used to stop the sign-in check from ever finishing. The helper is only used when someone taps Google sign-in. */
-  auth=initializeAuth(app,{persistence:[indexedDBLocalPersistence,browserLocalPersistence]}); db=getFirestore(app);
+  /* Sign-in start-up. Firebase normally keeps the signed-in person in IndexedDB, which can freeze in Safari
+     on iPad so the sign-in check never answers. If nothing comes back within 6 seconds we switch to a backup
+     that keeps sign-in in localStorage instead, and remember that for next time on this device. */
+  const LS_AUTH="rmy-authmode";
+  let authGen=0, gotAuth=false, authWatch=0;
+  const useLocal=()=>{try{return localStorage.getItem(LS_AUTH)==="local"}catch(e){return false}};
+  function startAuth(local){
+    const gen=++authGen;
+    const a=local?initializeApp(cfg,"rmy-local"):initializeApp(cfg);
+    auth=initializeAuth(a,{persistence:local?[browserLocalPersistence,inMemoryPersistence]:[indexedDBLocalPersistence,browserLocalPersistence]});
+    db=getFirestore(a);
+    onAuthStateChanged(auth,u=>{if(gen!==authGen)return;gotAuth=true;clearTimeout(authWatch);onAuth(u)});
+  }
+  const local0=useLocal();
+  startAuth(local0);
+  if(!local0) setTimeout(()=>{
+    if(gotAuth) return;
+    try{localStorage.setItem(LS_AUTH,"local")}catch(e){}
+    status("Still connecting… switching to a backup sign-in");
+    startAuth(true);
+  },6000);
   if(p.get("emulator")==="1"){connectAuthEmulator(auth,"http://127.0.0.1:9099",{disableWarnings:true});connectFirestoreEmulator(db,"127.0.0.1",8080)}
   let wasRedirect=false;try{wasRedirect=sessionStorage.getItem("rmy-redirect")==="1";sessionStorage.removeItem("rmy-redirect")}catch(e){}
   if(wasRedirect) getRedirectResult(auth,browserPopupRedirectResolver).catch(()=>{});
   try{render()}catch(x){console.error(x)}
-  const authWatch=setTimeout(()=>{if(stillBusy())showFatal({code:"sign-in check timed out. Check your connection, or turn off content blockers for this site"})},15000);
-  onAuthStateChanged(auth,async u=>{ clearTimeout(authWatch); try{
+  authWatch=setTimeout(()=>{if(stillBusy()&&!gotAuth)showFatal({code:"sign-in check timed out. Check your connection, or turn off content blockers for this site"})},20000);
+  async function onAuth(u){ try{
     clearCrewSubs(); user=u; crew=null; crewId=""; target=null; myCrews=[];
     if(JOIN){
       if(!u){
         if(guestTried){viewSignedOut();return}
         guestTried=true; body.innerHTML=`<p class="muted">Getting ready…</p>`;
-        try{await signInAnonymously(auth)}catch(x){body.innerHTML=`<p class="err">${esc(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase (Authentication → Sign-in method).":errText(x))}</p>`}
+        try{await withTimeout(signInAnonymously(auth),15000,"Getting ready")}catch(x){guestFail(x,()=>location.reload())}
         return;
       }
       status("Loading your crews…");
@@ -1969,7 +1997,7 @@ async function loadConfig(){
       if(invite&&!guestTried&&!ADMIN){
         guestTried=true;
         body.innerHTML=`<p class="muted">Joining the crew…</p>`;
-        try{await signInAnonymously(auth)}catch(x){viewSignedOut(x&&(x.code==="auth/operation-not-allowed"||x.code==="auth/admin-restricted-operation")?"Guest joining isn't switched on yet. Ask the crew admin to turn on Anonymous sign-in in Firebase.":errText(x))}
+        try{await withTimeout(signInAnonymously(auth),15000,"Joining the crew")}catch(x){guestFail(x,()=>location.reload())}
         return;
       }
       viewSignedOut();return;
@@ -1985,7 +2013,7 @@ async function loadConfig(){
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);
     else if(myCrews.length===1) openCrew(myCrews[0].id);
     else viewLobby();
-  }catch(x){console.error(x);showFatal(x)} });
+  }catch(x){console.error(x);showFatal(x)} }
 }catch(x){console.error(x);showFatal(x)} })();
 
 </script>
