@@ -267,6 +267,10 @@ details.more{border-top:1px dashed var(--line);padding-top:12px}
 button.danger{background:transparent;color:var(--gE);box-shadow:inset 0 0 0 1.5px var(--gE)}
 @media (max-width:520px){.mrow{grid-template-columns:1fr;gap:4px}}
 .topnav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.menu{display:flex;gap:8px;flex-wrap:wrap}
+.menu a{font-family:var(--display);font-weight:400;font-size:clamp(16px,2.6vw,20px);line-height:1;text-decoration:none;color:var(--green);padding:10px 18px;border-radius:999px;border:2px solid var(--green);background:var(--panel)}
+.menu a[aria-current="page"],.menu a[aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -4px 0 var(--gold)}
+.menu a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .topnav .brand{font-family:var(--display);font-size:18px;color:var(--green);text-decoration:none}
 .topbtn{display:inline-flex;align-items:center;font-weight:700;text-decoration:none;background:var(--green);color:var(--panel);padding:10px 18px;border-radius:999px}
 .topbtn.ghostbtn{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
@@ -356,20 +360,19 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
 <body class="admin-page">
 
 <div class="wrap">
-  <nav class="topnav">
-    <a class="brand" href="./">About Rate My Year</a>
-    <a class="topbtn ghostbtn admin-only join-only" href="review.html">&larr; Back to reviews</a>
+  <nav class="topnav" aria-label="Main">
+    <div class="menu">
+      <a id="navAbout" href="./">About</a>
+      <a id="choiceJoin" href="review.html?go=join">Join</a>
+      <a id="choiceCreate" href="mycrew.html">Create</a>
+    </div>
+    <button type="button" id="choiceRate" aria-pressed="true" hidden>Rate Me</button>
   </nav>
   <header class="admin-only admin-hero">
     <div class="eyebrow">Rate My Year · Crew admin</div>
     <h1>My <span>Crew</span></h1>
     <p class="lede">Set up your crew, add the people, send the invite link and see everyone's results. Your crew don't need to sign in: they just open the link, pick their name and start reviewing.</p>
   </header>
-  <div class="choicebar review-only" role="group" aria-label="Get started">
-    <button type="button" id="choiceRate" aria-pressed="true" hidden>Rate Me</button>
-    <button type="button" id="choiceJoin" aria-pressed="false">Join A Crew</button>
-    <a id="choiceCreate" href="mycrew.html">Create A Crew</a>
-  </div>
   <div class="ratebar review-only" role="radiogroup" aria-label="Who are you rating?">
     <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
     <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>See how well your family is functioning</small></span></label>
@@ -947,6 +950,10 @@ const PAGE=window.RMY_PAGE||"review";
 const ADMIN=PAGE==="admin";                       // My Crew page
 const JOIN=PAGE==="join";                         // Join A Crew page
 const HOME_PATH=location.pathname.replace(/[^/]*$/,"");      // the landing page
+/* Menu: mark the page you're on; show "My Crew" straight away if this device was signed in last time. */
+if(ADMIN) document.getElementById("choiceCreate").setAttribute("aria-current","page");
+if(JOIN) document.getElementById("choiceJoin").setAttribute("aria-current","page");
+try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("choiceCreate").textContent="My Crew"}catch(e){}
 const REVIEW_PATH=HOME_PATH+"review.html";
 const MYCREW_PATH=HOME_PATH+"mycrew.html";
 const JOIN_PATH=HOME_PATH+"join.html";
@@ -1656,7 +1663,8 @@ async function resetAll(){
 /* Signed in with Google (or running a crew) → "My Crew"; otherwise "Create A Crew". */
 function paintCreate(){
   const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
-  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create A Crew";
+  try{localStorage.setItem("rmy-signedin",mine?"1":"0")}catch(e){}
+  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create";
   const eb=$("endCreate"); if(eb) eb.innerHTML=mine?"<b>My Crew</b><small>Your crew, invite link and everyone's reports</small>":"<b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small>";
 }
 function renderBoard(){
@@ -2016,7 +2024,7 @@ if(REVIEW_PAGE){
     $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
     if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
   };
-  $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
+  $("choiceJoin").onclick=e=>{e.preventDefault();entry="join";paintEntry();startJoin()};
   $("endJoin").onclick=()=>$("choiceJoin").click();
   /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
   ["who-family","who-mate","who-me"].forEach(id=>$(id).addEventListener("change",()=>{

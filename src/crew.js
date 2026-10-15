@@ -12,6 +12,10 @@ const PAGE=window.RMY_PAGE||"review";
 const ADMIN=PAGE==="admin";                       // My Crew page
 const JOIN=PAGE==="join";                         // Join A Crew page
 const HOME_PATH=location.pathname.replace(/[^/]*$/,"");      // the landing page
+/* Menu: mark the page you're on; show "My Crew" straight away if this device was signed in last time. */
+if(ADMIN) document.getElementById("choiceCreate").setAttribute("aria-current","page");
+if(JOIN) document.getElementById("choiceJoin").setAttribute("aria-current","page");
+try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("choiceCreate").textContent="My Crew"}catch(e){}
 const REVIEW_PATH=HOME_PATH+"review.html";
 const MYCREW_PATH=HOME_PATH+"mycrew.html";
 const JOIN_PATH=HOME_PATH+"join.html";
@@ -721,7 +725,8 @@ async function resetAll(){
 /* Signed in with Google (or running a crew) → "My Crew"; otherwise "Create A Crew". */
 function paintCreate(){
   const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
-  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create A Crew";
+  try{localStorage.setItem("rmy-signedin",mine?"1":"0")}catch(e){}
+  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create";
   const eb=$("endCreate"); if(eb) eb.innerHTML=mine?"<b>My Crew</b><small>Your crew, invite link and everyone's reports</small>":"<b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small>";
 }
 function renderBoard(){
@@ -1081,7 +1086,7 @@ if(REVIEW_PAGE){
     $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
     if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
   };
-  $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
+  $("choiceJoin").onclick=e=>{e.preventDefault();entry="join";paintEntry();startJoin()};
   $("endJoin").onclick=()=>$("choiceJoin").click();
   /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
   ["who-family","who-mate","who-me"].forEach(id=>$(id).addEventListener("change",()=>{
