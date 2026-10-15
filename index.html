@@ -58,14 +58,16 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
 /* example report card */
 .card{background:var(--panel);border:2px solid var(--green);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,77,50,.12)}
-.card-top{background:#0f4d32;color:#eef1ec;padding:20px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
+.card-top{background:#0f4d32;color:#eef1ec;padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
+.card-top .rt-row{display:contents}.card-top .hview.s{grid-area:self}.card-top .hview.c{grid-area:crew}
+.card-text{grid-area:text;display:flex;flex-direction:column;gap:8px;align-items:center}
 .rt-row{display:flex;justify-content:center;gap:clamp(28px,8vw,72px);width:100%}
 .hview{display:flex;flex-direction:column;align-items:center;gap:8px}
 .big.tilt{transform:rotate(3deg)}
 .hview .hl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#f2b705}
 .hg{font-family:var(--display);font-size:20px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
 .hview .hn{font-family:var(--mono);font-weight:700}
-.big{font-family:var(--display);font-size:56px;width:108px;height:108px;border-radius:14px;background:#f2b705;color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
+.big{font-family:var(--display);font-size:48px;width:96px;height:96px;border-radius:14px;background:#f2b705;color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
 .pill{display:inline-block;background:#f2b705;color:#14231b;font-family:var(--display);font-size:14px;padding:3px 10px;border-radius:999px}
 .card-title{font-family:var(--display);font-size:clamp(22px,3.6vw,30px);line-height:1}
 .card-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
@@ -150,7 +152,8 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   .benefits{grid-template-columns:1fr 1fr}
 }
 @media (max-width:440px){
-  .big{width:92px;height:92px;font-size:44px}
+  .big{width:84px;height:84px;font-size:40px}
+  .card-top{grid-template-columns:1fr 1fr;grid-template-areas:"self crew" "text text"}
   .benefits{grid-template-columns:1fr}
   .row{grid-template-columns:20px auto 1fr}.row .tag{grid-column:3}
 }
@@ -183,12 +186,14 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <article class="card" aria-label="Example report card">
       <div class="card-top">
         <div class="rt-row">
-          <div class="hview"><span class="hl">Self</span><span class="big">B+</span><span class="hn">8.1 / 10</span></div>
-          <div class="hview"><span class="hl">Crew</span><span class="big tilt">C</span><span class="hn">6.3 / 10</span></div>
+          <div class="hview s"><span class="hl">Self</span><span class="big">B+</span><span class="hn">8.1 / 10</span></div>
+          <div class="hview c"><span class="hl">Crew</span><span class="big tilt">C</span><span class="hn">6.3 / 10</span></div>
         </div>
-        <span class="pill">Family Review</span>
-        <div class="card-title">Sam Family Report Card</div>
-        <div style="font-weight:700">Middle of the ladder. Room to climb.</div>
+        <div class="card-text">
+          <span class="pill">Family Review</span>
+          <div class="card-title">Sam Family Report Card</div>
+          <div style="font-weight:700">Middle of the ladder. Room to climb.</div>
+        </div>
       </div>
       <div class="card-body">
         <div class="leftcol">

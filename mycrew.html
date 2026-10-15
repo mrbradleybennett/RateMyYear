@@ -79,12 +79,16 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 
 /* Report card */
 .report{background:var(--panel);border:2px solid var(--green);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
-.report-top{background:var(--green);color:var(--bg);padding:22px 20px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center}
+/* Header: Self on the left, title in the middle, Crew on the right (single big grade on the left when there's nothing to compare). */
+.report-top{background:var(--green);color:var(--bg);padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
+.report-top .rt-row{display:contents}
+#viewSelf,#bigGrade{grid-area:self} #viewCrew{grid-area:crew} .report-top .overall-text{grid-area:text}
+@media (max-width:560px){.report-top{grid-template-columns:1fr 1fr;grid-template-areas:"self crew" "text text"}#bigGrade{grid-column:1/-1;justify-self:center}}
 .report-top .overall-text{align-items:center}.report-top .rkind{align-self:center}
 .rt-row{display:flex;justify-content:center;align-items:flex-start;gap:clamp(24px,8vw,72px);width:100%}
-.hview{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;max-width:200px}
+.hview{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;max-width:160px}
 .hview[hidden],.big[hidden]{display:none}
-.hbig{font-family:var(--display);font-size:clamp(44px,9vw,62px);line-height:1;width:clamp(96px,20vw,120px);height:clamp(96px,20vw,120px);border-radius:14px;background:var(--gold);color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
+.hbig{font-family:var(--display);font-size:clamp(40px,7vw,54px);line-height:1;width:clamp(84px,15vw,104px);height:clamp(84px,15vw,104px);border-radius:14px;background:var(--gold);color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
 #viewCrew .hbig{transform:rotate(3deg)}
 .hview .hl{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
 .hview .hg{font-family:var(--display);font-size:24px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g,rgba(255,255,255,.15))}
