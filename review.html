@@ -282,6 +282,9 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .qlow{font-size:14px;color:var(--muted)}.qlow b{color:var(--ink);font-family:var(--mono)}.qnote{margin:6px 0 0;font-size:14px}
 .herotag{font-weight:700;font-size:19px;line-height:1.35;color:var(--green);margin:12px 0 0;max-width:34ch}
 .herotag[hidden]{display:none}
+.whoseg{display:inline-flex;border:2px solid var(--green);border-radius:999px;overflow:hidden;flex:none}
+.whoseg button{font:inherit;font-weight:700;background:transparent;color:var(--green);border:0;border-radius:0;padding:8px 16px;cursor:pointer}
+.whoseg button[aria-pressed="true"]{background:var(--green);color:var(--panel)}
 .ratebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
 .ratebar label{position:relative;cursor:pointer;min-width:0}
@@ -307,6 +310,8 @@ body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHin
 .board-h{margin:6px 0 0;font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}
 .member.pick-row{grid-template-columns:1fr auto}.member.board-row.done .nm{opacity:.85}
 .blurred{filter:blur(5px);user-select:none}
+.award{display:inline-block;font-family:var(--display);font-weight:400;font-size:13px;background:var(--gold);color:#14231b;padding:2px 9px;border-radius:999px;transform:rotate(-2deg);margin-left:4px;vertical-align:2px}
+.member.board-row.best{box-shadow:inset 0 0 0 2px var(--gold)}
 .crewscore{display:flex;align-items:center;gap:14px;background:var(--green);color:var(--panel);border-radius:12px;padding:12px 16px}.crewscore[hidden]{display:none}
 .cs-chip{font-family:var(--display);font-size:26px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;flex:none;box-shadow:0 0 0 3px var(--gold)}
 .cs-txt{display:flex;flex-direction:column;min-width:0}.cs-txt b{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
@@ -383,7 +388,8 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <button id="famLeave" class="ghost sm" type="button" hidden>Leave crew</button>
     </div>
     <div class="namerow review-only">
-      <label for="name" id="nameLabel">Your name</label>
+      <div class="whoseg" role="group" aria-label="Who are you rating?"><button type="button" id="whoMe" aria-pressed="true">Me</button><button type="button" id="whoOther" aria-pressed="false">Someone else</button></div>
+      <label for="name" id="nameLabel">Name:</label>
       <input id="name" type="text" placeholder="e.g. Brad" autocomplete="off">
       <select id="famPick" hidden style="font:inherit;padding:8px 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1;max-width:280px"></select>
     </div>
@@ -654,11 +660,15 @@ CATS.forEach((c,ci)=>{
 }
 /* Every assessment starts in summary mode: detailed questions closed until someone opens them. */
 function applyMode(){CATS.forEach(c=>{const d=$m("d-"+c.id);if(d)d.open=false})}
+/* Me / Someone else: "Someone else" keeps the last family-or-mates choice (family by default). */
+const pickWho=w=>{const r=$m("who-"+w);if(r&&!r.checked){r.checked=true;r.dispatchEvent(new Event("change",{bubbles:true}))}};
+$m("whoMe").onclick=()=>pickWho("me");
+$m("whoOther").onclick=()=>pickWho(state.other==="mate"?"mate":"family");
 const nameEl=$m("name");nameEl.value=state.name||"";
 nameEl.addEventListener("input",()=>{state.name=nameEl.value.trim();save();render()});
 document.querySelectorAll('input[name=who]').forEach(r=>{
   r.checked=r.value===state.who;
-  r.addEventListener("change",()=>{state.who=r.value;delete state.qset;save();render()});
+  r.addEventListener("change",()=>{state.who=r.value;if(r.value!=="me")state.other=r.value;delete state.qset;save();render()});
 });
 
 /* ---------- wheel (drawn twice: header and report card) ---------- */
@@ -751,7 +761,8 @@ function render(){
   $m("lede").textContent=me
     ?`${how} Drag each slider to where you honestly sit right now, or tick Don't know to skip it.`
     :`${how} Drag each slider to where you reckon your ${state.who==="mate"?"mate":"family member"} sits right now, or tick Don't know to skip it. Be honest and fair.`;
-  $m("nameLabel").textContent=me?"Your name":(state.who==="mate"?"Your mate's name":"Their name");
+  $m("nameLabel").textContent="Name:";
+  $m("whoMe").setAttribute("aria-pressed",me); $m("whoOther").setAttribute("aria-pressed",!me);
   nameEl.placeholder=me?"e.g. Brad":(state.who==="mate"?"e.g. Dave":"e.g. Mum");
 
   const rows=CATS.map((c,ci)=>{
@@ -1674,9 +1685,10 @@ function refresh(){
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     const score=open?(b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
-    return `<div class="member board-row${mine?" done":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
+    const award=open&&crew.type==="mates"&&i===0&&b.v!=null&&ranked.filter(x=>x.b.v!=null).length>=2;
+    return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 Best Bloke Award</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}

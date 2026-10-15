@@ -36,6 +36,10 @@ a{color:inherit}
 .top{display:flex;flex-direction:column;gap:14px}
 .choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none}
+.choicebar.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.choicebar.two a{flex-direction:column;gap:6px;min-height:84px;padding:14px}
+.choicebar.two a b{font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
+.choicebar.two a small{font-family:var(--body);font-size:15px;font-weight:600;opacity:.9}
 .choicebar a.main{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
 .choicebar a:focus-visible,.toggle button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
@@ -119,6 +123,10 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .row .n{font-weight:700;display:flex;flex-direction:column}.row .n small{font-weight:500;color:var(--muted);font-size:13px}
 .tag{font-family:var(--display);font-size:12px;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .tag.best{background:#f2b705;color:#14231b}.tag.notice{background:var(--gE);color:#fff}.tag.hold{background:var(--gA);color:#fff}.tag.help{background:var(--gD);color:#fff}
+.improve{border-top:1.5px solid var(--line);padding-top:10px;margin-top:2px;display:flex;flex-direction:column;gap:8px}
+.improve>b{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.imp{border-left:4px solid var(--gD);background:var(--soft);border-radius:0 8px 8px 0;padding:8px 12px;font-size:15px;display:flex;flex-direction:column;gap:2px}
+.imp .area{font-family:var(--display);font-size:14px;color:var(--green)}
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .twocol .sec-head{margin-bottom:12px}
 
@@ -150,10 +158,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
   <header class="top">
     <a class="brand" href="./">About Rate My Year</a>
-    <nav class="choicebar" aria-label="Get started">
-      <a class="main" href="review.html?who=me">Rate Me</a>
-      <a href="review.html?go=join">Join A Crew</a>
-      <a href="mycrew.html">Create A Crew</a>
+    <nav class="choicebar two" aria-label="Get started">
+      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
+      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
     </nav>
   </header>
 
@@ -237,6 +244,10 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Nikki<small>7.5 / 10 · 4 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C+</span><span class="n">Dad<small>6.6 / 10 · 3 reviews</small></span></div>
           <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag help">Needs a hand</span></div>
+          <div class="improve"><b>What the crew could work on together</b>
+            <div class="imp"><span class="area">Cleanliness · D+</span>Clean up as you go: dishes away, clothes off the floor.</div>
+            <div class="imp"><span class="area">Action · C-</span>Do the worst job first thing each morning.</div>
+          </div>
         </div>
       </div>
       <div>
@@ -244,10 +255,14 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
         <div class="crewcard" aria-label="Example mates leaderboard">
           <div class="ch"><b>Friday Footy</b><span class="eyebrow">Mates crew</span></div>
           <div class="crewscore" style="--g:var(--gC)"><span class="cc">C+</span><div><b>Crew score</b><span>6.6 / 10</span></div></div>
-          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">Best bloke</span></div>
+          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 Best Bloke Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
           <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">On notice</span></div>
+          <div class="improve"><b>What the crew could work on together</b>
+            <div class="imp"><span class="area">Reliable · D</span>Stop saying maybe. Give a straight yes or no.</div>
+            <div class="imp"><span class="area">Cleanliness · D+</span>Shower, deodorant, clean clothes: every time you head out.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -275,10 +290,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
   <section class="bottom">
     <h2>Ready to <span>find out?</span></h2>
-    <nav class="choicebar" aria-label="Get started" style="width:100%">
-      <a class="main" href="review.html?who=me">Rate Me</a>
-      <a href="review.html?go=join">Join A Crew</a>
-      <a href="mycrew.html">Create A Crew</a>
+    <nav class="choicebar two" aria-label="Get started" style="width:100%">
+      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
+      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
     </nav>
   </section>
 

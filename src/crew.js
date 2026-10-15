@@ -785,9 +785,10 @@ function refresh(){
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     const score=open?(b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
-    return `<div class="member board-row${mine?" done":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
+    const award=open&&crew.type==="mates"&&i===0&&b.v!=null&&ranked.filter(x=>x.b.v!=null).length>=2;
+    return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 Best Bloke Award</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
