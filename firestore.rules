@@ -55,41 +55,39 @@ service cloud.firestore {
         allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
       }
 
-      // Which account is which person in the crew ("I am").
-      // Each account holds at most one claim: the claim and the account's
-      // pointer (accounts/{uid}) are written together, and any earlier claim
-      // must be deleted in the same batch.
-      match /claims/{memberId} {
-        allow read: if isMember(c);
-        allow create: if isMember(c)
-          && request.resource.data.uid == request.auth.uid
-          && getAfter(docAt(c, 'accounts', request.auth.uid)).data.member == memberId
-          && (!exists(docAt(c, 'accounts', request.auth.uid))
-              || get(docAt(c, 'accounts', request.auth.uid)).data.member == memberId
-              || !existsAfter(docAt(c, 'claims', get(docAt(c, 'accounts', request.auth.uid)).data.member)));
-        allow delete: if isAdmin(c) || (signedIn() && resource.data.uid == request.auth.uid);
-      }
+      // Which person each account is in the crew ("I am"): accounts/{uid} = {member}.
+      // Several accounts (devices) can be the same person. claims/{memberId} records the
+      // latest account to pick that name, for the admin tools.
       match /accounts/{uid} {
         allow read: if isMember(c);
         allow create, update: if isMember(c) && uid == request.auth.uid
-          && getAfter(docAt(c, 'claims', request.resource.data.member)).data.uid == request.auth.uid;
+          && request.resource.data.member is string;
         allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
+      }
+      match /claims/{memberId} {
+        allow read: if isMember(c);
+        allow create, update: if isMember(c)
+          && request.resource.data.uid == request.auth.uid
+          && getAfter(docAt(c, 'accounts', request.auth.uid)).data.member == memberId;
+        allow delete: if isAdmin(c) || (signedIn() && resource.data.uid == request.auth.uid);
       }
 
       match /reviews/{reviewId} {
+        // Admins read all; you read reviews you wrote (on any of your devices) and reviews about you.
         allow read: if isAdmin(c)
           || (isMember(c) && resource.data.reviewerUid == request.auth.uid)
-          || (isMember(c) && get(/databases/$(database)/documents/crews/$(c)/claims/$(resource.data.member)).data.uid == request.auth.uid);
+          || (isMember(c) && get(docAt(c, 'accounts', request.auth.uid)).data.member == resource.data.member)
+          || (isMember(c) && get(docAt(c, 'accounts', request.auth.uid)).data.member == resource.data.reviewer);
         allow create: if isMember(c)
           && request.resource.data.reviewerUid == request.auth.uid
           && reviewId == request.auth.uid + '_' + request.resource.data.member
-          && get(docAt(c, 'claims', request.resource.data.reviewer)).data.uid == request.auth.uid;
+          && get(docAt(c, 'accounts', request.auth.uid)).data.member == request.resource.data.reviewer;
         allow update: if isMember(c)
           && resource.data.reviewerUid == request.auth.uid
           && request.resource.data.reviewerUid == request.auth.uid
           && request.resource.data.member == resource.data.member
           && (!('boardKey' in resource.data) || request.resource.data.get('boardKey', '') == resource.data.boardKey)
-          && get(docAt(c, 'claims', request.resource.data.reviewer)).data.uid == request.auth.uid;
+          && get(docAt(c, 'accounts', request.auth.uid)).data.member == request.resource.data.reviewer;
         // Only crew admins delete reviews, so nobody can delete and re-add to stack the leaderboard.
         allow delete: if isAdmin(c);
       }

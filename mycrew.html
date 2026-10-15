@@ -955,10 +955,10 @@ const parseInvite=s=>{
   try{const u=new URL(s);const c=u.searchParams.get("crew"),k=u.searchParams.get("code");if(c&&k)return {crew:c,code:k}}catch(e){}
   const m=s.match(/^([a-z0-9]{6,40})[-\s:]+([a-z0-9]{4,40})$/i); return m?{crew:m[1],code:m[2]}:null;
 };
-/* Claim a person in the crew ("I am"): one claim per account, written together with the account pointer. */
+/* "I am": each device/account says who it is in accounts/{uid}. Several devices can be the same person.
+   claims/{memberId} just records the latest account to pick that name (used for admin tools). */
 async function claimMember(cid,memberId,oldMemberId){
   const b=writeBatch(db);
-  if(oldMemberId&&oldMemberId!==memberId) b.delete(doc(db,"crews",cid,"claims",oldMemberId));
   b.set(doc(db,"crews",cid,"accounts",user.uid),{member:memberId});
   b.set(doc(db,"crews",cid,"claims",memberId),{uid:user.uid,at:Date.now()});
   await b.commit();
@@ -1277,10 +1277,15 @@ function openCrew(id){
     crew=s.data(); syncReviewSubs(); syncBoardSub(); refresh();
   },x=>{leaveLocal(x&&x.code==="permission-denied"?"You're no longer in that crew.":errText(x))}));
   boardById={}; boardSubOn=false;
+  let myMember="";
+  const pickMe=()=>{me=myMember&&isMember(myMember)?myMember:"";syncReviewSubs();refresh()};
+  unsubs.push(onSnapshot(doc(db,"crews",id,"accounts",user.uid),s=>{
+    myMember=s.exists()?(s.data().member||""):""; pickMe();
+  },()=>{}));
   unsubs.push(onSnapshot(collection(db,"crews",id,"claims"),s=>{
     claims={}; s.docs.forEach(d=>claims[d.id]=d.data().uid);
-    me=Object.keys(claims).find(k=>claims[k]===user.uid)||"";
-    syncReviewSubs(); refresh();
+    if(!myMember){const old=Object.keys(claims).find(k=>claims[k]===user.uid);if(old)myMember=old}
+    pickMe();
   },()=>{}));
 }
 function syncReviewSubs(){
@@ -1298,6 +1303,7 @@ function syncReviewSubs(){
   else{
     revUnsubs.push(onSnapshot(query(col,where("reviewerUid","==",user.uid)),merge("mine"),()=>{}));
     if(me) revUnsubs.push(onSnapshot(query(col,where("member","==",me)),merge("aboutMe"),()=>{}));
+    if(me) revUnsubs.push(onSnapshot(query(col,where("reviewer","==",me)),merge("byMe"),()=>{}));   // written on my other devices
   }
 }
 function leaveLocal(msg){
@@ -1384,7 +1390,7 @@ function viewCrewShell(){
       }else if(v){
         if(v!==me) await claimMember(crewId,v,me);
       }else if(me){
-        await deleteDoc(doc(db,"crews",crewId,"claims",me));
+        await deleteDoc(doc(db,"crews",crewId,"accounts",user.uid));
       }
       $("meNote").hidden=true;$("meField").classList.remove("attention");
       if(pending){const id=pending;pending="";setTimeout(()=>startReview(id),300)}
@@ -1465,7 +1471,7 @@ function managePanel(m,joined,isAdm,a){
   const nm=esc(m.name);
   const row=(act,label,desc,danger)=>`<div class="mrow"><button type="button" class="${danger?"danger":"ghost"} sm" data-act="${act}" data-id="${m.id}">${arm(act+":"+m.id)?"Tap again to confirm":label}</button><span>${desc}</span></div>`;
   return `<div class="manage" role="group" aria-label="Manage ${nm}">
-    ${joined&&!isMe?row("free","Free up name",`For when ${nm} changes phone or clears their browser. They pick their name again from the invite link. Their reviews are kept.`):""}
+    ${false?row("free","Free up name",`For when ${nm} changes phone or clears their browser. They pick their name again from the invite link. Their reviews are kept.`):""}
     ${joined&&!isMe&&!isOwnerSeat?row("admin",isAdm?"Remove admin":"Make admin",isAdm?`${nm} goes back to seeing only their own results.`:`${nm} will see everyone's reports and can manage the crew.`):""}
     ${row("reset","Reset",`Deletes the ${aboutThem} review${aboutThem===1?"":"s"} about ${nm} and the ${byThem} they wrote${joined&&!isMe?", and frees up their name":""}. ${isMe?"You stay":"They stay"} in the crew to start again.`,true)}
     ${!isMe&&!isOwnerSeat?row("delete","Delete",`Removes ${nm} from the crew, along with every review by and about them. This can't be undone.`,true):""}
@@ -1591,7 +1597,7 @@ function refresh(){
   if(!crew||!$("memList")) return;
   title.textContent=`Your crew: ${crew.name}`;
   const ms=members(), admin=isAdmin();
-  const taken=id=>claims[id]&&claims[id]!==user.uid;
+  const taken=id=>false;   // several devices can be the same person
   $("meWrap").hidden=ADMIN; $("addMeForm").hidden=ADMIN||$("addMeForm").hidden;
   $("notAdmin").hidden=!(ADMIN&&!admin); $("toMyCrew").hidden=ADMIN||!admin;
   $("addForm").hidden=!(ADMIN&&admin); $("memList").hidden=ADMIN&&!admin;
@@ -1626,7 +1632,7 @@ function refresh(){
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
-  const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid).map(r=>r.member));
+  const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid||(me&&r.reviewer===me)).map(r=>r.member));
   const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
   const open=boardOpen();
   $("boardTitle").textContent=ADMIN?"":"Crew leaderboard";
@@ -1655,7 +1661,7 @@ function refresh(){
       </span></div>`}).join("")
     :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
-    const mine=reviews().some(r=>r.member===m.id&&r.reviewerUid===user.uid);
+    const mine=reviews().some(r=>r.member===m.id&&(r.reviewerUid===user.uid||(me&&r.reviewer===me)));
     const canSee=ADMIN?admin:m.id===me;
     const joined=!!claims[m.id], isAdm=joined&&crew.adminUids.includes(claims[m.id]);
     return `<div class="member"${g&&canSee?` style="--g:${gcol(g)}"`:""}>
@@ -1719,7 +1725,8 @@ function startReview(id){
   if(!me) return needMe(id);
   const wasTarget=!!target;
   target={id,name:memberName(id)};
-  const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid);
+  // this device's review, or else the latest one this person saved on another device
+  const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid)||reviews().filter(r=>r.member===id&&r.reviewer===me).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0))[0];
   const carry=!wasTarget&&!existing&&(Object.keys(state.v).length||Object.keys(state.dk).length)&&setForType(memberType(id))===activeSet();
   state.who=id===me?"me":memberType(id); state.qset=setForType(memberType(id)); state.name=target.name;
   if(carry){useSet(activeSet());CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)})}
