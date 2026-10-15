@@ -127,6 +127,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .improve>b{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .imp{border-left:4px solid var(--gD);background:var(--soft);border-radius:0 8px 8px 0;padding:8px 12px;font-size:15px;display:flex;flex-direction:column;gap:2px}
 .imp .area{font-family:var(--display);font-size:14px;color:var(--green)}
+.leftcol{display:flex;flex-direction:column;gap:14px}
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .twocol .sec-head{margin-bottom:12px}
 
@@ -167,7 +168,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   <section class="hero">
     <div class="hero-text">
       <div class="eyebrow">Rate My Year · Season 2026</div>
-      <h1>Welcome to your End of Year <span>Performance Review</span></h1>
+      <h1>Your End of Year <span>Performance Review</span></h1>
       <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Review your own performance, or set up a crew and get anonymous feedback from family and friends.</p>
     </div>
   </section>
@@ -188,7 +189,13 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
         <div style="font-weight:700">Middle of the ladder. Room to climb.</div>
       </div>
       <div class="card-body">
-        <div class="wheel"><svg id="cardWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example report card wheel"></svg></div>
+        <div class="leftcol">
+          <div class="wheel"><svg id="cardWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example report card wheel"></svg></div>
+          <div class="improve"><b>How Sam can lift the bottom two</b>
+            <div class="imp" style="border-color:var(--gE)"><span class="area">Cleanliness · E+</span>Clean up as you go: dishes away, clothes off the floor.<br>Do a chore before anyone has to ask.</div>
+            <div class="imp"><span class="area">Action · D</span>Do the worst job first thing each morning.<br>Only say yes to what you'll really do, then write it down and tick it off.</div>
+          </div>
+        </div>
         <div class="lists">
           <div class="gaps"><b class="h">Biggest gaps: self vs crew</b><ul><li>Overall, Sam rates himself <b>1.8 higher</b> than the crew does.</li><li><b>Cleanliness</b>: Sam says 8, the crew says 3.5.</li><li><b>Love</b>: the crew rates Sam 2.0 higher than he does.</li></ul></div>
           <h3>Top 3</h3>
@@ -196,7 +203,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
           <div class="li" style="--g:var(--gA)"><span class="c">A-</span>Love<span class="s">8.6</span></div>
           <div class="li" style="--g:var(--gB)"><span class="c">B</span>Mates<span class="s">7.6</span></div>
           <h3>Bottom 3</h3>
-          <div class="li" style="--g:var(--gE)"><span class="c">E</span>Cleanliness<span class="s">3.5</span></div>
+          <div class="li" style="--g:var(--gE)"><span class="c">E+</span>Cleanliness<span class="s">3.5</span></div>
           <div class="li" style="--g:var(--gD)"><span class="c">D</span>Action<span class="s">4.6</span></div>
           <div class="li" style="--g:var(--gC)"><span class="c">C-</span>Health<span class="s">5.7</span></div>
         </div>
