@@ -11,9 +11,10 @@ const LS_CREW="ratemyyear-crew";
 const PAGE=window.RMY_PAGE||"review";
 const ADMIN=PAGE==="admin";                       // My Crew page
 const JOIN=PAGE==="join";                         // Join A Crew page
-const REVIEW_PATH=location.pathname.replace(/(mycrew|join)(\.html)?$/,"");
-const MYCREW_PATH=REVIEW_PATH+"mycrew.html";
-const JOIN_PATH=REVIEW_PATH+"join.html";
+const HOME_PATH=location.pathname.replace(/[^/]*$/,"");      // the landing page
+const REVIEW_PATH=HOME_PATH+"review.html";
+const MYCREW_PATH=HOME_PATH+"mycrew.html";
+const JOIN_PATH=HOME_PATH+"join.html";
 const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
@@ -1035,7 +1036,7 @@ soloBtn.addEventListener("click",async()=>{
 });
 
 /* ---------- main page entry: Rate Me / Join A Crew / Create A Crew ---------- */
-let entry="rate";
+let entry="rate", landJoin=false;
 const REVIEW_PAGE=!ADMIN&&!JOIN;
 function paintEntry(){
   if(!REVIEW_PAGE) return;
@@ -1070,7 +1071,7 @@ if(REVIEW_PAGE){
   const shareText=()=>{
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
-    return `${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
+    return `${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${HOME_PATH}`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
   async function record(channel,extra){
@@ -1131,7 +1132,7 @@ if(REVIEW_PAGE){
     $("shareGo").disabled=false;
     say2("Opening your email app… To include the picture, save it first and attach it.");
     const subject=`${cardTitle()}: ${grade(last.avg)} (Rate My Year)`;
-    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+REVIEW_PATH)}`;
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+HOME_PATH)}`;
   });
 }
 
@@ -1162,6 +1163,8 @@ async function loadConfig(){
   }
   const local0=useLocal();
   startAuth(local0);
+  if(REVIEW_PAGE&&LAND.get("go")==="join"&&!invite){entry="join";paintEntry()}
+  if(LAND.get("who")||LAND.get("go")) history.replaceState(null,"",location.pathname);
   if(!local0) setTimeout(()=>{
     if(gotAuth) return;
     try{localStorage.setItem(LS_AUTH,"local")}catch(e){}
@@ -1194,6 +1197,7 @@ async function loadConfig(){
         try{await withTimeout(signInAnonymously(auth),15000,"Joining the crew")}catch(x){guestFail(x,()=>location.reload())}
         return;
       }
+      if(REVIEW_PAGE&&entry==="join"&&!landJoin){landJoin=true;return startJoin()}
       viewSignedOut();return;
     }
     status("Loading your crews…");
@@ -1203,6 +1207,7 @@ async function loadConfig(){
     if(loadErr&&loadErr.code!=="permission-denied"&&!myCrews.length){body.innerHTML=`<p class="err">Couldn't load your crews: ${esc(errText(loadErr))}</p><p class="muted">Check your connection and reload. If it keeps happening, send a screenshot of this message.</p><div class="row-btns"><button type="button" id="bootReload">Reload</button></div>`;$("bootReload").onclick=()=>location.reload();return}
     if(afterAuth){const f=afterAuth;afterAuth=null;return f()}
     if(invite&&!ADMIN) return joinCrew(invite);
+    if(REVIEW_PAGE&&entry==="join"&&!landJoin){landJoin=true;return startJoin()}
     const lastCrew=loadLS();
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);
     else if(myCrews.length===1) openCrew(myCrews[0].id);

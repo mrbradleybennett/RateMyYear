@@ -2,6 +2,8 @@
 
 A one-page website for rating yourself, your mates and your family across the areas of life that matter.
 
+**Pages:** `index.html` is the landing page that introduces the site. `review.html` is the review tool, `mycrew.html` is for crew admins, and `join.html` is the Join A Crew page. The landing page links in with `review.html?who=me|family|mate` and `review.html?go=join`, and it forwards old invite links (`/?crew=…&code=…`) to `review.html`.
+
 **Getting started:** the top of the main page has **Rate Me**, **Join A Crew** (crew search right on the page) and **Create A Crew** (goes to My Crew). Under them, **Rate My Family** and **Rate My Mates** switch to the matching questions and wheel.
 
 **End of the report card:** outside a crew it offers **Share Results**, **Join A Crew** and **Create A Crew**. In a crew it offers **Share Results** and **Save & Review Another** (saves the review and starts a clean one for the next person). Share Results makes a picture of the report card. On https, **Send picture** opens the phone's share sheet (Messages, WhatsApp and so on) with the picture attached. **WhatsApp** and **Text message** send a summary with an optional mobile number, **Save picture** downloads it, and email opens the mail app. Each send is recorded in the `shares` collection (channel, plus the email or mobile if given).
@@ -28,7 +30,7 @@ It runs on Firebase (Google), which is free at family and friends scale. Firebas
 
 | File | What it does |
 |---|---|
-| `index.html` | The review page: questions, wheel, report card, joining a crew from the invite link |
+| `review.html` | The review page: questions, wheel, report card, joining a crew from the invite link |
 | `join.html` | The **Join A Crew** page: search for a crew by name and enter the crew password |
 | `mycrew.html` | The **My Crew** page for crew admins: set up a crew, people, invite link, Manage, and all the reports |
 | `firebase-config.js` | Leave this alone if you deploy with Firebase Hosting. Fill it in only if you host the page somewhere else |
