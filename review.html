@@ -37,6 +37,7 @@ header{display:flex;flex-direction:column;gap:12px}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,9vw,68px);line-height:.95;margin:0;color:var(--green);text-wrap:balance}
 h1 span{display:inline-block;background:var(--gold);color:#14231b;padding:0 .18em;transform:rotate(-1.5deg)}
 .lede{margin:0;max-width:60ch;color:var(--muted)}
+ul.steps{padding-left:22px;display:flex;flex-direction:column;gap:4px;font-weight:600}
 
 .setup{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
 .fam legend{font-weight:700;padding:0;margin-bottom:8px}
@@ -285,6 +286,9 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .rkind{display:inline-block;align-self:flex-start;background:var(--gold);color:#14231b;font-family:var(--display);font-size:15px;letter-spacing:.02em;padding:4px 10px;border-radius:999px;margin-bottom:8px}
 .qtips{display:flex;flex-direction:column;gap:10px}.qtips li{display:flex;flex-direction:column;gap:2px}
 .qlow{font-size:14px;color:var(--muted)}.qlow b{color:var(--ink);font-family:var(--mono)}.qnote{margin:6px 0 0;font-size:14px}
+.heroawards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}.heroawards[hidden]{display:none}
+.heroawards .pop{font-family:var(--display);font-size:clamp(14px,2vw,17px);line-height:1.1;background:var(--gold);color:#14231b;padding:7px 12px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 #0f4d32}
+.heroawards .pop.low{background:var(--gE);color:#fff;transform:rotate(1.5deg)}
 .herotag{font-weight:700;font-size:19px;line-height:1.35;color:var(--green);margin:12px 0 0;max-width:34ch}
 .herotag[hidden]{display:none}
 .whoseg{display:inline-flex;border:2px solid var(--green);border-radius:999px;overflow:hidden;flex:none}
@@ -381,11 +385,12 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <div class="eyebrow">Rate My Year · Season 2026</div>
       <h1 id="heroH1">End Of Year <span>Review</span></h1>
       <p class="herotag" id="heroTag" hidden></p>
-      <p class="lede" id="lede"></p>
+      <ul class="lede steps" id="lede"></ul>
     </div>
     <figure class="wheel-wrap">
       <svg id="wheel" viewBox="-235 -140 470 280" role="img" aria-label="Grades for the 8 areas"></svg>
       <figcaption><span class="wlegend"></span><span>Bars fill as you score. Tap an area to jump to it.</span></figcaption>
+      <div class="heroawards" id="heroAwards" hidden></div>
     </figure>
   </header>
 
@@ -759,18 +764,16 @@ function tipsFor(c,max){const qs=c.qs.map((q,i)=>({i,v:state.dk[c.id+i]?null:sta
   return {targeted:qs.length>0,tips:qs.length?qs.slice(0,2).map(x=>c.tips[x.i]):c.tips.slice(0,max||3)}}
 const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
-  family:{h:"End Of Year <span>Family Review</span>",t:"Find out who the best family member is and who needs some family support."},
-  mates:{h:"End Of Year <span>Mate Review</span>",t:"Find out who the best bloke is in your crew and who should get cut loose."}};
+  family:{h:"End Of Year <span>Family Review</span>",t:"",awards:["🏆 Holding You All Together Award","🤝 Who Needs Some Family Support"]},
+  mates:{h:"End Of Year <span>Mate Review</span>",t:"",awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]}};
 function render(){
   useSet(activeSet());
   const hk=reviewKind();
   $m("reviewKind").textContent=KIND_LABEL[hk];
-  if($m("heroH1").dataset.k!==hk){$m("heroH1").dataset.k=hk;$m("heroH1").innerHTML=HEROES[hk].h;$m("heroTag").textContent=HEROES[hk].t;$m("heroTag").hidden=!HEROES[hk].t}
+  if($m("heroH1").dataset.k!==hk){$m("heroH1").dataset.k=hk;$m("heroH1").innerHTML=HEROES[hk].h;$m("heroTag").textContent=HEROES[hk].t;$m("heroTag").hidden=!HEROES[hk].t;
+    const aw=HEROES[hk].awards||[];$m("heroAwards").innerHTML=aw.map((t,i)=>`<span class="pop${i?" low":""}">${t}</span>`).join("");$m("heroAwards").hidden=!aw.length}
   const me=isMe(),w=words();
-  const how=NUMW[CATS.length]+" areas, one quick question each. Want more detail? Open the arrow under any area for three more questions, and the quick score moves to match their average.";
-  $m("lede").textContent=me
-    ?`${how} Drag each slider to where you honestly sit right now, or tick Don't know to skip it.`
-    :`${how} Drag each slider to where you reckon your ${state.who==="mate"?"mate":"family member"} sits right now, or tick Don't know to skip it. Be honest and fair.`;
+  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, one quick question each.`,"More detail under any area (if needed).","Drag each slider to score.","Tick Don't know to skip it."].map(t=>`<li>${t}</li>`).join("");
   $m("nameLabel").textContent="Name:";
   $m("whoMe").setAttribute("aria-pressed",me); $m("whoOther").setAttribute("aria-pressed",!me);
   nameEl.placeholder=me?"e.g. Brad":(state.who==="mate"?"e.g. Dave":"e.g. Mum");
@@ -1737,7 +1740,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&nScored>=3&&i===nScored-1;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Holding You All Together Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Put On Notice":"🤝 Needs Some Family Support"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Holding You All Together Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Who's On Notice":"🤝 Needs Some Family Support"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}

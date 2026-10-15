@@ -231,7 +231,6 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <div class="kind">
       <div>
         <h3 id="kTitle">Family Review</h3>
-        <p id="kText"></p>
         <div class="perfect"><span class="pf-h">Awards</span><div id="kAwards"></div></div>
         <div class="perfect"><span class="pf-h">Perfect for</span><div id="kFor"></div></div>
         <div class="areas" id="kAreas"></div>
@@ -273,7 +272,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
           <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 Best Bloke Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
-          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Put On Notice</span></div>
+          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Who's On Notice</span></div>
           <div class="improve"><b>What the crew could work on together</b>
             <div class="imp"><span class="area">Reliable · D</span>Stop saying maybe. Give a straight yes or no.</div>
             <div class="imp"><span class="area">Cleanliness · D+</span>Shower, deodorant, clean clothes: every time you head out.</div>
@@ -326,7 +325,7 @@ const SETS={
          title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
          text:"See who the BEST BLOKE is, and who needs to be PUT ON NOTICE.",
          perfect:["Groups of mates","Sporting clubs"],
-         awards:["🏆 Best Bloke Award","⚠️ Who's Going To Be Put On Notice"]}};
+         awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]}};
 const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
 const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
 const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
@@ -357,7 +356,6 @@ function showKind(k){
   document.getElementById("tFamily").setAttribute("aria-pressed",k==="family");
   document.getElementById("tMates").setAttribute("aria-pressed",k==="mates");
   document.getElementById("kTitle").textContent=s.title;
-  document.getElementById("kText").innerHTML=esc(s.text).replace(/(BEST BLOKE|PUT ON NOTICE)/g,"<b>$1</b>");
   document.getElementById("kAwards").innerHTML=s.awards.map((t,i)=>`<span class="pop award${i?" low":""}">${esc(t)}</span>`).join("");
   document.getElementById("kFor").innerHTML=s.perfect.map((t,i)=>`<span class="pop${i%2?" alt":""}">${esc(t)}</span>`).join("");
   document.getElementById("kAreas").innerHTML=s.groups.map(([n,c,ids])=>`<div><b style="color:${c}">${n}</b>${ids.join(" · ")}</div>`).join("");
