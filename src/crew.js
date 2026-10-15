@@ -235,7 +235,7 @@ function viewLobby(msg=""){
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
       <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
-      <div class="field"><label for="cType">Crew type</label><select id="cType"><option value="family">Family: see how well your family is functioning</option><option value="mates">Mates: a leaderboard of your top mates</option></select></div>
+      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
       <div class="field"><label for="cPw">Crew password</label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
       <p class="muted" style="grid-column:1/-1">Your crew search for the crew name and enter this password to join. The name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
@@ -659,15 +659,15 @@ function refresh(){
   const tkey=`${crew.type||""}|${typeArmed}`;
   if(!tbx.hidden&&tbx.dataset.k!==tkey){
     tbx.dataset.k=tkey;
-    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});typeArmed="";toast(`This is now a ${t==="mates"?"Mates":"Family"} crew.`)}catch(x){famErr(errText(x))}};
+    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});typeArmed="";toast(`Switched to ${t==="mates"?"Mate":"Family"} Review.`)}catch(x){famErr(errText(x))}};
     if(!crew.type){
-      tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews use the family questions. Mates crews use the mates questions.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
+      tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews answer the family questions. Mates crews answer the mates questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
       tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>setType(b.dataset.ctype));
     }else{
       const other=crew.type==="mates"?"family":"mates", On=other==="mates"?"Mates":"Family";
-      tbx.innerHTML=`<p><b>Crew type: ${crew.type==="mates"?"Mates":"Family"}</b>. Everyone is rated on the ${crew.type==="mates"?"mates":"family"} questions.</p>`+
-        (typeArmed?`<p class="err">Switch to ${On}? Reviews already saved are kept but won't count until you switch back. Everyone would need to review again on the ${other} questions.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${On}</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
-          :`<div class="row-btns"><button type="button" class="ghost sm" id="typeSwitch">Switch to a ${On} crew</button></div>`);
+      tbx.innerHTML=`<p><b>Review type: ${crew.type==="mates"?"Mate Review":"Family Review"}</b>. Everyone is rated on the ${crew.type==="mates"?"mates":"family"} questions.</p><p class="muted">If you move to a different review type, your crew will be asked a different sort of questions and existing reviews won't come across. They're kept, and count again if you switch back.</p>`+
+        (typeArmed?`<p class="err">Switch to ${On==="Mates"?"Mate":"Family"} Review? Your crew will be asked the ${other} questions and existing reviews won't come across. Everyone needs to review again.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${On==="Mates"?"Mate":"Family"} Review</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
+          :`<div class="row-btns"><button type="button" class="ghost sm" id="typeSwitch">Switch to ${On==="Mates"?"Mate":"Family"} Review</button></div>`);
       if($("typeSwitch")) $("typeSwitch").onclick=()=>{typeArmed=other;refresh()};
       if($("typeNo")) $("typeNo").onclick=()=>{typeArmed="";refresh()};
       if($("typeYes")) $("typeYes").onclick=()=>setType(other);

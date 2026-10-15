@@ -266,6 +266,7 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .adminlink{margin:0;background:var(--soft);border-radius:8px;padding:10px 14px;font-weight:600}
 .adminlink a,.muted a{color:var(--green)}
 .navbtns{display:flex;gap:8px;flex-wrap:wrap}
+.rkind{display:inline-block;align-self:flex-start;background:var(--gold);color:#14231b;font-family:var(--display);font-size:15px;letter-spacing:.02em;padding:4px 10px;border-radius:999px;margin-bottom:8px}
 .herotag{font-weight:700;font-size:19px;line-height:1.35;color:var(--green);margin:12px 0 0;max-width:34ch}
 .herotag[hidden]{display:none}
 .ratebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -373,6 +374,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
     <div class="report-top">
       <div class="big" id="bigGrade">C</div>
       <div class="overall-text">
+        <div class="rkind" id="reviewKind">Personal Review</div>
         <div class="eyebrow">Report card</div>
         <h2 id="reportTitle">Your 2026</h2>
         <div class="verdict" id="verdict"></div>
@@ -657,13 +659,17 @@ function words(){
   const me=isMe(),n=state.name;
   return {poss: me?(n?n+"'s":"Your"):(n?n+"'s":"Their")};
 }
+/* What kind of review this is: a crew review follows the crew's type; otherwise the button picked. */
+const KIND_LABEL={me:"Personal Review",family:"Family Review",mates:"Mate Review"};
+const reviewKind=()=>state.qset?(state.qset==="mates"?"mates":"family"):state.who==="family"?"family":state.who==="mate"?"mates":"me";
 const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
   family:{h:"End Of Year <span>Family Review</span>",t:"Find out who the best family member is and who needs some family support."},
   mates:{h:"End Of Year <span>Mate Review</span>",t:"Find out who the best bloke is in your crew and who should get cut loose."}};
 function render(){
   useSet(activeSet());
-  const hk=state.who==="family"?"family":activeSet()==="mates"?"mates":state.who==="me"?"me":"family";
+  const hk=reviewKind();
+  $m("reviewKind").textContent=KIND_LABEL[hk];
   if($m("heroH1").dataset.k!==hk){$m("heroH1").dataset.k=hk;$m("heroH1").innerHTML=HEROES[hk].h;$m("heroTag").textContent=HEROES[hk].t;$m("heroTag").hidden=!HEROES[hk].t}
   const me=isMe(),w=words();
   const how=NUMW[CATS.length]+" areas, one quick question each. Want more detail? Open the arrow under any area for three more questions, and the quick score moves to match their average.";
@@ -718,7 +724,7 @@ function render(){
   $m("recs").innerHTML=two.length?two.map(r=>`<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4><ul>${r.c.recs.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
 
   if(window.afterRender) window.afterRender(rows,avg,g);
-  window._summary=g?`${w.poss} 2026 review: ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${w.poss} 2026 review: not enough answers yet.`;
+  window._summary=g?`${w.poss} 2026 ${KIND_LABEL[reviewKind()]}: ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${w.poss} 2026 review: not enough answers yet.`;
 }
 render();
 
@@ -739,7 +745,7 @@ async function makeCard(){
   x.save();rr(30,30,W-60,300,28);x.clip();x.fillStyle=PAL.green;x.fillRect(30,30,W-60,300);x.restore();
   // header
   const w=words(), poss=w.poss;
-  x.fillStyle=PAL.gold;x.font=`700 24px ${FM}`;x.textBaseline="alphabetic";x.fillText("RATE MY YEAR · 2026"+(curSet==="mates"?" · MATES":""),80,100);
+  x.fillStyle=PAL.gold;x.font=`700 24px ${FM}`;x.textBaseline="alphabetic";x.fillText(("RATE MY YEAR · 2026 · "+KIND_LABEL[reviewKind()]).toUpperCase(),80,100);
   x.fillStyle="#fff";x.font=`64px ${FD}`;x.fillText(fit(`${poss} 2026`,700),80,180);
   x.font=`500 30px ${FB}`;x.fillText(fit(G?VERDICTS[G[0]]:"Not enough answers yet.",700),80,232);
   const V=window.__views, vline=V&&V.self!=null&&V.crew!=null?`Self ${grade(V.self)} ${V.self.toFixed(1)} · Crew ${grade(V.crew)} ${V.crew.toFixed(1)}`:"";
@@ -1037,7 +1043,7 @@ function viewLobby(msg=""){
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
       <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
-      <div class="field"><label for="cType">Crew type</label><select id="cType"><option value="family">Family: see how well your family is functioning</option><option value="mates">Mates: a leaderboard of your top mates</option></select></div>
+      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
       <div class="field"><label for="cPw">Crew password</label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
       <p class="muted" style="grid-column:1/-1">Your crew search for the crew name and enter this password to join. The name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
@@ -1461,15 +1467,15 @@ function refresh(){
   const tkey=`${crew.type||""}|${typeArmed}`;
   if(!tbx.hidden&&tbx.dataset.k!==tkey){
     tbx.dataset.k=tkey;
-    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});typeArmed="";toast(`This is now a ${t==="mates"?"Mates":"Family"} crew.`)}catch(x){famErr(errText(x))}};
+    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});typeArmed="";toast(`Switched to ${t==="mates"?"Mate":"Family"} Review.`)}catch(x){famErr(errText(x))}};
     if(!crew.type){
-      tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews use the family questions. Mates crews use the mates questions.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
+      tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews answer the family questions. Mates crews answer the mates questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
       tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>setType(b.dataset.ctype));
     }else{
       const other=crew.type==="mates"?"family":"mates", On=other==="mates"?"Mates":"Family";
-      tbx.innerHTML=`<p><b>Crew type: ${crew.type==="mates"?"Mates":"Family"}</b>. Everyone is rated on the ${crew.type==="mates"?"mates":"family"} questions.</p>`+
-        (typeArmed?`<p class="err">Switch to ${On}? Reviews already saved are kept but won't count until you switch back. Everyone would need to review again on the ${other} questions.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${On}</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
-          :`<div class="row-btns"><button type="button" class="ghost sm" id="typeSwitch">Switch to a ${On} crew</button></div>`);
+      tbx.innerHTML=`<p><b>Review type: ${crew.type==="mates"?"Mate Review":"Family Review"}</b>. Everyone is rated on the ${crew.type==="mates"?"mates":"family"} questions.</p><p class="muted">If you move to a different review type, your crew will be asked a different sort of questions and existing reviews won't come across. They're kept, and count again if you switch back.</p>`+
+        (typeArmed?`<p class="err">Switch to ${On==="Mates"?"Mate":"Family"} Review? Your crew will be asked the ${other} questions and existing reviews won't come across. Everyone needs to review again.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${On==="Mates"?"Mate":"Family"} Review</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
+          :`<div class="row-btns"><button type="button" class="ghost sm" id="typeSwitch">Switch to ${On==="Mates"?"Mate":"Family"} Review</button></div>`);
       if($("typeSwitch")) $("typeSwitch").onclick=()=>{typeArmed=other;refresh()};
       if($("typeNo")) $("typeNo").onclick=()=>{typeArmed="";refresh()};
       if($("typeYes")) $("typeYes").onclick=()=>setType(other);
