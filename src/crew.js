@@ -272,7 +272,7 @@ function viewLobby(msg=""){
       if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
       const ctype=$("cType").value==="mates"?"mates":"family";
-      b.set(doc(db,"crews",id),{name,slug,type:ctype,passHash:passHash(slug,pw),ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:ctype==="mates"?"mate":"family"}],createdAt:Date.now()});
+      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,passHash:passHash(slug,pw),ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:ctype==="mates"?"mate":"family"}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
       await b.commit();
       await claimMember(id,myId,"");
@@ -390,7 +390,7 @@ async function joinCrew(inv){
 /* ---------- inside a crew ---------- */
 function clearCrewSubs(){unsubs.forEach(u=>u());unsubs=[];revUnsubs.forEach(u=>u());revUnsubs=[];revKey="";if(boardUnsub){boardUnsub();boardUnsub=null}boardSubOn=false}
 /* The leaderboard is only readable by the crew when the admin switches it on (admins can always read it). */
-const boardOpen=()=>!!(crew&&(isAdmin()||crew.showBoard));
+const boardOpen=()=>!!(crew&&(isAdmin()||crew.showBoard!==false));
 function syncBoardSub(){
   const want=boardOpen();
   if(want===boardSubOn) return;
@@ -467,7 +467,7 @@ function viewCrewShell(){
       <button type="submit">Add me</button>
     </form>
     <div class="typebox" id="typeBox" hidden></div>
-    <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">Tick to show the crew leaderboard to everyone in the crew. When it's off, they see it blurred out. You can always see the scores here under All scores.</span></label>
+    <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">On by default: everyone in the crew sees the leaderboard. Untick it to blur the scores out for the crew. You can always see them here under All scores.</span></label>
     <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
     <p class="muted" id="boardNote" hidden></p>
     <div class="members" id="memList"></div>
@@ -668,7 +668,7 @@ async function syncBoard(){
 }
 
 function renderBoard(){
-  const sec=$("boardSec"); if(!sec) return;
+  const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
   sec.hidden=false;
   const ms=members(), open=boardOpen(), mates=crew.type==="mates";
@@ -723,7 +723,7 @@ function refresh(){
   if(tbx.hidden){tbx.innerHTML="";tbx.dataset.k=""}
   $("boardTitle").hidden=ADMIN;
   const bt=$("boardToggle"); bt.hidden=!(ADMIN&&admin);
-  if(!bt.hidden){$("boardOn").checked=!!crew.showBoard;$("boardOn").onchange=async e=>{try{await updateDoc(doc(db,"crews",crewId),{showBoard:e.target.checked});toast(e.target.checked?"Leaderboard switched on for the crew.":"Leaderboard hidden from the crew.")}catch(x){e.target.checked=!e.target.checked;famErr(errText(x))}}}
+  if(!bt.hidden){$("boardOn").checked=crew.showBoard!==false;$("boardOn").onchange=async e=>{try{await updateDoc(doc(db,"crews",crewId),{showBoard:e.target.checked});toast(e.target.checked?"Leaderboard switched on for the crew.":"Leaderboard hidden from the crew.")}catch(x){e.target.checked=!e.target.checked;famErr(errText(x))}}}
   renderBoard();
   const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
@@ -731,13 +731,19 @@ function refresh(){
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
   const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid).map(r=>r.member));
   const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
-  $("boardTitle").textContent=ADMIN?"":me?`You've reviewed ${done.length} of ${ms.length}`:"Who are you reviewing?";
-  $("boardNote").hidden=ADMIN||!me||!ms.length;
-  if(!$("boardNote").hidden) $("boardNote").innerHTML=todo.length?`Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work.";
-  $("memList").innerHTML=!ADMIN&&ms.length?[...todo,...done].map(m=>{
-    const mine=doneIds.has(m.id);
-    return `<div class="member pick-row${mine?" done":""}">
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small><span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+  const open=boardOpen();
+  $("boardTitle").textContent=ADMIN?"":"Crew leaderboard";
+  $("boardNote").hidden=ADMIN||!ms.length;
+  if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone.")+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
+  const fake=["A","B+","B","C+","C","D"];
+  const ranked=ms.map(m=>({m,b:open&&boardById?boardScore(m.id):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
+    const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
+    const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
+    const score=open?(b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
+    return `<div class="member board-row${mine?" done":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
+      <span class="rank">${rank}</span>${chip}
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}

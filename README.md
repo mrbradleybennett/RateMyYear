@@ -10,7 +10,7 @@ A one-page website for rating yourself, your mates and your family across the ar
 
 **Self vs crew:** in a crew, the report card shows the **Self assessment** and **Crew assessment** overall ratings side by side, and a **Biggest gaps** summary above the Top 3: the overall gap plus up to three areas that differ by a point or more. The area-by-area gaps show for your own review, and for crew admins. Everyone else sees the overall gap, taken from the leaderboard. Solo Rate Me shows the self rating with a prompt to join or create a crew.
 
-**Leaderboard:** the crew leaderboard sits at the very bottom of the main page. It stays blurred out until the crew admin ticks **Make leaderboard visible** on My Crew (`showBoard` on the crew, enforced in the security rules). The crew box lists everyone with a Review button and a **To do** or **✓ Reviewed** tag, plus "You've reviewed X of Y" and who's still to review.
+**Leaderboard:** the crew leaderboard sits in the Review My Crew box, under **I am**. Everyone is ranked by the crew's scores, each with a **To do** or **✓ Reviewed** tag and a Review button. It's on by default. Crew admins can untick **Make leaderboard visible** on My Crew to blur the scores for everyone else (`showBoard: false`, enforced in the security rules).
 
 **Ideas for the bottom two:** each detailed question has its own tip. The report card shows the tips for the two lowest-scoring detailed questions in each bottom area. If no detailed questions were answered, it shows all three tips and suggests opening the detailed questions.
 
