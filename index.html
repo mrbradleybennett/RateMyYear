@@ -151,7 +151,8 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .plans{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 .plan{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;text-align:center;align-items:center}
 .plan b{font-family:var(--display);font-weight:400;font-size:clamp(15px,1.8vw,18px);line-height:1.1;color:var(--green);white-space:nowrap}
-.plan .who{font-size:15px;color:var(--muted);font-weight:600}
+.plan .who{display:inline-flex;align-items:baseline;gap:5px;background:var(--gold);color:var(--ink);font-size:14px;font-weight:700;padding:5px 12px;border-radius:999px;margin:4px 0;white-space:nowrap}
+.plan .who em{font-style:normal;font-family:var(--display);font-size:22px;line-height:1}
 .plan .price{font-family:var(--display);font-size:32px;line-height:1;color:var(--ink);margin-top:auto;padding-top:6px}
 .plan .per{font-size:12px;color:var(--muted)}
 .plan.hot{border-color:var(--green);box-shadow:inset 0 -5px 0 var(--gold)}
@@ -331,11 +332,11 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <div class="sec-head"><div class="eyebrow">Pricing</div><h2 id="pricingH">Simple <span>pricing</span></h2>
       <p>Only the person who sets up the crew pays. Everyone they invite joins free.</p></div>
     <div class="plans">
-      <div class="plan"><b>Self Assessment</b><span class="who">Just you</span><span class="price">Free</span><span class="per">No sign-up needed</span></div>
-      <div class="plan"><b>Crew Assessment</b><span class="who">Up to 4 people</span><span class="price">Free</span><span class="per">Always free</span></div>
-      <div class="plan hot"><b>Crew Pass</b><span class="who">Up to 15 people</span><span class="price">$9.99</span><span class="per">AUD per crew, per season</span></div>
-      <div class="plan"><b>Club Pass</b><span class="who">Up to 50 people</span><span class="price">$29.99</span><span class="per">AUD per crew, per season</span></div>
-      <div class="plan"><b>Big Club Pass</b><span class="who">Up to 150 people</span><span class="price">$59.99</span><span class="per">AUD per crew, per season</span></div>
+      <div class="plan"><b>Self Review</b><span class="who">Just you</span><span class="price">Free</span><span class="per">No sign-up needed</span></div>
+      <div class="plan"><b>Crew Review</b><span class="who">Up to <em>4</em> people</span><span class="price">Free</span><span class="per">Always free</span></div>
+      <div class="plan hot"><b>Crew Pass</b><span class="who">Up to <em>15</em> people</span><span class="price">$9.99</span><span class="per">AUD per crew, per season</span></div>
+      <div class="plan"><b>Club Pass</b><span class="who">Up to <em>50</em> people</span><span class="price">$29.99</span><span class="per">AUD per crew, per season</span></div>
+      <div class="plan"><b>Big Club Pass</b><span class="who">Up to <em>150</em> people</span><span class="price">$59.99</span><span class="per">AUD per crew, per season</span></div>
     </div>
   </section>
 
