@@ -749,6 +749,9 @@ const KIND_WORD={me:"Personal",family:"Family",mates:"Mate"};
 function cardTitle(){const n=(state.name||"").trim(), kk=reviewKind(), k=KIND_WORD[kk];
   if(kk==="me") return n?`${n} Report Card`:"Your Report Card";
   return n?`${n} ${k} Report Card`:isMe()?`Your ${k} Report Card`:`${k} Report Card`}
+/* Ideas for an area: tips for its two lowest-scoring detailed questions, or its general tips if none were answered. */
+function tipsFor(c,max){const qs=c.qs.map((q,i)=>({i,v:state.dk[c.id+i]?null:state.v[c.id+i]})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
+  return {targeted:qs.length>0,tips:qs.length?qs.slice(0,2).map(x=>c.tips[x.i]):c.tips.slice(0,max||3)}}
 const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
   family:{h:"End Of Year <span>Family Review</span>",t:"Find out who the best family member is and who needs some family support."},
@@ -811,14 +814,14 @@ function render(){
   $m("recsTitle").textContent=me?"How to lift your bottom two":`Ideas to suggest to ${state.name||"them"} for the bottom two`;
   /* Ideas aim at the lowest-scoring detailed questions in each of the bottom two areas. */
   $m("recs").innerHTML=two.length?two.map(r=>{
-    const qs=r.c.qs.map((q,i)=>({q,i,v:state.dk[r.c.id+i]?null:state.v[r.c.id+i]})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
-    const body=qs.length
-      ?`<ul>${qs.slice(0,2).map(x=>`<li>${esc(r.c.tips[x.i])}</li>`).join("")}</ul>`
-      :`<ul>${r.c.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul><p class="muted qnote">Open <b>Detailed questions</b> on ${esc(r.c.name)} to get ideas aimed at the exact things to work on.</p>`;
+    const T=tipsFor(r.c);
+    const body=T.targeted
+      ?`<ul>${T.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`
+      :`<ul>${T.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul><p class="muted qnote">Open <b>Detailed questions</b> on ${esc(r.c.name)} to get ideas aimed at the exact things to work on.</p>`;
     return `<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4>${body}</div>`}).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
 
   if(window.afterRender) window.afterRender(rows,avg,g);
-  window._summary=g?`${cardTitle()} (Rate My Year 2026): ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${cardTitle()}: not enough answers yet.`;
+  window._summary=g?`${cardTitle()} (Rate My Year 2026): ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${tipsFor(r.c).tips.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${cardTitle()}: not enough answers yet.`;
 }
 render();
 
@@ -827,9 +830,15 @@ const PAL={bg:"#eef1ec",panel:"#ffffff",ink:"#14231b",muted:"#5a6b60",line:"#d5d
 const FD='"Bowlby One","Arial Black",Impact,sans-serif', FB='"Figtree",system-ui,-apple-system,sans-serif', FM='"JetBrains Mono",Menlo,monospace';
 async function makeCard(){
   try{await document.fonts.ready}catch(e){}
-  const W=1080,H=1440,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
   const rows=CATS.map((c,i)=>{const avg=catScore(c);return {c,avg,g:avg==null?null:grade(avg),i}});
   const sc=rows.filter(r=>r.avg!=null), avg=sc.length?mean(sc.map(r=>r.avg)):null, G=avg==null?null:grade(avg);
+  // ideas for the bottom two, wrapped to fit
+  const sorted0=[...sc].sort((a,b)=>b.avg-a.avg||a.i-b.i), bot0=sorted0.slice(Math.max(3,sorted0.length-3)).reverse(), two=bot0.slice(0,2);
+  const mx=document.createElement("canvas").getContext("2d"); mx.font=`500 25px ${FB}`;
+  const wrap=(t,w)=>{const out=[];let line="";t.split(" ").forEach(word=>{const tryL=line?line+" "+word:word;if(mx.measureText(tryL).width>w&&line){out.push(line);line=word}else line=tryL});if(line)out.push(line);return out};
+  const ideas=two.map(r=>({r,lines:tipsFor(r.c,2).tips.map(t=>wrap(t,860))}));
+  const ideaH=ideas.length?70+ideas.reduce((s,d)=>s+70+d.lines.reduce((a,l)=>a+l.length*34+8,0),0):0;
+  const W=1080,H=1440+ideaH+(ideaH?30:0),cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
   const gc=g=>g?PAL[g[0]]:PAL.track;
   const rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()};
   const fit=(t,max)=>{if(x.measureText(t).width<=max)return t;while(t.length>1&&x.measureText(t+"…").width>max)t=t.slice(0,-1);return t+"…"};
@@ -878,7 +887,22 @@ async function makeCard(){
       x.textAlign="left";x.fillStyle=PAL.ink;x.font=`700 25px ${FB}`;x.fillText(fit(r.c.name,300),X+56,Y+26);
       x.textAlign="right";x.font=`700 24px ${FM}`;x.fillText(r.avg.toFixed(1),X+424,Y+26)})};
   list("TOP 3",top,80);list("BOTTOM 3",bot,560);
-  x.textAlign="center";x.textBaseline="alphabetic";x.fillStyle=PAL.muted;x.font=`600 26px ${FB}`;x.fillText("Rate yours at ratemyyear.com",W/2,1395);
+  if(ideas.length){
+    let y=1420;
+    x.textAlign="left";x.textBaseline="alphabetic";x.fillStyle=PAL.muted;x.font=`700 22px ${FM}`;
+    x.fillText((reviewKind()==="me"||isMe()?"HOW TO LIFT YOUR BOTTOM TWO":"IDEAS FOR THE BOTTOM TWO"),80,y+10); y+=30;
+    ideas.forEach(({r,lines})=>{
+      const boxH=60+lines.reduce((a,l)=>a+l.length*34+8,0);
+      rr(80,y,920,boxH,14);x.fillStyle=PAL.soft;x.fill();
+      x.save();rr(80,y,920,boxH,14);x.clip();x.fillStyle=gc(r.g);x.fillRect(80,y,8,boxH);x.restore();
+      x.fillStyle=PAL.ink;x.font=`30px ${FD}`;x.textBaseline="alphabetic";x.fillText(r.c.name,108,y+42);
+      const nw=x.measureText(r.c.name).width;x.font=`700 20px ${FM}`;x.fillStyle=gc(r.g);x.fillText(`${r.g} · ${r.avg.toFixed(1)}`,108+nw+16,y+40);
+      let ty=y+80; x.font=`500 25px ${FB}`;x.fillStyle=PAL.ink;
+      lines.forEach(ls=>{ls.forEach((l,k)=>{if(k===0){x.beginPath();x.arc(116,ty-9,5,0,2*Math.PI);x.fill()}x.fillText(l,132,ty);ty+=34});ty+=8});
+      y+=boxH+16;
+    });
+  }
+  x.textAlign="center";x.textBaseline="alphabetic";x.fillStyle=PAL.muted;x.font=`600 26px ${FB}`;x.fillText("Rate yours at ratemyyear.com",W/2,H-45);
   return await new Promise(res=>cv.toBlob(res,"image/png"));
 }
 window.makeCard=makeCard;
