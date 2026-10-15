@@ -470,6 +470,7 @@ function viewCrewShell(){
     <div class="typebox" id="typeBox" hidden></div>
     <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">On by default: everyone in the crew sees the leaderboard. Untick it to blur the scores out for the crew. You can always see them here under All scores.</span></label>
     <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
+    <div class="crewscore" id="crewScore" hidden></div>
     <p class="muted" id="boardNote" hidden></p>
     <div class="members" id="memList"></div>
     <form class="form" id="addForm" novalidate>
@@ -765,6 +766,14 @@ function refresh(){
   if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone.")+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
   const fake=["A","B+","B","C+","C","D"];
   const ranked=ms.map(m=>({m,b:open&&boardById?boardScore(m.id):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  /* Crew score: the average of everyone's leaderboard score (people with at least one review). */
+  const scored=ranked.filter(x=>x.b.v!=null), cs=$("crewScore");
+  cs.hidden=ADMIN||!ms.length;
+  if(!cs.hidden){
+    const v=scored.length?mean(scored.map(x=>x.b.v)):null, g=v==null?null:grade(v);
+    cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
+    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>Crew score</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
+  }
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
