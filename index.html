@@ -58,8 +58,8 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
 /* example report card */
 .card{background:var(--panel);border:2px solid var(--green);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,77,50,.12)}
-.card-top{background:#0f4d32;color:#eef1ec;padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
-.card-top .rt-row{display:contents}.card-top .hview.s{grid-area:self}.card-top .hview.c{grid-area:crew}
+.card-top{background:#0f4d32;color:#eef1ec;padding:16px 14px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
+.card-top .rt-row{display:contents}.card-top .hview.s{grid-area:self;justify-self:start;align-items:flex-start}.card-top .hview.c{grid-area:crew;justify-self:end;align-items:flex-end}
 .card-text{grid-area:text;display:flex;flex-direction:column;gap:8px;align-items:center}
 .rt-row{display:flex;justify-content:center;gap:clamp(28px,8vw,72px);width:100%}
 .hview{display:flex;flex-direction:column;align-items:center;gap:8px}
