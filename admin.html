@@ -109,11 +109,14 @@ async function load(user){
       return {...c,reviews:rv,joined:jn};
     }));
     const opt=p=>p.catch(()=>null);
-    const [sharesN,resultsN,usersN,sharesSnap]=await Promise.all([
+    const [sharesN,resultsN,usersN,sharesSnap,usersSnap]=await Promise.all([
       opt(getCountFromServer(collection(db,"shares")).then(s=>s.data().count)),
       opt(getCountFromServer(collection(db,"results")).then(s=>s.data().count)),
       opt(getCountFromServer(collection(db,"users")).then(s=>s.data().count)),
-      opt(getDocs(query(collection(db,"shares"),orderBy("at","desc"),limit(50))))]);
+      opt(getDocs(query(collection(db,"shares"),orderBy("at","desc"),limit(50)))),
+      opt(getDocs(collection(db,"users")))]);
+    const emailOf={};if(usersSnap)usersSnap.docs.forEach(d=>{const e=d.data().email;if(e)emailOf[d.id]=e});
+    const ownerMail=c=>c.ownerEmail||emailOf[c.ownerUid]||"";
     const sum=k=>per.reduce((a,c)=>a+(c[k]||0),0);
     const fam=per.filter(c=>c.type!=="mates").length, mates=per.filter(c=>c.type==="mates").length;
     const people=per.reduce((a,c)=>a+(Array.isArray(c.members)?c.members.length:0),0);
@@ -134,8 +137,8 @@ async function load(user){
       </div>
       <h2>Crews</h2>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Crew</th><th>Type</th><th>Created</th><th style="text-align:right">People</th><th style="text-align:right">Joined</th><th style="text-align:right">Reviews</th><th>Leaderboard</th></tr></thead>
-        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td><span class="pill ${c.type==="mates"?"mates":"family"}">${c.type==="mates"?"Mates":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td></tr>`).join("")||`<tr><td colspan="7" class="muted">No crews yet.</td></tr>`}</tbody>
+        <thead><tr><th>Crew</th><th>Owner email</th><th>Type</th><th>Created</th><th style="text-align:right">People</th><th style="text-align:right">Joined</th><th style="text-align:right">Reviews</th><th>Leaderboard</th></tr></thead>
+        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td>${ownerMail(c)?`<a href="mailto:${esc(ownerMail(c))}">${esc(ownerMail(c))}</a>`:`<span class="muted">Not seen yet</span>`}</td><td><span class="pill ${c.type==="mates"?"mates":"family"}">${c.type==="mates"?"Mates":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td></tr>`).join("")||`<tr><td colspan="8" class="muted">No crews yet.</td></tr>`}</tbody>
       </table></div>
       <h2>Latest shares</h2>
       <div class="tbl-wrap"><table>

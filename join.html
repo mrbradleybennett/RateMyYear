@@ -1232,7 +1232,7 @@ function viewLobby(msg=""){
       if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
       const ctype=$("cType").value==="mates"?"mates":"family";
-      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,passHash:passHash(slug,pw),ownerUid:user.uid,adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:ctype==="mates"?"mate":"family"}],createdAt:Date.now()});
+      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,passHash:passHash(slug,pw),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:ctype==="mates"?"mate":"family"}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
       await b.commit();
       await claimMember(id,myId,"");
@@ -2173,6 +2173,7 @@ async function loadConfig(){
     status("Loading your crews…");
     let loadErr=null;
     try{const s=await withTimeout(getDoc(doc(db,"users",u.uid)),12000,"Loading your crews");myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[];loadErr=e}
+    if(!u.isAnonymous&&u.email) setDoc(doc(db,"users",u.uid),{email:u.email,name:u.displayName||"",seenAt:Date.now()},{merge:true}).catch(()=>{});
     try{render()}catch(x){console.error(x)}
     if(loadErr&&loadErr.code!=="permission-denied"&&!myCrews.length){body.innerHTML=`<p class="err">Couldn't load your crews: ${esc(errText(loadErr))}</p><p class="muted">Check your connection and reload. If it keeps happening, send a screenshot of this message.</p><div class="row-btns"><button type="button" id="bootReload">Reload</button></div>`;$("bootReload").onclick=()=>location.reload();return}
     if(afterAuth){const f=afterAuth;afterAuth=null;return f()}
