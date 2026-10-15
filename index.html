@@ -914,7 +914,9 @@ const isMember=id=>members().some(m=>m.id===id);
 const isAdmin=()=>!!(crew&&user&&Array.isArray(crew.adminUids)&&crew.adminUids.includes(user.uid));
 const isOwner=()=>!!(crew&&user&&crew.ownerUid===user.uid);
 const reviews=()=>Object.values(reviewsById);
-const liveReviews=()=>reviews().filter(r=>isMember(r.member)&&isMember(r.reviewer));
+/* One review per reviewer per person: if someone came back on a new device (name freed up) and reviewed again,
+   only their latest review counts. */
+const liveReviews=()=>{const best={};reviews().filter(r=>isMember(r.member)&&isMember(r.reviewer)).forEach(r=>{const k=r.reviewer+"|"+r.member;if(!best[k]||(r.savedAt||0)>(best[k].savedAt||0))best[k]=r});return Object.values(best)};
 const fillThey=t=>t.replace(/\{(you|your|yourself|are)\}/g,(_,k)=>P.other[k]).replace(/(^|[.?!]\s+)([a-z])/g,(m,a,b)=>a+b.toUpperCase());
 const peopleLine=n=>n===0?"No one has reviewed them yet":`${n} ${n===1?"person has":"people have"} given a review`;
 const dot=v=>v==null?`<span class="muted">–</span>`:`<span class="g-dot" style="--g:${gcol(grade(v))}">${grade(v)}</span>${v.toFixed(1)}`;
