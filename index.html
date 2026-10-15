@@ -393,8 +393,8 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <div class="big" id="bigGrade">C</div>
       <div class="overall-text">
         <div class="rkind" id="reviewKind">Personal Review</div>
-        <div class="eyebrow">Report card</div>
-        <h2 id="reportTitle">Your 2026</h2>
+        <div class="eyebrow">Rate My Year · 2026</div>
+        <h2 id="reportTitle">Your Report Card</h2>
         <div class="verdict" id="verdict"></div>
         <div class="avg" id="avg"></div>
         <div class="avg" id="revCount" hidden></div>
@@ -715,6 +715,9 @@ function words(){
 /* What kind of review this is: a crew review follows the crew's type; otherwise the button picked. */
 const KIND_LABEL={me:"Personal Review",family:"Family Review",mates:"Mate Review"};
 const reviewKind=()=>state.qset?(state.qset==="mates"?"mates":"family"):state.who==="family"?"family":state.who==="mate"?"mates":"me";
+/* Report card title: "<Name> Family Report Card", "<Name> Mate Report Card", "<Name> Personal Report Card". */
+const KIND_WORD={me:"Personal",family:"Family",mates:"Mate"};
+function cardTitle(){const n=(state.name||"").trim(), k=KIND_WORD[reviewKind()];return n?`${n} ${k} Report Card`:isMe()?`Your ${k} Report Card`:`${k} Report Card`}
 const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
   family:{h:"End Of Year <span>Family Review</span>",t:"Find out who the best family member is and who needs some family support."},
@@ -755,7 +758,7 @@ function render(){
   const avg=scored.length?mean(scored.map(r=>r.avg)):null, g=avg==null?null:grade(avg);
   drawWheel(rows,avg);
   $m("bigGrade").textContent=g||"–";
-  $m("reportTitle").textContent=`${w.poss} 2026`;
+  $m("reportTitle").textContent=cardTitle();
   $m("verdict").textContent=g?VERDICTS[g[0]]:"Answer at least one area to get a grade.";
   const skipped=rows.length-scored.length;
   $m("avg").textContent=g?`Overall ${g} · ${avg.toFixed(1)} / 10${skipped?` · ${skipped} area${skipped===1?"":"s"} marked don't know`:""}`:"";
@@ -783,7 +786,7 @@ function render(){
     return `<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4>${body}</div>`}).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
 
   if(window.afterRender) window.afterRender(rows,avg,g);
-  window._summary=g?`${w.poss} 2026 ${KIND_LABEL[reviewKind()]}: ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${w.poss} 2026 review: not enough answers yet.`;
+  window._summary=g?`${cardTitle()} (Rate My Year 2026): ${g} overall (${avg.toFixed(1)}/10). ${VERDICTS[g[0]]}\n\n${groupRows.map(x=>`${x.gp.name}: ${x.g?`${x.g} (${x.v.toFixed(1)})`:"don't know"}`).join(" · ")}\n\nTop 3:\n${top.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}\n\nBottom 3:\n${bottom.map((r,k)=>`${k+1}. ${r.c.name} – ${r.g} (${r.avg.toFixed(1)})`).join("\n")}${two.length?`\n\nTo improve:\n${two.map(r=>`${r.c.name}\n${r.c.recs.map(t=>"- "+t).join("\n")}`).join("\n\n")}`:""}`:`${cardTitle()}: not enough answers yet.`;
 }
 render();
 
@@ -805,7 +808,7 @@ async function makeCard(){
   // header
   const w=words(), poss=w.poss;
   x.fillStyle=PAL.gold;x.font=`700 24px ${FM}`;x.textBaseline="alphabetic";x.fillText(("RATE MY YEAR · 2026 · "+KIND_LABEL[reviewKind()]).toUpperCase(),80,100);
-  x.fillStyle="#fff";x.font=`64px ${FD}`;x.fillText(fit(`${poss} 2026`,700),80,180);
+  x.fillStyle="#fff";x.font=`64px ${FD}`;x.font=`${cardTitle().length>22?48:58}px ${FD}`;x.fillText(fit(cardTitle(),690),80,180);
   x.font=`500 30px ${FB}`;x.fillText(fit(G?VERDICTS[G[0]]:"Not enough answers yet.",700),80,232);
   const V=window.__views, vline=V&&V.self!=null&&V.crew!=null?`Self ${grade(V.self)} ${V.self.toFixed(1)} · Crew ${grade(V.crew)} ${V.crew.toFixed(1)}`:"";
   x.font=`500 26px ${FM}`;x.globalAlpha=.85;x.fillText(G?(vline||`Overall ${G} · ${avg.toFixed(1)} / 10`):"",80,280);x.globalAlpha=1;
@@ -1934,8 +1937,7 @@ if(REVIEW_PAGE){
   const shareText=()=>{
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
-    const who=state.who==="me"?(state.name?state.name+"'s":"My"):(state.name?state.name+"'s":"Their");
-    return `${who} Rate My Year report card: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
+    return `${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
   async function record(channel,extra){
@@ -1995,7 +1997,7 @@ if(REVIEW_PAGE){
     await record("email",{email:email.toLowerCase().slice(0,200)});
     $("shareGo").disabled=false;
     say2("Opening your email app… To include the picture, save it first and attach it.");
-    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
+    const subject=`${cardTitle()}: ${grade(last.avg)} (Rate My Year)`;
     location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+REVIEW_PATH)}`;
   });
 }

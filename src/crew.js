@@ -1067,8 +1067,7 @@ if(REVIEW_PAGE){
   const shareText=()=>{
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
-    const who=state.who==="me"?(state.name?state.name+"'s":"My"):(state.name?state.name+"'s":"Their");
-    return `${who} Rate My Year report card: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
+    return `${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${REVIEW_PATH}`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
   async function record(channel,extra){
@@ -1128,7 +1127,7 @@ if(REVIEW_PAGE){
     await record("email",{email:email.toLowerCase().slice(0,200)});
     $("shareGo").disabled=false;
     say2("Opening your email app… To include the picture, save it first and attach it.");
-    const subject=`${state.name?state.name+"'s":"My"} Rate My Year report card: ${grade(last.avg)}`;
+    const subject=`${cardTitle()}: ${grade(last.avg)} (Rate My Year)`;
     location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+REVIEW_PATH)}`;
   });
 }
