@@ -718,6 +718,12 @@ async function resetAll(){
   }catch(x){famErr(errText(x))}
   resetting=false; resetArmed=false; renderResetAll(true);
 }
+/* Signed in with Google (or running a crew) → "My Crew"; otherwise "Create A Crew". */
+function paintCreate(){
+  const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
+  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create A Crew";
+  const eb=$("endCreate"); if(eb) eb.innerHTML=mine?"<b>My Crew</b><small>Your crew, invite link and everyone's reports</small>":"<b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small>";
+}
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
@@ -777,7 +783,7 @@ function refresh(){
   if(!bt.hidden){$("boardOn").checked=crew.showBoard!==false;$("boardOn").onchange=async e=>{try{await updateDoc(doc(db,"crews",crewId),{showBoard:e.target.checked});toast(e.target.checked?"Leaderboard switched on for the crew.":"Leaderboard hidden from the crew.")}catch(x){e.target.checked=!e.target.checked;famErr(errText(x))}}}
   renderBoard();
   renderResetAll(ADMIN&&admin);
-  const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
+  paintCreate();
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
@@ -1196,7 +1202,7 @@ async function loadConfig(){
   if(wasRedirect) getRedirectResult(auth,browserPopupRedirectResolver).catch(()=>{});
   try{render()}catch(x){console.error(x)}
   authWatch=setTimeout(()=>{if(stillBusy()&&!gotAuth)showFatal({code:"sign-in check timed out. Check your connection, or turn off content blockers for this site"})},20000);
-  async function onAuth(u){ try{
+  async function onAuth(u){ try{ user=u; paintCreate();
     clearCrewSubs(); user=u; crew=null; crewId=""; target=null; myCrews=[];
     if(JOIN){
       if(!u){
