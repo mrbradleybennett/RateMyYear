@@ -17,9 +17,15 @@ service cloud.firestore {
     function isMember(c) { return isAdmin(c) || hasJoined(c); }
     function docAt(c, sub, id) { return /databases/$(database)/documents/crews/$(c)/$(sub)/$(id); }
     function validCode(d) { return d.joinCode is string && d.joinCode.size() >= 6; }
+    // Site owner (admin.html): read-only access to everything, for totals.
+    function isSuper() {
+      return signedIn() && request.auth.token.email_verified == true
+        && request.auth.token.email in ['brad@epicagile.com.au'];
+    }
 
     match /crews/{c} {
-      allow get: if isMember(c);
+      allow get: if isMember(c) || isSuper();
+      allow list: if isSuper();
 
       // Only a Google-signed-in crew admin can set up a crew; guests join by invite link.
       allow create: if signedIn()
@@ -47,7 +53,7 @@ service cloud.firestore {
 
       // One doc per account that joined; created only with the current invite code.
       match /joins/{uid} {
-        allow read: if isMember(c);
+        allow read: if isMember(c) || isSuper();
         // Join with the invite link's code, or with the crew password (stored as a hash).
         allow create, update: if signedIn() && uid == request.auth.uid
           && (request.resource.data.get('code', '') == crewData(c).joinCode
@@ -74,7 +80,7 @@ service cloud.firestore {
 
       match /reviews/{reviewId} {
         // Admins read all; you read reviews you wrote (on any of your devices) and reviews about you.
-        allow read: if isAdmin(c)
+        allow read: if isAdmin(c) || isSuper()
           || (isMember(c) && resource.data.reviewerUid == request.auth.uid)
           || (isMember(c) && get(docAt(c, 'accounts', request.auth.uid)).data.member == resource.data.member)
           || (isMember(c) && get(docAt(c, 'accounts', request.auth.uid)).data.member == resource.data.reviewer);
@@ -140,18 +146,21 @@ service cloud.firestore {
         && request.resource.data.get('email', '').size() <= 200
         && request.resource.data.get('phone', '') is string
         && request.resource.data.get('phone', '').size() <= 30;
-      allow read, update, delete: if false;
+      allow read: if isSuper();
+      allow update, delete: if false;
     }
 
     // Each person's list of crews, private to them.
     match /users/{uid} {
       allow read, write: if signedIn() && uid == request.auth.uid;
+      allow list: if isSuper();
     }
 
     // Solo reviews saved outside a crew, private to the person who saved them.
     match /results/{id} {
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
-      allow read, delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow read: if isSuper() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
   }
 }

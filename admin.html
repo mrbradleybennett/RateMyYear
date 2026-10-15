@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Site Admin · Rate My Year</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#eef1ec; --panel:#ffffff; --ink:#14231b; --muted:#5a6b60; --line:#d5ddd6;
+  --green:#0f4d32; --gold:#f2b705; --blue:#3f5fb5; --soft:#e4ece6; --red:#c2362b;
+  --display:"Bowlby One","Arial Black",Impact,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
+  --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --soft:#1a2c22; --red:#e0544a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
+  --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --soft:#1a2c22; --red:#e0544a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:22px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);color:var(--green);text-decoration:none}
+h1{font-family:var(--display);font-weight:400;color:var(--green);margin:0;font-size:clamp(30px,6vw,46px);line-height:1}
+h1 span{background:var(--gold);color:#14231b;padding:0 .15em;display:inline-block;transform:rotate(-1.5deg)}
+h2{font-family:var(--display);font-weight:400;color:var(--green);margin:0;font-size:22px}
+.muted{color:var(--muted)} .err{color:var(--red);font-weight:600}
+button{font:inherit;font-weight:700;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;background:var(--gold);color:#14231b}
+button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.panel{background:var(--panel);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;border:1.5px solid var(--line)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.tile{background:var(--panel);border-radius:14px;padding:16px;border-top:5px solid var(--gold);display:flex;flex-direction:column;gap:4px}
+.tile b{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tile span{font-family:var(--display);font-size:38px;line-height:1;color:var(--green)}
+.tile small{color:var(--muted);font-size:13px}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+td.n{text-align:right;font-family:var(--mono)}
+.pill{display:inline-block;font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--soft)}
+.pill.mates{background:#fff4d6;color:#6b4e00}.pill.family{background:#e3f1e8;color:#14532d}
+.gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1f1f1f;box-shadow:inset 0 0 0 1px #dadce0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="brand" href="./">About Rate My Year</a><span class="row" id="who"></span></div>
+  <h1>Site <span>Admin</span></h1>
+  <div id="main" class="panel"><p class="muted">Loading…</p></div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {initializeAuth,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithCredential,linkWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,query,orderBy,limit,getDocs,getCountFromServer} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* Only these Google accounts see the numbers. The same list is in the Firestore security rules (isSuper),
+   which is what actually protects the data. */
+const SUPER_EMAILS=["brad@epicagile.com.au"];
+
+const $=id=>document.getElementById(id), main=$("main");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const when=t=>t?new Date(t).toLocaleString("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}):"–";
+const day=t=>t?new Date(t).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}):"–";
+const cfg=window.RATEMYYEAR_FIREBASE_CONFIG;
+if(!cfg){main.innerHTML=`<p class="err">Firebase isn't set up on this site.</p>`;throw new Error("no config")}
+const app=initializeApp(cfg,"rmy-admin");
+const auth=initializeAuth(app,{persistence:[browserLocalPersistence,inMemoryPersistence]});
+const db=getFirestore(app);
+
+async function google(){
+  const prov=new GoogleAuthProvider();
+  try{await signInWithPopup(auth,prov,browserPopupRedirectResolver)}
+  catch(x){main.insertAdjacentHTML("beforeend",`<p class="err">Sign-in didn't work${x&&x.code?` (${esc(x.code)})`:""}. Tap the button to try again${x&&x.code==="auth/popup-blocked"?", or turn off Block Pop-ups for this site":""}.</p>`)}
+}
+function signedOut(){
+  $("who").innerHTML="";
+  main.innerHTML=`<p>This page is just for the site owner. Sign in with your Google account.</p><div><button class="gbtn" id="g">Sign in with Google</button></div>`;
+  $("g").onclick=google;
+}
+async function load(user){
+  $("who").innerHTML=`<span class="muted">${esc(user.email||"")}</span><button class="ghost" id="out">Sign out</button>`;
+  $("out").onclick=()=>signOut(auth);
+  if(!SUPER_EMAILS.includes((user.email||"").toLowerCase())){
+    main.innerHTML=`<p class="err">${esc(user.email||"This account")} isn't a site admin.</p><p class="muted">Sign out and sign in with the site owner's Google account.</p>`;return;
+  }
+  main.innerHTML=`<p class="muted">Counting…</p>`;
+  try{
+    const crewSnap=await getDocs(collection(db,"crews"));
+    const crews=crewSnap.docs.map(d=>({id:d.id,...d.data()}));
+    // per-crew counts (no special database indexes needed)
+    const per=await Promise.all(crews.map(async c=>{
+      const [rv,jn]=await Promise.all([
+        getCountFromServer(collection(db,"crews",c.id,"reviews")).then(s=>s.data().count).catch(()=>null),
+        getCountFromServer(collection(db,"crews",c.id,"joins")).then(s=>s.data().count).catch(()=>null)]);
+      return {...c,reviews:rv,joined:jn};
+    }));
+    const opt=p=>p.catch(()=>null);
+    const [sharesN,resultsN,usersN,sharesSnap]=await Promise.all([
+      opt(getCountFromServer(collection(db,"shares")).then(s=>s.data().count)),
+      opt(getCountFromServer(collection(db,"results")).then(s=>s.data().count)),
+      opt(getCountFromServer(collection(db,"users")).then(s=>s.data().count)),
+      opt(getDocs(query(collection(db,"shares"),orderBy("at","desc"),limit(50))))]);
+    const sum=k=>per.reduce((a,c)=>a+(c[k]||0),0);
+    const fam=per.filter(c=>c.type!=="mates").length, mates=per.filter(c=>c.type==="mates").length;
+    const people=per.reduce((a,c)=>a+(Array.isArray(c.members)?c.members.length:0),0);
+    const weekAgo=Date.now()-7*864e5, newCrews=per.filter(c=>(c.createdAt||0)>weekAgo).length;
+    const tile=(label,val,note)=>`<div class="tile"><b>${label}</b><span>${val==null?"–":val}</span>${note?`<small>${note}</small>`:""}</div>`;
+    const shares=sharesSnap?sharesSnap.docs.map(d=>d.data()):[];
+    const byCh={};shares.forEach(s=>{byCh[s.channel||"email"]=(byCh[s.channel||"email"]||0)+1});
+    per.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    main.innerHTML=`
+      <div class="row" style="justify-content:space-between"><h2>Overview</h2><button class="ghost" id="again">Refresh</button></div>
+      <div class="tiles">
+        ${tile("Crews",per.length,`${fam} family · ${mates} mates · ${newCrews} new this week`)}
+        ${tile("Reviews submitted",sum("reviews"),"Saved crew reviews")}
+        ${tile("People in crews",people,`${sum("joined")} joined by link or password`)}
+        ${tile("Solo results saved",resultsN,"Rate Me results saved outside a crew")}
+        ${tile("Report cards shared",sharesN,Object.entries(byCh).map(([k,v])=>`${k} ${v}`).join(" · ")||"")}
+        ${tile("Signed-in users",usersN,"People with a crew list")}
+      </div>
+      <h2>Crews</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Crew</th><th>Type</th><th>Created</th><th style="text-align:right">People</th><th style="text-align:right">Joined</th><th style="text-align:right">Reviews</th><th>Leaderboard</th></tr></thead>
+        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td><span class="pill ${c.type==="mates"?"mates":"family"}">${c.type==="mates"?"Mates":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td></tr>`).join("")||`<tr><td colspan="7" class="muted">No crews yet.</td></tr>`}</tbody>
+      </table></div>
+      <h2>Latest shares</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>When</th><th>How</th><th>Sent to</th><th>Review</th><th>Grade</th></tr></thead>
+        <tbody>${shares.map(s=>`<tr><td>${when(s.at)}</td><td>${esc(s.channel||"email")}</td><td>${esc(s.email||s.phone||"–")}</td><td>${esc(s.subject||"")} ${s.set==="mates"?"(Mate)":s.who==="me"?"(Personal)":"(Family)"}</td><td>${esc(s.grade||"")}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">No shares yet${sharesSnap?"":" (or not readable: publish the latest security rules)"}.</td></tr>`}</tbody>
+      </table></div>
+      <p class="muted">Updated ${when(Date.now())}.</p>`;
+    $("again").onclick=()=>load(user);
+  }catch(x){
+    main.innerHTML=`<p class="err">Couldn't load the numbers${x&&x.code?` (${esc(x.code)})`:""}.</p><p class="muted">${x&&x.code==="permission-denied"?"Publish the latest security rules in Firebase (they give this account read access).":"Check your connection and tap Refresh."}</p><div><button class="ghost" id="again">Refresh</button></div>`;
+    $("again").onclick=()=>load(user);
+  }
+}
+let got=false;
+onAuthStateChanged(auth,u=>{got=true;if(!u||u.isAnonymous)signedOut();else load(u)});
+setTimeout(()=>{if(!got)main.innerHTML=`<p class="err">Sign-in didn't start. Check your connection and reload.</p>`},15000);
+</script>
+</body>
+</html>
