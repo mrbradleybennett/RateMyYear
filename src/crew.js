@@ -782,11 +782,62 @@ function syncPick(){
   }
 }
 
+/* ---------- self vs crew on the report card ---------- */
+const VIEW=(label,v,note)=>{const g=v==null?null:grade(v);return `<div class="view"${g?` style="--g:${gcol(g)}"`:""}><span class="vg">${g||"–"}</span><span class="vt"><b>${label}</b><span>${v==null?"–":v.toFixed(1)+" / 10"}</span>${note?`<small>${note}</small>`:""}</span></div>`};
+function selfVsCrew(rows,avg){
+  if(!REVIEW_PAGE) return null;
+  if(!crew||!target){
+    if(state.who!=="me") return null;
+    return {self:avg,crew:null,crewN:0,selfNote:"Your own rating",crewNote:"Join or create a crew to see how others rate you",gaps:null};
+  }
+  const tid=target.id, isSelf=tid===me, nm=target.name;
+  const myRid=`${user.uid}_${tid}`, mine=reviews().find(r=>r.id===myRid), myKey=mine?(mine.boardKey||legacyKey(myRid)):"";
+  const by=(boardById&&boardById[tid]&&boardById[tid].by)||{};
+  const readable=liveReviews().filter(r=>r.member===tid&&r.id!==myRid);
+  const selfRev=readable.find(r=>r.reviewer===tid)||null, otherRevs=readable.filter(r=>r.reviewer!==tid);
+  // overall: board first (everyone can read it), readable reviews as a fallback
+  let crewVals=Object.entries(by).filter(([k,e])=>!e.self&&k!==myKey).map(([k,e])=>e.o);
+  if(!crewVals.length) crewVals=otherRevs.map(r=>r.overall).filter(v=>typeof v==="number");
+  let selfV;
+  if(isSelf) selfV=avg;
+  else{ const se=Object.values(by).find(e=>e.self); selfV=se?se.o:(selfRev?selfRev.overall:null); if(avg!=null) crewVals=[...crewVals,avg]; }
+  const crewV=crewVals.length?mean(crewVals):null;
+  // per-area: needs the person's own review and the crew's (readable for yourself, or for crew admins)
+  const live=Object.fromEntries(rows.filter(r=>r.avg!=null).map(r=>[r.c.id,r.avg]));
+  const selfCats=isSelf?live:(selfRev&&selfRev.cats)||null;
+  const crewList=[...otherRevs.map(r=>r.cats||{}),...(isSelf?[]:[live])];
+  const crewCats=crewList.length?Object.fromEntries(CATS.map(c=>{const vs=crewList.map(x=>x[c.id]).filter(v=>v!=null);return [c.id,vs.length?mean(vs):null]})):null;
+  let gaps=null;
+  if(selfCats&&crewCats&&(isSelf?otherRevs.length:true)) gaps=CATS.filter(c=>selfCats[c.id]!=null&&crewCats[c.id]!=null).map(c=>({c,s:selfCats[c.id],k:crewCats[c.id],d:selfCats[c.id]-crewCats[c.id]})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
+  const n=crewVals.length;
+  return {self:selfV,crew:crewV,crewN:n,isSelf,nm,gaps,
+    selfNote:isSelf?"How you rate yourself":(selfV==null?`${esc(nm)} hasn't done a self review yet`:`How ${esc(nm)} rates themselves`),
+    crewNote:n?`Average of ${n} review${n===1?"":"s"} from the crew${isSelf?"":" (including yours)"}`:(isSelf?"No one in the crew has reviewed you yet":"")};
+}
+function paintViews(rows,avg){
+  const vb=$("views"), gb=$("gaps"); if(!vb||!gb) return;
+  const v=selfVsCrew(rows,avg); window.__views=v;
+  if(v&&v.self!=null&&v.crew!=null&&window._summary) window._summary=window._summary.replace("\n\n",`\nSelf assessment: ${grade(v.self)} (${v.self.toFixed(1)}) · Crew assessment: ${grade(v.crew)} (${v.crew.toFixed(1)})\n\n`);
+  if(!v){vb.hidden=true;gb.hidden=true;return}
+  vb.innerHTML=VIEW("Self assessment",v.self,v.selfNote)+VIEW("Crew assessment",v.crew,v.crewNote); vb.hidden=false;
+  if(v.self==null||v.crew==null){gb.hidden=true;return}
+  const you=v.isSelf, them=esc(v.nm), d=v.self-v.crew;
+  const subj=you?"You rate yourself":`${them} rates themselves`;
+  const overall=Math.abs(d)<0.5?`Overall, ${you?"your view":`${them}'s view`} and the crew's are pretty much in line (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`
+    :`Overall, ${subj.charAt(0).toLowerCase()+subj.slice(1)} <b>${Math.abs(d).toFixed(1)} ${d>0?"higher":"lower"}</b> than the crew does (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`;
+  const big=(v.gaps||[]).filter(x=>Math.abs(x.d)>=1).slice(0,3);
+  const line=x=>x.d>0?`<b>${x.c.name}</b>: ${subj.charAt(0).toLowerCase()+subj.slice(1)} ${Math.abs(x.d).toFixed(1)} higher than the crew does (${x.s.toFixed(1)} vs ${x.k.toFixed(1)}).`
+    :`<b>${x.c.name}</b>: the crew rates ${you?"you":them} ${Math.abs(x.d).toFixed(1)} higher than ${you?"you do":"they do"} (${x.k.toFixed(1)} vs ${x.s.toFixed(1)}).`;
+  gb.innerHTML=`<h3>Biggest gaps: self vs crew</h3><p>${overall}</p>`+(big.length?`<ul>${big.map(x=>`<li>${line(x)}</li>`).join("")}</ul>`:v.gaps?`<p class="muted">No area differs by a full point or more.</p>`:`<p class="muted">${you?"Area-by-area gaps show once someone in the crew has reviewed you.":`Only ${them} and the crew admin see the area-by-area gaps.`}</p>`);
+  gb.hidden=false;
+}
+
 let last=null, savedSig="";
 const sig=()=>JSON.stringify([state.v,state.dk]);
 const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
   last={rows,avg};
+  try{paintViews(rows,avg)}catch(x){console.warn(x)}
   if(crew&&entry==="join") entry="rate";
   if(REVIEW_PAGE&&!$("shareBox").hidden){clearTimeout(window.__cardT);window.__cardT=setTimeout(()=>$("shareBtn")&&$("shareBox")&&!$("shareBox").hidden&&window.__rebuildCard&&window.__rebuildCard(),400)}
   document.body.classList.toggle("in-crew",!!crew);

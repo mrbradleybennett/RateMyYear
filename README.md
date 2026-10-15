@@ -8,6 +8,8 @@ A one-page website for rating yourself, your mates and your family across the ar
 
 **Crews:** every new crew is a **Family** crew or a **Mates** crew, and everyone in it is rated on that crew's questions. (Older crews without a type: the admin is asked to pick one on My Crew.) Once you've joined, the crew box shows **Review My Crew**, your crew's name, the **I am** dropdown and the **Crew leaderboard**, with a Review button next to each person. The leaderboard is stored in `crews/{id}/board`, one anonymous entry per review, so the crew sees everyone's scores but not who gave which.
 
+**Self vs crew:** in a crew, the report card shows the **Self assessment** and **Crew assessment** overall ratings side by side, and a **Biggest gaps** summary above the Top 3: the overall gap plus up to three areas that differ by a point or more. The area-by-area gaps show for your own review, and for crew admins. Everyone else sees the overall gap, taken from the leaderboard. Solo Rate Me shows the self rating with a prompt to join or create a crew.
+
 **Headings:** Rate My Family shows "End Of Year Family Review" and Rate My Mates shows "End Of Year Mate Review", each with its own tagline.
 
 **Two question sets:**
