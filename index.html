@@ -44,7 +44,7 @@ h1{font-size:clamp(40px,8.5vw,76px)}
 h2{font-size:clamp(30px,5.5vw,46px)}
 h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;padding:0 .16em;transform:rotate(-1.5deg)}
 .lede{font-size:clamp(18px,2.4vw,21px);max-width:44ch;margin:0}
-.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:center}
+.hero{display:block}
 .hero-text{display:flex;flex-direction:column;gap:16px}
 .sec{display:flex;flex-direction:column;gap:18px}
 .sec-head{display:flex;flex-direction:column;gap:10px;max-width:60ch}
@@ -55,8 +55,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 /* example report card */
 .card{background:var(--panel);border:2px solid var(--green);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,77,50,.12)}
 .card-top{background:#0f4d32;color:#eef1ec;padding:20px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
-.rt-row{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;width:100%}
-.hview{display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(255,255,255,.08);border-radius:12px;padding:10px 8px}
+.rt-row{display:flex;justify-content:center;gap:clamp(28px,8vw,72px);width:100%}
+.hview{display:flex;flex-direction:column;align-items:center;gap:8px}
+.big.tilt{transform:rotate(3deg)}
 .hview .hl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#f2b705}
 .hg{font-family:var(--display);font-size:20px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
 .hview .hn{font-family:var(--mono);font-weight:700}
@@ -65,6 +66,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .card-title{font-family:var(--display);font-size:clamp(22px,3.6vw,30px);line-height:1}
 .card-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .gaps{border-left:4px solid var(--gold);background:var(--soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px;grid-column:1/-1}
+.gaps ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 .gaps b.h{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
 .lists{display:flex;flex-direction:column;gap:12px}
 .lists h3{margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
@@ -92,6 +94,12 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .toggle button small{font-size:15px;opacity:.9}
 .toggle button[aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
 .kind{display:grid;grid-template-columns:1fr 1.1fr;gap:24px;align-items:center;background:var(--panel);border-radius:16px;padding:20px;border:1.5px solid var(--line)}
+.kind p#kText{font-size:clamp(19px,2.6vw,23px);font-weight:700;line-height:1.3}
+.perfect{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.pf-h{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+#kFor{display:flex;flex-wrap:wrap;gap:10px}
+.pop{font-family:var(--display);font-size:clamp(16px,2.4vw,20px);line-height:1.1;background:var(--gold);color:#14231b;padding:8px 14px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 #0f4d32}
+.pop.alt{background:#0f4d32;color:#f2b705;transform:rotate(1.5deg);box-shadow:3px 3px 0 #f2b705}
 .kind h3{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 8px;color:var(--green)}
 .kind p{margin:0 0 10px}
 .areas{display:flex;flex-direction:column;gap:6px;margin-top:8px}
@@ -131,7 +139,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   .benefits{grid-template-columns:1fr 1fr}
 }
 @media (max-width:440px){
-  .rt-row{grid-template-columns:1fr 1fr}.rt-row .big{grid-column:1/-1;grid-row:1;justify-self:center}
+  .big{width:92px;height:92px;font-size:44px}
   .benefits{grid-template-columns:1fr}
   .row{grid-template-columns:20px auto 1fr}.row .tag{grid-column:3}
 }
@@ -141,7 +149,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 <div class="wrap">
 
   <header class="top">
-    <a class="brand" href="./">Rate My Year</a>
+    <a class="brand" href="./">About Rate My Year</a>
     <nav class="choicebar" aria-label="Get started">
       <a class="main" href="review.html?who=me">Rate Me</a>
       <a href="review.html?go=join">Join A Crew</a>
@@ -152,13 +160,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   <section class="hero">
     <div class="hero-text">
       <div class="eyebrow">Rate My Year · Season 2026</div>
-      <h1>Welcome to the End of Year <span>Performance Review</span></h1>
+      <h1>Welcome to your End of Year <span>Performance Review</span></h1>
       <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Review your own performance, or set up a crew and get anonymous feedback from family and friends.</p>
     </div>
-    <figure class="wheel" style="margin:0">
-      <svg id="heroWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example wheel of grades across nine areas"></svg>
-      <figcaption class="legend" id="heroLegend"></figcaption>
-    </figure>
   </section>
 
   <section class="sec">
@@ -169,9 +173,8 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <article class="card" aria-label="Example report card">
       <div class="card-top">
         <div class="rt-row">
-          <div class="hview"><span class="hl">Self assessment</span><span class="hg" style="--g:var(--gB)">B+</span><span class="hn">8.1 / 10</span></div>
-          <div class="big">C+</div>
-          <div class="hview"><span class="hl">Crew assessment</span><span class="hg" style="--g:var(--gC)">C</span><span class="hn">6.3 / 10</span></div>
+          <div class="hview"><span class="hl">Self</span><span class="big">B+</span><span class="hn">8.1 / 10</span></div>
+          <div class="hview"><span class="hl">Crew</span><span class="big tilt">C</span><span class="hn">6.3 / 10</span></div>
         </div>
         <span class="pill">Family Review</span>
         <div class="card-title">Sam Family Report Card</div>
@@ -180,7 +183,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <div class="card-body">
         <div class="wheel"><svg id="cardWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example report card wheel"></svg></div>
         <div class="lists">
-          <div class="gaps"><b class="h">Biggest gaps: self vs crew</b>Sam rates himself <b>1.8 higher</b> than the crew does. <b>Cleanliness</b>: Sam says 8, the crew says 3.5. <b>Love</b>: the crew rates Sam 2.0 higher than he does.</div>
+          <div class="gaps"><b class="h">Biggest gaps: self vs crew</b><ul><li>Overall, Sam rates himself <b>1.8 higher</b> than the crew does.</li><li><b>Cleanliness</b>: Sam says 8, the crew says 3.5.</li><li><b>Love</b>: the crew rates Sam 2.0 higher than he does.</li></ul></div>
           <h3>Top 3</h3>
           <div class="li" style="--g:var(--gA)"><span class="c">A</span>Humour<span class="s">9.0</span></div>
           <div class="li" style="--g:var(--gA)"><span class="c">A-</span>Love<span class="s">8.6</span></div>
@@ -201,13 +204,14 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <p>Each crew gets its own set of questions and its own wheel. Tap to see the difference.</p>
     </div>
     <div class="toggle" role="group" aria-label="Choose a crew type">
-      <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding it all together and who needs a bit of help</small></button>
-      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Perfect for groups of mates and sporting clubs</small></button>
+      <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding you all together</small></button>
+      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Find the best bloke in your group</small></button>
     </div>
     <div class="kind">
       <div>
         <h3 id="kTitle">Family Review</h3>
         <p id="kText"></p>
+        <div class="perfect"><span class="pf-h">Perfect for</span><div id="kFor"></div></div>
         <div class="areas" id="kAreas"></div>
         <p style="margin-top:14px"><a class="tag hold" id="kGo" href="review.html?who=family" style="text-decoration:none;font-size:15px;padding:8px 14px">Try a Family Review →</a></p>
       </div>
@@ -286,10 +290,12 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 const SETS={
   family:{groups:[["Self","var(--green)",["Self Care","Health","Cleanliness"]],["Others","var(--gold)",["Mates","Family & Others","Love"]],["Life","var(--blue)",["Action","Growth Mindset","Humour"]]],
           title:"Family Review",go:"review.html?who=family",cta:"Try a Family Review →",
-          text:"See who is holding it all together and who needs a bit of help. Nine areas across looking after yourself, how you treat the people around you, and getting on with life."},
+          text:"See who is holding you all together, and say what you've always wanted to say but never could.",
+          perfect:["Families who want to be awesome","A different kind of Christmas"]},
   mates:{groups:[["Them","var(--green)",["Vibe","Banter","Generous","Cleanliness"]],["Us","var(--gold)",["Reliable","Loyalty"]],["Life","var(--blue)",["Adventure","Social"]]],
          title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
-         text:"Perfect for groups of mates and sporting clubs. Eight areas: the vibe and banter they bring, whether they've got your back, and whether they're up for it."}};
+         text:"See who the BEST BLOKE is, and who needs to be PUT ON NOTICE.",
+         perfect:["Groups of mates","Sporting clubs"]}};
 const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
 const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
 const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
@@ -313,7 +319,6 @@ function drawWheel(svg,set,vals){
   svg.innerHTML=h;
 }
 const legend=(el,set)=>{el.innerHTML=set.groups.map(([n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")};
-drawWheel(document.getElementById("heroWheel"),SETS.family,[8.2,7.4,5.1,8.8,7.6,9.1,6.3,7.8,9.4]);legend(document.getElementById("heroLegend"),SETS.family);
 drawWheel(document.getElementById("cardWheel"),SETS.family,[6.1,5.7,3.5,7.6,7.0,8.6,4.6,6.4,9.0]);
 const SAMPLE={family:[7.9,6.8,4.2,8.4,7.7,9.0,6.0,7.3,8.8],mates:[9.0,8.6,6.2,4.1,7.8,9.2,7.0,8.3]};
 function showKind(k){
@@ -321,7 +326,8 @@ function showKind(k){
   document.getElementById("tFamily").setAttribute("aria-pressed",k==="family");
   document.getElementById("tMates").setAttribute("aria-pressed",k==="mates");
   document.getElementById("kTitle").textContent=s.title;
-  document.getElementById("kText").textContent=s.text;
+  document.getElementById("kText").innerHTML=esc(s.text).replace(/(BEST BLOKE|PUT ON NOTICE)/g,"<b>$1</b>");
+  document.getElementById("kFor").innerHTML=s.perfect.map((t,i)=>`<span class="pop${i%2?" alt":""}">${esc(t)}</span>`).join("");
   document.getElementById("kAreas").innerHTML=s.groups.map(([n,c,ids])=>`<div><b style="color:${c}">${n}</b>${ids.join(" · ")}</div>`).join("");
   const go=document.getElementById("kGo");go.href=s.go;go.textContent=s.cta;
   drawWheel(document.getElementById("kindWheel"),s,SAMPLE[k]);legend(document.getElementById("kindLegend"),s);
