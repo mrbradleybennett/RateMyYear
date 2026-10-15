@@ -18,6 +18,7 @@ const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
 let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
+let resetArmed=false, resetting=false;
 let boardById={}, boardSyncT=0, typeArmed="", boardUnsub=null, boardSubOn=false;
 let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
 let invite=null; // {crew, code} from the link
@@ -484,6 +485,7 @@ function viewCrewShell(){
     </div>
     <p class="err" id="famErr" hidden></p>
     <div id="famResults"></div>
+    <div class="danger" id="resetAllBox" hidden></div>
     <div id="adminArea" hidden>
       <div class="admin-head"><h3>Crew admin</h3>
         <div class="tabs" role="tablist">
@@ -667,6 +669,31 @@ async function syncBoard(){
   if(n) try{await b.commit()}catch(x){console.warn("leaderboard sync",x)}
 }
 
+/* Crew admin: reset all reviews. Keeps the crew, its people and everyone's names; deletes every review
+   and clears the leaderboard so the crew can start fresh. */
+function renderResetAll(show){
+  const box=$("resetAllBox"); if(!box) return;
+  box.hidden=!show; if(!show){box.innerHTML="";return}
+  const n=reviews().length;
+  const key=`${n}|${resetArmed}|${resetting}`; if(box.dataset.k===key) return; box.dataset.k=key;
+  box.innerHTML=`<p><b>Reset all</b>: delete all ${n} review${n===1?"":"s"} in this crew and clear the leaderboard. Everyone stays in the crew with their name, ready to start again.</p>`+
+    (resetting?`<p class="muted">Resetting…</p>`
+    :resetArmed?`<p class="err">This deletes every review in ${esc(crew.name)} for good. It can't be undone.</p><div class="row-btns"><button type="button" class="dangerbtn" id="resetAllYes">Yes, delete all ${n} review${n===1?"":"s"}</button><button type="button" class="ghost" id="resetAllNo">Cancel</button></div>`
+    :`<div class="row-btns"><button type="button" class="ghost dangerline" id="resetAllGo"${n?"":" disabled"}>Reset all</button></div>`);
+  if($("resetAllGo")) $("resetAllGo").onclick=()=>{resetArmed=true;renderResetAll(true)};
+  if($("resetAllNo")) $("resetAllNo").onclick=()=>{resetArmed=false;renderResetAll(true)};
+  if($("resetAllYes")) $("resetAllYes").onclick=resetAll;
+}
+async function resetAll(){
+  if(!crew||!isAdmin()) return;
+  resetting=true; renderResetAll(true);
+  try{
+    const refs=[...reviews().map(r=>doc(db,"crews",crewId,"reviews",r.id)),...Object.keys(boardById||{}).map(id=>doc(db,"crews",crewId,"board",id))];
+    for(let i=0;i<refs.length;i+=400){const b=writeBatch(db);refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit()}
+    toast(`All reviews in ${crew.name} have been deleted. The crew can start fresh.`);
+  }catch(x){famErr(errText(x))}
+  resetting=false; resetArmed=false; renderResetAll(true);
+}
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
@@ -725,6 +752,7 @@ function refresh(){
   const bt=$("boardToggle"); bt.hidden=!(ADMIN&&admin);
   if(!bt.hidden){$("boardOn").checked=crew.showBoard!==false;$("boardOn").onchange=async e=>{try{await updateDoc(doc(db,"crews",crewId),{showBoard:e.target.checked});toast(e.target.checked?"Leaderboard switched on for the crew.":"Leaderboard hidden from the crew.")}catch(x){e.target.checked=!e.target.checked;famErr(errText(x))}}}
   renderBoard();
+  renderResetAll(ADMIN&&admin);
   const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
