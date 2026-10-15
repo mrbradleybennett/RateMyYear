@@ -789,10 +789,12 @@ function refresh(){
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     const score=open?(b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
-    const award=open&&crew.type==="mates"&&i===0&&b.v!=null&&ranked.filter(x=>x.b.v!=null).length>=2;
+    const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
+    const award=open&&i===0&&b.v!=null&&nScored>=2;
+    const bottom=open&&b.v!=null&&nScored>=3&&i===nScored-1;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 Best Bloke Award</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Holding You All Together Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Put On Notice":"🤝 Needs Some Family Support"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -1064,7 +1066,7 @@ if(REVIEW_PAGE){
   $("choiceJoin").onclick=()=>{entry="join";paintEntry();startJoin()};
   $("endJoin").onclick=()=>$("choiceJoin").click();
   /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
-  ["who-family","who-mate"].forEach(id=>$(id).addEventListener("change",()=>{
+  ["who-family","who-mate","who-me"].forEach(id=>$(id).addEventListener("change",()=>{
     if(entry!=="join") return;
     entry="rate"; paintEntry();
     if(!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }

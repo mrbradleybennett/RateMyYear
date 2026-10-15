@@ -101,7 +101,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .kind p#kText{font-size:clamp(19px,2.6vw,23px);font-weight:700;line-height:1.3}
 .perfect{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
 .pf-h{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-#kFor{display:flex;flex-wrap:wrap;gap:10px}
+#kFor,#kAwards{display:flex;flex-wrap:wrap;gap:10px}
+.pop.award{background:#f2b705;color:#14231b;box-shadow:3px 3px 0 #0f4d32}
+.pop.award.low{background:var(--gE);color:#fff;transform:rotate(1.5deg);box-shadow:3px 3px 0 #0f4d32}
 .pop{font-family:var(--display);font-size:clamp(16px,2.4vw,20px);line-height:1.1;background:var(--gold);color:#14231b;padding:8px 14px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 #0f4d32}
 .pop.alt{background:#0f4d32;color:#f2b705;transform:rotate(1.5deg);box-shadow:3px 3px 0 #f2b705}
 .kind h3{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 8px;color:var(--green)}
@@ -225,6 +227,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <div>
         <h3 id="kTitle">Family Review</h3>
         <p id="kText"></p>
+        <div class="perfect"><span class="pf-h">Awards</span><div id="kAwards"></div></div>
         <div class="perfect"><span class="pf-h">Perfect for</span><div id="kFor"></div></div>
         <div class="areas" id="kAreas"></div>
         <p style="margin-top:14px"><a class="tag hold" id="kGo" href="review.html?who=family" style="text-decoration:none;font-size:15px;padding:8px 14px">Try a Family Review →</a></p>
@@ -247,10 +250,10 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
         <div class="crewcard" aria-label="Example family crew report">
           <div class="ch"><b>The Bennetts</b><span class="eyebrow">Family crew</span></div>
           <div class="crewscore" style="--g:var(--gB)"><span class="cc">B-</span><div><b>Crew score</b><span>7.2 / 10</span></div></div>
-          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A-</span><span class="n">Mum<small>8.6 / 10 · 4 reviews</small></span><span class="tag hold">Holding it together</span></div>
+          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A-</span><span class="n">Mum<small>8.6 / 10 · 4 reviews</small></span><span class="tag best">🏆 Holding You All Together Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Nikki<small>7.5 / 10 · 4 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C+</span><span class="n">Dad<small>6.6 / 10 · 3 reviews</small></span></div>
-          <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag help">Needs a hand</span></div>
+          <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag notice">🤝 Needs Some Family Support</span></div>
           <div class="improve"><b>What the crew could work on together</b>
             <div class="imp"><span class="area">Cleanliness · D+</span>Clean up as you go: dishes away, clothes off the floor.</div>
             <div class="imp"><span class="area">Action · C-</span>Do the worst job first thing each morning.</div>
@@ -265,7 +268,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
           <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 Best Bloke Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
-          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">On notice</span></div>
+          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Put On Notice</span></div>
           <div class="improve"><b>What the crew could work on together</b>
             <div class="imp"><span class="area">Reliable · D</span>Stop saying maybe. Give a straight yes or no.</div>
             <div class="imp"><span class="area">Cleanliness · D+</span>Shower, deodorant, clean clothes: every time you head out.</div>
@@ -312,11 +315,13 @@ const SETS={
   family:{groups:[["Self","var(--green)",["Self Care","Health","Cleanliness"]],["Others","var(--gold)",["Mates","Family & Others","Love"]],["Life","var(--blue)",["Action","Growth Mindset","Humour"]]],
           title:"Family Review",go:"review.html?who=family",cta:"Try a Family Review →",
           text:"See who is holding you all together, and say what you've always wanted to say but never could.",
-          perfect:["Families who want to be awesome","A different kind of Christmas"]},
+          perfect:["Families who want to be awesome","A different kind of Christmas"],
+          awards:["🏆 Holding You All Together Award","🤝 Who Needs Some Family Support"]},
   mates:{groups:[["Them","var(--green)",["Vibe","Banter","Generous","Cleanliness"]],["Us","var(--gold)",["Reliable","Loyalty"]],["Life","var(--blue)",["Adventure","Social"]]],
          title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
          text:"See who the BEST BLOKE is, and who needs to be PUT ON NOTICE.",
-         perfect:["Groups of mates","Sporting clubs"]}};
+         perfect:["Groups of mates","Sporting clubs"],
+         awards:["🏆 Best Bloke Award","⚠️ Who's Going To Be Put On Notice"]}};
 const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
 const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
 const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
@@ -348,6 +353,7 @@ function showKind(k){
   document.getElementById("tMates").setAttribute("aria-pressed",k==="mates");
   document.getElementById("kTitle").textContent=s.title;
   document.getElementById("kText").innerHTML=esc(s.text).replace(/(BEST BLOKE|PUT ON NOTICE)/g,"<b>$1</b>");
+  document.getElementById("kAwards").innerHTML=s.awards.map((t,i)=>`<span class="pop award${i?" low":""}">${esc(t)}</span>`).join("");
   document.getElementById("kFor").innerHTML=s.perfect.map((t,i)=>`<span class="pop${i%2?" alt":""}">${esc(t)}</span>`).join("");
   document.getElementById("kAreas").innerHTML=s.groups.map(([n,c,ids])=>`<div><b style="color:${c}">${n}</b>${ids.join(" · ")}</div>`).join("");
   const go=document.getElementById("kGo");go.href=s.go;go.textContent=s.cta;
