@@ -941,8 +941,11 @@ function paintViews(rows,avg){
   const vb=$("views"), gb=$("gaps"); if(!vb||!gb) return;
   const v=selfVsCrew(rows,avg); window.__views=v;
   if(v&&v.self!=null&&v.crew!=null&&window._summary) window._summary=window._summary.replace("\n\n",`\nSelf assessment: ${grade(v.self)} (${v.self.toFixed(1)}) · Crew assessment: ${grade(v.crew)} (${v.crew.toFixed(1)})\n\n`);
-  if(!v){vb.hidden=true;gb.hidden=true;return}
-  vb.innerHTML=VIEW("Self assessment",v.self,v.selfNote)+VIEW("Crew assessment",v.crew,v.crewNote); vb.hidden=false;
+  const hs=$("viewSelf"), hc=$("viewCrew");
+  const HV=(el,label,val,note)=>{const g=val==null?null:grade(val);el.style.setProperty("--g",g?gcol(g):"rgba(255,255,255,.15)");el.innerHTML=`<span class="hl">${label}</span><span class="hg">${g||"–"}</span><span class="hn">${val==null?"–":val.toFixed(1)+" / 10"}</span>${note?`<small>${note}</small>`:""}`;el.hidden=false};
+  vb.hidden=true;
+  if(!v){hs.hidden=true;hc.hidden=true;gb.hidden=true;return}
+  HV(hs,"Self assessment",v.self,v.selfNote); HV(hc,"Crew assessment",v.crew,v.crewNote);
   if(v.self==null||v.crew==null){gb.hidden=true;return}
   const you=v.isSelf, them=esc(v.nm), d=v.self-v.crew;
   const subj=you?"You rate yourself":`${them} rates themselves`;
