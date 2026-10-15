@@ -18,7 +18,7 @@ const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
 let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
-let boardById={}, boardSyncT=0;
+let boardById={}, boardSyncT=0, typeArmed="";
 let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
 let invite=null; // {crew, code} from the link
 let guestTried=false;
@@ -632,7 +632,7 @@ function syncBoardSoon(){clearTimeout(boardSyncT);boardSyncT=setTimeout(syncBoar
 async function syncBoard(){
   if(!crew||!isAdmin()||boardById===null) return;
   const want={};
-  liveReviews().forEach(r=>{if(typeof r.overall!=="number")return;(want[r.member]=want[r.member]||{})[r.boardKey||legacyKey(r.id)]={o:r.overall,self:r.reviewer===r.member}});
+  liveReviews().forEach(r=>{if(typeof r.overall!=="number"||(r.set||"life")!==setOf(r.member).key)return;(want[r.member]=want[r.member]||{})[r.boardKey||legacyKey(r.id)]={o:r.overall,self:r.reviewer===r.member}});
   const ids=new Set([...Object.keys(want),...Object.keys(boardById||{})]);
   const b=writeBatch(db); let n=0;
   ids.forEach(mid=>{
@@ -653,10 +653,27 @@ function refresh(){
   $("notAdmin").hidden=!(ADMIN&&!admin); $("toMyCrew").hidden=ADMIN||!admin;
   $("addForm").hidden=!(ADMIN&&admin); $("memList").hidden=ADMIN&&!admin;
   $("newTypeF").hidden=!!crew.type; $("addMeTypeF").hidden=!!crew.type;
-  const tbx=$("typeBox"); tbx.hidden=!(ADMIN&&admin&&!crew.type);
-  if(!tbx.hidden&&!tbx.innerHTML){tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews use the family questions, Mates crews use the mates questions and get a leaderboard. You can only set this once.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
-    tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=async()=>{try{const t=b.dataset.ctype;await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});tbx.innerHTML=""}catch(x){famErr(errText(x))}})}
-  if(tbx.hidden) tbx.innerHTML="";
+  /* Crew type (admins, on My Crew). Switching keeps every saved review; only reviews on the crew's
+     current questions count, so switching back brings the earlier ones back. */
+  const tbx=$("typeBox"); tbx.hidden=!(ADMIN&&admin);
+  const tkey=`${crew.type||""}|${typeArmed}`;
+  if(!tbx.hidden&&tbx.dataset.k!==tkey){
+    tbx.dataset.k=tkey;
+    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});typeArmed="";toast(`This is now a ${t==="mates"?"Mates":"Family"} crew.`)}catch(x){famErr(errText(x))}};
+    if(!crew.type){
+      tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews use the family questions. Mates crews use the mates questions.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
+      tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>setType(b.dataset.ctype));
+    }else{
+      const other=crew.type==="mates"?"family":"mates", On=other==="mates"?"Mates":"Family";
+      tbx.innerHTML=`<p><b>Crew type: ${crew.type==="mates"?"Mates":"Family"}</b>. Everyone is rated on the ${crew.type==="mates"?"mates":"family"} questions.</p>`+
+        (typeArmed?`<p class="err">Switch to ${On}? Reviews already saved are kept but won't count until you switch back. Everyone would need to review again on the ${other} questions.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${On}</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
+          :`<div class="row-btns"><button type="button" class="ghost sm" id="typeSwitch">Switch to a ${On} crew</button></div>`);
+      if($("typeSwitch")) $("typeSwitch").onclick=()=>{typeArmed=other;refresh()};
+      if($("typeNo")) $("typeNo").onclick=()=>{typeArmed="";refresh()};
+      if($("typeYes")) $("typeYes").onclick=()=>setType(other);
+    }
+  }
+  if(tbx.hidden){tbx.innerHTML="";tbx.dataset.k=""}
   $("boardTitle").hidden=ADMIN; $("boardNote").hidden=true;
   if(!ADMIN&&boardById===null){$("boardNote").textContent="The leaderboard isn't switched on yet. The crew admin needs to publish the latest security rules.";$("boardNote").hidden=false}
   const tb=document.getElementById("choiceCreate"); if(tb&&!ADMIN) tb.textContent=admin?"My Crew":"Create A Crew";
