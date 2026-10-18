@@ -64,8 +64,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .grade{font-family:var(--display);font-size:22px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g);transition:background .25s}
 
 .q{display:flex;flex-direction:column;gap:6px}
-.q-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
-.q-top p{margin:0;font-weight:600;min-width:0}
+.q>p{margin:0;font-weight:600}
+.q-ctrl{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:2px}
 .q-val{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;color:var(--green);flex:none}
 .ends{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--muted)}
 .ends span:last-child{text-align:right}
@@ -190,7 +190,7 @@ body.has-bar .wrap{padding-bottom:120px}
 [hidden]{display:none!important}
 .crew-box{border-top:2px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px}
 .crew-box h3{margin:0;font-size:18px}
-.src-block .q-top p{font-size:17px}
+.src-block .q>p{font-size:17px}
 .auto{margin:0;font-size:13px;color:var(--muted)}
 details.more summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;font-weight:700;color:var(--green);flex-wrap:wrap}
 details.more summary::-webkit-details-marker{display:none}
@@ -240,7 +240,6 @@ input[type=range]:disabled{cursor:default;opacity:.6}
 .wgrade{font-family:var(--display);font-size:20px;fill:var(--green)}
 .cat h2 .num{font-family:var(--mono);font-size:14px;color:var(--muted);margin-right:10px;vertical-align:middle}
 .grade.unknown{color:var(--muted)}
-.q-right{display:flex;align-items:center;gap:12px;flex:none}
 .dk{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .dk input{width:16px;height:16px;accent-color:var(--green);margin:0}
 .q.is-dk .ends,.q.is-dk input[type=range]{opacity:.4}
@@ -652,7 +651,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const $m=id=>document.getElementById(id);
 
 /* ---------- category cards ---------- */
-const qHTML=(key,lo,hi)=>`<div class="q" id="q-${key}"><div class="q-top"><p id="l-${key}"></p><span class="q-right"><label class="dk"><input type="checkbox" id="k-${key}"> Don't know</label><span class="q-val" id="v-${key}">5</span></span></div>
+const qHTML=(key,lo,hi)=>`<div class="q" id="q-${key}"><p id="l-${key}"></p><div class="q-ctrl"><label class="dk"><input type="checkbox" id="k-${key}"> Don't know</label><span class="q-val" id="v-${key}">5</span></div>
    <input type="range" id="r-${key}" min="1" max="10" step="1" aria-labelledby="l-${key}">
    <div class="ends"><span>${lo}</span><span id="e-${key}">${hi}</span></div></div>`;
 const host=$m("cats");
