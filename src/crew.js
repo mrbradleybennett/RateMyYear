@@ -1108,8 +1108,8 @@ if(REVIEW_PAGE){
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
     const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a", from=sender();
-    if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\nRate your family and friends at:\nwww.ratemyyear.com`;
-    return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nRate your family and friends at:\nwww.ratemyyear.com`;
+    if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
+    return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
   async function record(channel,extra){

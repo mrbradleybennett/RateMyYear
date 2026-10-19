@@ -132,6 +132,9 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 .endbtn b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.05}
 .endbtn small{font-size:14px;color:var(--muted);line-height:1.35}
 .endbtn:first-child{background:var(--green);color:var(--panel)}.endbtn:first-child small{color:var(--panel);opacity:.85}
+.gift{font-family:var(--display);font-size:clamp(20px,3vw,26px);color:var(--ink);margin:0}
+.gift b{font-weight:400;background:var(--gold);color:#14231b;padding:0 .2em;border-radius:4px}
+.report-body>.gift{text-align:center}
 .endbtn[hidden],#fromField[hidden]{display:none}
 .endbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
@@ -389,6 +392,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <h1 id="heroH1">End Of Year <span>Review</span></h1>
       <p class="herotag" id="heroTag" hidden></p>
       <ul class="lede steps" id="lede"></ul>
+      <p class="gift">Feedback is a <b>GIFT</b></p>
     </div>
     <figure class="wheel-wrap">
       <svg id="wheel" viewBox="-235 -140 470 280" role="img" aria-label="Grades for the 8 areas"></svg>
@@ -436,6 +440,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       </div>
     </div>
     <div class="report-body">
+      <p class="gift">Feedback is a <b>GIFT</b></p>
       <div class="views" id="views" hidden></div>
       <figure class="wheel-wrap report-wheel">
         <svg id="wheel2" viewBox="-235 -140 470 280" role="img" aria-label="Grades for the 8 areas"></svg>
@@ -847,7 +852,7 @@ async function makeCard(){
   const wrap=(t,w)=>{const out=[];let line="";t.split(" ").forEach(word=>{const tryL=line?line+" "+word:word;if(mx.measureText(tryL).width>w&&line){out.push(line);line=word}else line=tryL});if(line)out.push(line);return out};
   const ideas=two.map(r=>({r,lines:tipsFor(r.c,2).tips.map(t=>wrap(t,860))}));
   const ideaH=ideas.length?70+ideas.reduce((s,d)=>s+70+d.lines.reduce((a,l)=>a+l.length*34+8,0),0):0;
-  const W=1080,H=1440+ideaH+(ideaH?30:0),cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+  const W=1080,H=1500+ideaH+(ideaH?30:0),cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
   const gc=g=>g?PAL[g[0]]:PAL.track;
   const rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()};
   const fit=(t,max)=>{if(x.measureText(t).width<=max)return t;while(t.length>1&&x.measureText(t+"…").width>max)t=t.slice(0,-1);return t+"…"};
@@ -912,6 +917,8 @@ async function makeCard(){
     });
   }
   x.textAlign="center";x.textBaseline="alphabetic";x.fillStyle=PAL.muted;x.font=`600 26px ${FB}`;x.fillText("Rate yours at ratemyyear.com",W/2,H-45);
+  {x.font=`40px ${FD}`;const t1="Feedback is a ",t2="GIFT",w1=x.measureText(t1).width,w2=x.measureText(t2).width,X0=W/2-(w1+w2+16)/2,Y=H-110;
+   x.textAlign="left";x.fillStyle=PAL.ink;x.fillText(t1,X0,Y);x.fillStyle=PAL.gold;x.beginPath();x.roundRect?x.roundRect(X0+w1,Y-38,w2+16,52,6):x.rect(X0+w1,Y-38,w2+16,52);x.fill();x.fillStyle="#14231b";x.fillText(t2,X0+w1+8,Y);x.textAlign="center"}
   return await new Promise(res=>cv.toBlob(res,"image/png"));
 }
 window.makeCard=makeCard;
@@ -2043,8 +2050,8 @@ if(REVIEW_PAGE){
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
     const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a", from=sender();
-    if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\nRate your family and friends at:\nwww.ratemyyear.com`;
-    return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nRate your family and friends at:\nwww.ratemyyear.com`;
+    if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
+    return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
   async function record(channel,extra){
