@@ -1096,7 +1096,7 @@ if(REVIEW_PAGE){
   }));
   /* Share Results: a picture of the report card, sent by the share sheet, WhatsApp, text or email.
      Each send is recorded in the shares collection (channel plus email or mobile if given). */
-  const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote"), hint=$("shareHint");
+  const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote");
   let cardBlob=null, cardUrl="";
   const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
   /* Who the report card is from: your crew name if you've joined a crew, otherwise the From box. */
@@ -1129,55 +1129,22 @@ if(REVIEW_PAGE){
       cardBlob=await window.makeCard(); if(cardUrl) URL.revokeObjectURL(cardUrl); cardUrl=URL.createObjectURL(cardBlob);
       $("cardImg").src=cardUrl; $("cardImg").hidden=false; $("cardMaking").hidden=true; $("saveImg").href=cardUrl;
     }catch(x){$("cardMaking").textContent="Couldn't make the picture on this device. You can still send the summary by WhatsApp, text or email."}
-    const files=canShareFiles();
-    $("shareImg").hidden=!files;
-    hint.textContent=files?"WhatsApp and Text message send the picture and the summary: choose WhatsApp or Messages in the list that pops up."
-      :(window.isSecureContext?"This browser can't attach the picture to a message directly.":"The picture can't go straight into WhatsApp or Messages until the site is on https (the padlock in the address bar).")+" For now WhatsApp and Text message send the words. To add the picture, tap Save picture (or press and hold it and choose Save to Photos), then attach it in the message.";
   }
   window.__rebuildCard=buildCard;
   shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})}};
+  /* Share Report Card: the share list with the picture and the message (pick WhatsApp, Messages, Mail…).
+     Where a device can't share pictures, it shares the words, or opens WhatsApp with them. */
   $("shareImg").onclick=async()=>{
-    if(!ready()||!cardBlob) return;
-    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:cardTitle(),text:shareText()});record("picture",{})}
-    catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
-  };
-  /* Where the device can share files (https on iPhone/iPad/Android), WhatsApp and Text message open the
-     share sheet with the picture AND the words; pick WhatsApp or Messages there. Otherwise they send words only. */
-  const sharePic=async channel=>{
-    if(!canShareFiles()||!cardBlob) return false;
-    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:cardTitle(),text:shareText()});record(channel,phone()?{phone:phone().slice(0,30)}:{});}
-    catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
-    return true;
-  };
-  $("shareWa").onclick=async()=>{
-    if(!ready()) return; if(await sharePic("whatsapp")) return; const p=phone();
-    record("whatsapp",p?{phone:p.slice(0,30)}:{});
+    if(!ready()) return; const p=phone(), extra=p?{phone:p.slice(0,30)}:{};
+    try{
+      if(canShareFiles()&&cardBlob){await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:cardTitle(),text:shareText()});record("picture",extra);return}
+      if(navigator.share){await navigator.share({title:cardTitle(),text:shareText()});record("picture",{...extra,textOnly:true});say2("Only the words were sent: this device can't attach the picture. Tap Save Report to keep the picture.");return}
+    }catch(x){if(x&&x.name==="AbortError")return;say2("Couldn't open sharing. Try Save Report instead.",true);return}
+    record("whatsapp",extra);
     const u=`https://wa.me/${p?intl(p):""}?text=${encodeURIComponent(shareText())}`;
     if(!window.open(u,"_blank")) location.href=u;
   };
-  $("shareSms").onclick=async()=>{
-    if(!ready()) return; if(await sharePic("sms")) return; const p=phone(), apple=/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-    record("sms",p?{phone:p.slice(0,30)}:{});
-    location.href=`sms:${p}${apple?"&":"?"}body=${encodeURIComponent(shareText())}`;
-  };
   $("saveImg").addEventListener("click",e=>{if(!cardBlob){e.preventDefault();return}record("saved",{})});
-  $("shareForm").addEventListener("submit",async e=>{
-    e.preventDefault();
-    const email=$("shareEmail").value.trim();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return say2("Enter a valid email address.",true);
-    if(!ready()) return;
-    $("shareGo").disabled=true; say2("Saving…");
-    await record("email",{email:email.toLowerCase().slice(0,200)});
-    $("shareGo").disabled=false;
-    if(canShareFiles()&&cardBlob){
-      say2(`Choose Mail in the list, then send it to ${email}.`);
-      try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:`${cardTitle()}: ${grade(last.avg)}`,text:shareText()});return}
-      catch(x){if(x&&x.name==="AbortError")return}
-    }
-    say2("Opening your email app… To include the picture, save it first and attach it.");
-    const subject=`${cardTitle()}: ${grade(last.avg)} (Rate My Year)`;
-    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(shareText()+"\n\n"+window._summary.split("\n\n").slice(1).join("\n\n"))}`;
-  });
 }
 
 /* ---------- boot ---------- */
