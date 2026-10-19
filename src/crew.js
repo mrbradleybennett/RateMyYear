@@ -817,7 +817,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&nScored>=3&&i===nScored-1;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Family Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Who's On Notice":"🤝 Needs Some Family Support"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Family Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Who's On Notice":"🤝 Family Support Required"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
