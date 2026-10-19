@@ -41,7 +41,8 @@ a{color:inherit}
 .menu a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none}
-.choicebar.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.choicebar.two{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:560px){.choicebar.two a small{display:none}.choicebar.two a{min-height:64px;padding:10px 6px}.toggle button small{display:none}}
 .choicebar.two a{flex-direction:column;gap:6px;min-height:84px;padding:14px}
 .choicebar.two a b{font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
 .choicebar.two a small{font-family:var(--body);font-size:15px;font-weight:600;opacity:.9}
@@ -99,7 +100,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
 
 /* families / mates */
-.toggle{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .toggle button{font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;padding:14px;border-radius:14px;border:2px solid var(--green);background:var(--panel);color:var(--green)}
 .toggle button b{font-family:var(--display);font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
 .toggle button small{font-size:15px;opacity:.9}
@@ -187,6 +188,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <nav class="choicebar two" aria-label="Get started">
       <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
       <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
+      <a href="review.html?who=partner"><b>Rate My Partner</b><small>See how you're really going as a couple</small></a>
     </nav>
   </header>
 
@@ -240,13 +242,14 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
   <section class="sec">
     <div class="sec-head">
-      <div class="eyebrow">Two kinds of crew review</div>
-      <h2>Families <span>&amp;</span> Mates</h2>
+      <div class="eyebrow">Three kinds of crew review</div>
+      <h2>Families, Mates <span>&amp;</span> Partners</h2>
       <p>Each crew gets its own set of questions and its own wheel. Tap to see the difference.</p>
     </div>
     <div class="toggle" role="group" aria-label="Choose a crew type">
       <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding you all together</small></button>
       <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Find the best bloke in your group</small></button>
+      <button type="button" id="tPartner" aria-pressed="false"><b>Partners</b><small>See how you're really going as a couple</small></button>
     </div>
     <div class="kind">
       <div>
@@ -327,6 +330,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <nav class="choicebar two" aria-label="Get started" style="width:100%">
       <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
       <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
+      <a href="review.html?who=partner"><b>Rate My Partner</b><small>See how you're really going as a couple</small></a>
     </nav>
   </section>
 
@@ -358,7 +362,12 @@ const SETS={
          title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
          text:"See who the BEST BLOKE is, and who needs to be PUT ON NOTICE.",
          perfect:["Groups of mates","Sporting clubs"],
-         awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]}};
+         awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]},
+  partner:{groups:[["Them","var(--green)",["Kindness","Trust","Fun"]],["Us","var(--gold)",["Communication","Romance","Support","Quality Time"]],["Life","var(--blue)",["Fair Share","Money & Plans"]]],
+         title:"Partner Review",go:"review.html?who=partner",cta:"Try a Partner Review →",
+         text:"Rate each other as a couple, and see where you see things differently.",
+         perfect:["Couples","Date night conversation starter"],
+         awards:["💘 Partner of the Year","💐 Date Night Required"]}};
 const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
 const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
 const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
@@ -383,11 +392,12 @@ function drawWheel(svg,set,vals){
 }
 const legend=(el,set)=>{el.innerHTML=set.groups.map(([n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")};
 drawWheel(document.getElementById("cardWheel"),SETS.family,[6.1,5.7,3.5,7.6,7.0,8.6,4.6,6.4,9.0]);
-const SAMPLE={family:[7.9,6.8,4.2,8.4,7.7,9.0,6.0,7.3,8.8],mates:[9.0,8.6,6.2,4.1,7.8,9.2,7.0,8.3]};
+const SAMPLE={family:[7.9,6.8,4.2,8.4,7.7,9.0,6.0,7.3,8.8],mates:[9.0,8.6,6.2,4.1,7.8,9.2,7.0,8.3],partner:[8.4,8.9,7.6,5.2,6.8,8.1,4.6,5.9,7.3]};
 function showKind(k){
   const s=SETS[k];
   document.getElementById("tFamily").setAttribute("aria-pressed",k==="family");
   document.getElementById("tMates").setAttribute("aria-pressed",k==="mates");
+  document.getElementById("tPartner").setAttribute("aria-pressed",k==="partner");
   document.getElementById("kTitle").textContent=s.title;
   document.getElementById("kAwards").innerHTML=s.awards.map((t,i)=>`<span class="pop award${i?" low":""}">${esc(t)}</span>`).join("");
   document.getElementById("kFor").innerHTML=s.perfect.map((t,i)=>`<span class="pop${i%2?" alt":""}">${esc(t)}</span>`).join("");
@@ -397,6 +407,7 @@ function showKind(k){
 }
 document.getElementById("tFamily").onclick=()=>showKind("family");
 document.getElementById("tMates").onclick=()=>showKind("mates");
+document.getElementById("tPartner").onclick=()=>showKind("partner");
 showKind("family");
 </script>
 </body>

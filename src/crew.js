@@ -54,7 +54,7 @@ const rid=(n=10)=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [.
 const members=()=>(crew&&Array.isArray(crew.members))?crew.members:[];
 const memberName=id=>(members().find(m=>m.id===id)||{}).name||"Someone";
 /* A crew is either a Family crew or a Mates crew. Older crews without a type keep each person's own type. */
-const crewMemberType=()=>crew&&crew.type==="mates"?"mate":"family";
+const crewMemberType=()=>CREW_TYPES[crewTypeOf(crew&&crew.type)].member;
 const memberType=id=>crew&&crew.type?crewMemberType():(((members().find(m=>m.id===id)||{}).type)||"family");
 const isMember=id=>members().some(m=>m.id===id);
 const isAdmin=()=>!!(crew&&user&&Array.isArray(crew.adminUids)&&crew.adminUids.includes(user.uid));
@@ -260,7 +260,7 @@ function viewLobby(msg=""){
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
       <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
-      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option></select></div>
+      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option><option value="partner">Partner Review: you and your partner rate each other</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
       <div class="field"><label for="cPw">Crew password</label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
       <p class="muted" style="grid-column:1/-1">Your crew search for the crew name and enter this password to join. The name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
@@ -292,8 +292,8 @@ function viewLobby(msg=""){
     try{
       if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
-      const ctype=$("cType").value==="mates"?"mates":"family";
-      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,passHash:passHash(slug,pw),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:ctype==="mates"?"mate":"family"}],createdAt:Date.now()});
+      const ctype=crewTypeOf($("cType").value);
+      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,passHash:passHash(slug,pw),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:CREW_TYPES[ctype].member}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
       await b.commit();
       await claimMember(id,myId,"");
@@ -490,7 +490,7 @@ function viewCrewShell(){
     </div>
     <form class="form" id="addMeForm" novalidate hidden>
       <div class="field"><label for="addMeName">Your name</label><input id="addMeName" autocomplete="off" placeholder="e.g. Dave"></div>
-      <div class="field" id="addMeTypeF"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
+      <div class="field" id="addMeTypeF"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
       <button type="submit">Add me</button>
     </form>
     <div class="typebox" id="typeBox" hidden></div>
@@ -501,7 +501,7 @@ function viewCrewShell(){
     <div class="members" id="memList"></div>
     <form class="form" id="addForm" novalidate>
       <div class="field"><label for="newMem">Add someone to the crew</label><input id="newMem" autocomplete="off" placeholder="e.g. Nikki or Dave"></div>
-      <div class="field" id="newTypeF"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option></select></div>
+      <div class="field" id="newTypeF"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
       <button type="submit" class="ghost">Add to crew</button>
     </form>
     <div class="invite" id="passBox" hidden></div>
@@ -734,7 +734,7 @@ function renderBoard(){
   if(ADMIN||!crew){sec.hidden=true;return}
   sec.hidden=false;
   const ms=members(), open=boardOpen(), mates=crew.type==="mates";
-  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":"Ranked by what the rest of the crew thinks.";
+  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Ranked by what your partner thinks.":"Ranked by what the rest of the crew thinks.";
   const wrap=$("boardWrap"), lock=$("boardLock"), list=$("boardList");
   if(!open){
     const fake=["A","B+","B","C+","C","D"];
@@ -768,18 +768,18 @@ function refresh(){
   const tkey=`${crew.type||""}|${typeArmed}`;
   if(!tbx.hidden&&tbx.dataset.k!==tkey){
     tbx.dataset.k=tkey;
-    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:t==="mates"?"mate":"family"}))});typeArmed="";toast(`Switched to ${t==="mates"?"Mate":"Family"} Review.`)}catch(x){famErr(errText(x))}};
+    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:CREW_TYPES[t].member}))});typeArmed="";toast(`Switched to ${CREW_TYPES[t].review}.`)}catch(x){famErr(errText(x))}};
     if(!crew.type){
-      tbx.innerHTML=`<p><b>Is this a Family crew or a Mates crew?</b> Family crews answer the family questions. Mates crews answer the mates questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns"><button type="button" data-ctype="family">Family crew</button><button type="button" data-ctype="mates">Mates crew</button></div>`;
+      tbx.innerHTML=`<p><b>What kind of crew is this?</b> Family crews answer the family questions, Mates crews the mates questions and Partner crews the partner questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns">${Object.keys(CREW_TYPES).map(t=>`<button type="button" data-ctype="${t}">${CREW_TYPES[t].crew}</button>`).join("")}</div>`;
       tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>setType(b.dataset.ctype));
     }else{
-      const other=crew.type==="mates"?"family":"mates", On=other==="mates"?"Mates":"Family";
-      tbx.innerHTML=`<p><b>Review type: ${crew.type==="mates"?"Mate Review":"Family Review"}</b>. Everyone is rated on the ${crew.type==="mates"?"mates":"family"} questions.</p><p class="muted">If you move to a different review type, your crew will be asked a different sort of questions and existing reviews won't come across. They're kept, and count again if you switch back.</p>`+
-        (typeArmed?`<p class="err">Switch to ${On==="Mates"?"Mate":"Family"} Review? Your crew will be asked the ${other} questions and existing reviews won't come across. Everyone needs to review again.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${On==="Mates"?"Mate":"Family"} Review</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
-          :`<div class="row-btns"><button type="button" class="ghost sm" id="typeSwitch">Switch to ${On==="Mates"?"Mate":"Family"} Review</button></div>`);
-      if($("typeSwitch")) $("typeSwitch").onclick=()=>{typeArmed=other;refresh()};
+      const cur=crewTypeOf(crew.type), T=CREW_TYPES[cur], others=Object.keys(CREW_TYPES).filter(t=>t!==cur);
+      tbx.innerHTML=`<p><b>Review type: ${T.review}</b>. Everyone is rated on the ${T.word.toLowerCase()} questions.</p><p class="muted">If you move to a different review type, your crew will be asked a different sort of questions and existing reviews won't come across. They're kept, and count again if you switch back.</p>`+
+        (typeArmed?`<p class="err">Switch to ${CREW_TYPES[typeArmed].review}? Your crew will be asked the ${CREW_TYPES[typeArmed].word.toLowerCase()} questions and existing reviews won't come across. Everyone needs to review again.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${CREW_TYPES[typeArmed].review}</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
+          :`<div class="row-btns">${others.map(t=>`<button type="button" class="ghost sm" data-switch="${t}">Switch to ${CREW_TYPES[t].review}</button>`).join("")}</div>`);
+      tbx.querySelectorAll("[data-switch]").forEach(b=>b.onclick=()=>{typeArmed=b.dataset.switch;refresh()});
       if($("typeNo")) $("typeNo").onclick=()=>{typeArmed="";refresh()};
-      if($("typeYes")) $("typeYes").onclick=()=>setType(other);
+      if($("typeYes")) $("typeYes").onclick=()=>setType(typeArmed);
     }
   }
   if(tbx.hidden){tbx.innerHTML="";tbx.dataset.k=""}
@@ -818,7 +818,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1));
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Family Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Who's On Notice":"🤝 Family Support Required"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low">${CREW_TYPES[crewTypeOf(crew.type)].low}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -830,7 +830,7 @@ function refresh(){
     const joined=!!claims[m.id], isAdm=joined&&crew.adminUids.includes(claims[m.id]);
     return `<div class="member"${g&&canSee?` style="--g:${gcol(g)}"`:""}>
       <span class="chip${g&&canSee?"":" none"}">${g&&canSee?g:"–"}</span>
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${memberType(m.id)==="mate"?"Mate":"Family"}${joined?" · joined":""}${isAdm?" · admin":""}${canSee?` · ${a.rs.length} review${a.rs.length===1?"":"s"}`:""}${mine?" · you've reviewed":""}</small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${MEMBER_WORD[memberType(m.id)]||"Family"}${joined?" · joined":""}${isAdm?" · admin":""}${canSee?` · ${a.rs.length} review${a.rs.length===1?"":"s"}`:""}${mine?" · you've reviewed":""}</small></span>
       <span class="btns">
         ${ADMIN?"":`<button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>`}
         ${!ADMIN&&m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${a.rs.length?"":" disabled"}>My results</button>`:""}
@@ -922,17 +922,17 @@ document.querySelectorAll('input[name=who]').forEach(r=>r.addEventListener("chan
   else if(target&&(target.id===me||memberType(target.id)!==r.value)) stopReview();
 }));
 function syncPick(){
-  const crewWho=state.who==="family"||state.who==="mate";
+  const crewWho=state.who==="family"||state.who==="mate"||state.who==="partner";
   const show=!!crew&&crewWho;
   const others=members().filter(m=>m.id!==me&&memberType(m.id)===state.who);
-  const word=state.who==="mate"?"mates":"family";
+  const word=state.who==="mate"?"mates":state.who==="partner"?"partners":"family";
   pick.hidden=!show; nameInput.hidden=show; pickHint.hidden=true;
   if(show){
-    $("nameLabel").textContent=state.who==="mate"?"Mate":"Family member";
+    $("nameLabel").textContent=state.who==="mate"?"Mate":state.who==="partner"?"Partner":"Family member";
     pick.innerHTML=`<option value="">${others.length?"Choose who to review…":`No ${word} in your crew yet`}</option>`+others.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
     pick.value=target&&target.id!==me&&others.some(m=>m.id===target.id)?target.id:"";
     if(!me){pickHint.textContent="Pick your own name under \"I am\" in your crew below first.";pickHint.hidden=false}
-    else if(!others.length){pickHint.textContent=`Add ${word==="mates"?"mates":"family members"} to your crew below.`;pickHint.hidden=false}
+    else if(!others.length){pickHint.textContent=`Add ${word==="family"?"family members":word==="partners"?"your partner":"mates"} to your crew below.`;pickHint.hidden=false}
   }
 }
 
@@ -1090,7 +1090,7 @@ if(REVIEW_PAGE){
   $("choiceJoin").onclick=e=>{e.preventDefault();entry="join";paintEntry();startJoin()};
   $("endJoin").onclick=()=>$("choiceJoin").click();
   /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
-  ["who-family","who-mate","who-me"].forEach(id=>$(id).addEventListener("change",()=>{
+  ["who-family","who-mate","who-partner","who-me"].forEach(id=>$(id).addEventListener("change",()=>{
     if(entry!=="join") return;
     entry="rate"; paintEntry();
     if(!crew&&auth){ if(user&&myCrews.length) viewLobby(); else viewSignedOut(); }

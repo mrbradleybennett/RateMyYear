@@ -33,7 +33,7 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.adminUids == [request.auth.uid]
         && validCode(request.resource.data)
-        && request.resource.data.get('type', 'family') in ['family', 'mates']
+        && request.resource.data.get('type', 'family') in ['family', 'mates', 'partner']
         && request.resource.data.members is list;
 
       // Admins can change anything except who owns the crew, and the owner always stays an admin.
