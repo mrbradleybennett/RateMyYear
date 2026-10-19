@@ -132,7 +132,7 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 .endbtn b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.05}
 .endbtn small{font-size:14px;color:var(--muted);line-height:1.35}
 .endbtn:first-child{background:var(--green);color:var(--panel)}.endbtn:first-child small{color:var(--panel);opacity:.85}
-.endbtn[hidden]{display:none}
+.endbtn[hidden],#fromField[hidden]{display:none}
 .endbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
 .sharebox[hidden]{display:none}.sharebox label{font-weight:700}.sharebox p{margin:0}
@@ -466,6 +466,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
           <a id="saveImg" class="ghost btnlike" download="rate-my-year-report-card.png" href="#">Save picture</a>
         </div>
         <p class="muted" id="shareHint"></p>
+        <div class="field" id="fromField"><label for="shareFrom">From <span class="muted">(your name, so they know who rated them)</span></label><input id="shareFrom" type="text" autocomplete="given-name" maxlength="40" placeholder="e.g. Brad"></div>
         <div class="field"><label for="sharePhone">Their mobile <span class="muted">(optional, for WhatsApp or text)</span></label><input id="sharePhone" type="tel" inputmode="tel" autocomplete="off" placeholder="e.g. 0412 345 678"></div>
         <form class="sharerow" id="shareForm" novalidate><input id="shareEmail" type="email" inputmode="email" autocomplete="email" placeholder="Or email it: name@example.com" aria-label="Email address"><button type="submit" id="shareGo">Email</button></form>
         <p class="muted" id="shareNote"></p>
@@ -2037,10 +2038,16 @@ if(REVIEW_PAGE){
   const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote"), hint=$("shareHint");
   let cardBlob=null, cardUrl="";
   const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
+  /* Who the report card is from: your crew name if you've joined a crew, otherwise the From box. */
+  const inCrew=()=>!!(crew&&me&&members().some(m=>m.id===me));
+  const sender=()=>inCrew()?memberName(me):$("shareFrom").value.trim();
+  try{$("shareFrom").value=localStorage.getItem("rmy-from")||""}catch(e){}
+  $("shareFrom").addEventListener("input",()=>{try{localStorage.setItem("rmy-from",$("shareFrom").value.trim())}catch(e){}});
   const shareText=()=>{
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
-    const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a";
+    const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a", from=sender();
+    if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\nRate your family and friends at:\nwww.ratemyyear.com`;
     return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nRate your family and friends at:\nwww.ratemyyear.com`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
@@ -2055,6 +2062,7 @@ if(REVIEW_PAGE){
   const phone=()=>$("sharePhone").value.replace(/[^\d+]/g,"");
   const intl=p=>p.startsWith("+")?p.slice(1):p.startsWith("0")?"61"+p.slice(1):p;   // Australian numbers by default
   async function buildCard(){
+    $("fromField").hidden=isMe()||inCrew();
     $("cardMaking").hidden=false; $("cardImg").hidden=true;
     try{
       cardBlob=await window.makeCard(); if(cardUrl) URL.revokeObjectURL(cardUrl); cardUrl=URL.createObjectURL(cardBlob);

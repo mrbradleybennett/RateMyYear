@@ -1099,10 +1099,16 @@ if(REVIEW_PAGE){
   const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote"), hint=$("shareHint");
   let cardBlob=null, cardUrl="";
   const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
+  /* Who the report card is from: your crew name if you've joined a crew, otherwise the From box. */
+  const inCrew=()=>!!(crew&&me&&members().some(m=>m.id===me));
+  const sender=()=>inCrew()?memberName(me):$("shareFrom").value.trim();
+  try{$("shareFrom").value=localStorage.getItem("rmy-from")||""}catch(e){}
+  $("shareFrom").addEventListener("input",()=>{try{localStorage.setItem("rmy-from",$("shareFrom").value.trim())}catch(e){}});
   const shareText=()=>{
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
-    const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a";
+    const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a", from=sender();
+    if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\nRate your family and friends at:\nwww.ratemyyear.com`;
     return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nRate your family and friends at:\nwww.ratemyyear.com`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
@@ -1117,6 +1123,7 @@ if(REVIEW_PAGE){
   const phone=()=>$("sharePhone").value.replace(/[^\d+]/g,"");
   const intl=p=>p.startsWith("+")?p.slice(1):p.startsWith("0")?"61"+p.slice(1):p;   // Australian numbers by default
   async function buildCard(){
+    $("fromField").hidden=isMe()||inCrew();
     $("cardMaking").hidden=false; $("cardImg").hidden=true;
     try{
       cardBlob=await window.makeCard(); if(cardUrl) URL.revokeObjectURL(cardUrl); cardUrl=URL.createObjectURL(cardBlob);
