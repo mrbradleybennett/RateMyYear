@@ -135,6 +135,7 @@ input[type=range]:focus-visible{outline:2px solid var(--gold);outline-offset:4px
 .gift{font-family:var(--display);font-size:clamp(20px,3vw,26px);color:var(--ink);margin:0}
 .gift b{font-weight:400;background:var(--gold);color:#14231b;padding:0 .2em;border-radius:4px}
 .report-body>.gift{text-align:center}
+.ratecrew-wrap{flex-direction:column;margin-top:14px}.ratecrew{align-items:center;text-align:center;background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold);padding:18px}.ratecrew b{font-family:var(--display);font-size:clamp(22px,3.4vw,30px)}.ratecrew small{font-size:15px;font-weight:600}
 .endbtn[hidden],#fromField[hidden]{display:none}
 .endbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
@@ -485,6 +486,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
     </div>
   </section>
 
+  <div class="admin-only ratecrew-wrap"><a class="endbtn ratecrew" id="rateCrew" href="review.html" hidden><b>Rate My Crew</b><small>Review everyone in your crew and see the leaderboard</small></a></div>
   <p class="foot review-only">Scores: A 8.5+ · B 7+ · C 5.5+ · D 4+ · E under 4, out of 10. Each area's grade comes from its quick question, which moves to the average of any detailed questions you answer. Don't know answers are left out. A + means the top third of that band and a − the bottom third, so B+ is 8.0–8.4 and B− is 7.0–7.4.</p>
 
   <section class="boardsec review-only" id="boardSec" hidden>
@@ -1535,7 +1537,7 @@ function viewCrewShell(){
     try{const id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name:n,type:crew.type?crewMemberType():$("addMeType").value}]});await claimMember(crewId,id,me);$("addMeForm").hidden=true;$("addMeName").value="";famErr("");$("meNote").hidden=true;$("meField").classList.remove("attention");if(pending){const pid=pending;pending="";setTimeout(()=>startReview(pid),300)}}
     catch(x){famErr(errText(x))}
   });
-  if($("toLobby")) $("toLobby").onclick=()=>{clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()};
+  if($("toLobby")) $("toLobby").onclick=()=>{if($("rateCrew"))$("rateCrew").hidden=true;clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()};
   if($("crewSwitch")) $("crewSwitch").onchange=e=>{const v=e.target.value;if(v==="__lobby"){clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()}else openCrew(v)};
   $("meSel").addEventListener("change",async e=>{
     const v=e.target.value;
@@ -1768,6 +1770,7 @@ function refresh(){
   $("newTypeF").hidden=!!crew.type; $("addMeTypeF").hidden=!!crew.type;
   /* Crew type (admins, on My Crew). Switching keeps every saved review; only reviews on the crew's
      current questions count, so switching back brings the earlier ones back. */
+  if($("rateCrew")) $("rateCrew").hidden=!crew;
   const tbx=$("typeBox"); tbx.hidden=!(ADMIN&&admin);
   const tkey=`${crew.type||""}|${typeArmed}`;
   if(!tbx.hidden&&tbx.dataset.k!==tkey){

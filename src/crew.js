@@ -531,7 +531,7 @@ function viewCrewShell(){
     try{const id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name:n,type:crew.type?crewMemberType():$("addMeType").value}]});await claimMember(crewId,id,me);$("addMeForm").hidden=true;$("addMeName").value="";famErr("");$("meNote").hidden=true;$("meField").classList.remove("attention");if(pending){const pid=pending;pending="";setTimeout(()=>startReview(pid),300)}}
     catch(x){famErr(errText(x))}
   });
-  if($("toLobby")) $("toLobby").onclick=()=>{clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()};
+  if($("toLobby")) $("toLobby").onclick=()=>{if($("rateCrew"))$("rateCrew").hidden=true;clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()};
   if($("crewSwitch")) $("crewSwitch").onchange=e=>{const v=e.target.value;if(v==="__lobby"){clearCrewSubs();crewId="";crew=null;saveLS("");target=null;render();viewLobby()}else openCrew(v)};
   $("meSel").addEventListener("change",async e=>{
     const v=e.target.value;
@@ -764,6 +764,7 @@ function refresh(){
   $("newTypeF").hidden=!!crew.type; $("addMeTypeF").hidden=!!crew.type;
   /* Crew type (admins, on My Crew). Switching keeps every saved review; only reviews on the crew's
      current questions count, so switching back brings the earlier ones back. */
+  if($("rateCrew")) $("rateCrew").hidden=!crew;
   const tbx=$("typeBox"); tbx.hidden=!(ADMIN&&admin);
   const tkey=`${crew.type||""}|${typeArmed}`;
   if(!tbx.hidden&&tbx.dataset.k!==tkey){
