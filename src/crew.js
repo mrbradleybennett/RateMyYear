@@ -817,7 +817,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&nScored>=3&&i===nScored-1;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Holding You All Together Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Who's On Notice":"🤝 Needs Some Family Support"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">🏆 ${mates?"Best Bloke Award":"Family Award"}</span>`:""}${bottom?` <span class="award low">${mates?"⚠️ Who's On Notice":"🤝 Needs Some Family Support"}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -1102,7 +1102,8 @@ if(REVIEW_PAGE){
   const shareText=()=>{
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
-    return `${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10). ${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""} Do yours at ${location.origin}${HOME_PATH}`;
+    const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a";
+    return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nRate your family and friends at:\nwww.ratemyyear.com`;
   };
   const say2=(m,err)=>{note.textContent=m;note.className=err?"err":"muted"};
   async function record(channel,extra){
@@ -1130,14 +1131,14 @@ if(REVIEW_PAGE){
   shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})}};
   $("shareImg").onclick=async()=>{
     if(!ready()||!cardBlob) return;
-    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],text:shareText()});record("picture",{})}
+    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:cardTitle(),text:shareText()});record("picture",{})}
     catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
   };
   /* Where the device can share files (https on iPhone/iPad/Android), WhatsApp and Text message open the
      share sheet with the picture AND the words; pick WhatsApp or Messages there. Otherwise they send words only. */
   const sharePic=async channel=>{
     if(!canShareFiles()||!cardBlob) return false;
-    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],text:shareText()});record(channel,phone()?{phone:phone().slice(0,30)}:{});}
+    try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:cardTitle(),text:shareText()});record(channel,phone()?{phone:phone().slice(0,30)}:{});}
     catch(x){if(x&&x.name!=="AbortError")say2("Couldn't open sharing. Try Save picture instead.",true)}
     return true;
   };
@@ -1161,9 +1162,14 @@ if(REVIEW_PAGE){
     $("shareGo").disabled=true; say2("Saving…");
     await record("email",{email:email.toLowerCase().slice(0,200)});
     $("shareGo").disabled=false;
+    if(canShareFiles()&&cardBlob){
+      say2(`Choose Mail in the list, then send it to ${email}.`);
+      try{await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:`${cardTitle()}: ${grade(last.avg)}`,text:shareText()});return}
+      catch(x){if(x&&x.name==="AbortError")return}
+    }
     say2("Opening your email app… To include the picture, save it first and attach it.");
     const subject=`${cardTitle()}: ${grade(last.avg)} (Rate My Year)`;
-    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window._summary+"\n\nDo your own at "+location.origin+HOME_PATH)}`;
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(shareText()+"\n\n"+window._summary.split("\n\n").slice(1).join("\n\n"))}`;
   });
 }
 
