@@ -233,11 +233,11 @@ const whoRow=extra=>`<div class="who-row"><span>${isGuest()?"You're in as a gues
 function viewSignedOut(msg=""){
   title.textContent="Your crew"; leaveBtn.hidden=true;
   body.innerHTML=ADMIN?`<div class="stack">
-    <p class="muted">Sign in with Google to set up your crew and manage it. You'll be the crew admin: you add the people, send the invite link, and see everyone's reports. Your crew don't need to sign in at all.</p>
+    <p class="muted">Sign in with Google to set up your crew and manage it. You'll be the crew admin: you add the people, send the invite link, and see everyone's reports. Your crew just open the invite link and pick their name. No sign-in needed.</p>
     <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Sign in with Google</button></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`:`<div class="stack">
-    <p class="muted">A crew is your family, your mates, or both. To join yours, tap <b>Join A Crew</b>, search for its name and enter the crew password (or just open the invite link). Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a>. You can also do a review on your own below.</p>
+    <p class="muted">A crew is your family, your mates, or your partner. To join yours, open the invite link your crew admin sent you and pick your name. No sign-in needed. Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a>. You can also do a review on your own below.</p>
     <div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
@@ -260,10 +260,10 @@ function viewLobby(msg=""){
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
       <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
-      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option><option value="partner">Partner Review: you and your partner rate each other</option></select></div>
+      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option><option value="partner">Couple Review: check in on your relationship</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
-      <div class="field"><label for="cPw">Crew password</label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
-      <p class="muted" style="grid-column:1/-1">Your crew search for the crew name and enter this password to join. The name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
+      <div class="field"><label for="cPw">Backup password <span class="muted">(optional)</span></label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
+      <p class="muted" style="grid-column:1/-1">Once it's set up, send your crew the invite link. They open it and pick their name. No sign-in needed. The backup password is only for anyone who loses the link. The crew name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
       <button type="submit" id="createGo">Create crew</button>
     </form>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
@@ -287,13 +287,13 @@ function viewLobby(msg=""){
     const name=$("cName").value.trim().slice(0,60), myName=$("cMe").value.trim().slice(0,40), pw=$("cPw").value, slug=slugify(name);
     if(!slug) return famErr("Give your crew a name using letters or numbers.");
     if(!myName) return famErr("Enter your name so the crew knows who you are.");
-    if(pw.length<6) return famErr("Use a crew password of at least 6 characters.");
+    if(pw&&pw.length<6) return famErr("Use a backup password of at least 6 characters, or leave it blank.");
     $("createGo").disabled=true;
     try{
       if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
       const ctype=crewTypeOf($("cType").value);
-      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,passHash:passHash(slug,pw),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:CREW_TYPES[ctype].member}],createdAt:Date.now()});
+      b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,...(pw?{passHash:passHash(slug,pw)}:{}),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:CREW_TYPES[ctype].member}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
       await b.commit();
       await claimMember(id,myId,"");
@@ -312,7 +312,7 @@ async function forgetCrew(id){
   await setDoc(doc(db,"users",user.uid),{crews:myCrews},{merge:true});
 }
 
-/* ---------- Join A Crew: search by name, then the crew password ---------- */
+/* ---------- Join A Crew: open or paste the invite link; crew name + backup password if the link is lost ---------- */
 function guestFail(x,retry){
   const c=x&&x.code||"";
   const msg=c==="auth/operation-not-allowed"||c==="auth/admin-restricted-operation"?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase (Authentication → Sign-in method)."
@@ -340,7 +340,13 @@ function viewJoin(msg=""){
   clearCrewSubs(); crew=null; crewId=""; target=null; render();
   title.textContent="Join a crew"; leaveBtn.hidden=true;
   body.innerHTML=`<div class="stack">
-    <p class="muted">Search for your crew by name, pick it, then enter the crew password your crew admin gave you.</p>
+    <p class="muted">${JOIN?"Tap the invite link in your message, or paste it here.":"Open the invite link your crew admin sent you and pick your name. No sign-in needed. Tap it in your message, or paste it here."}</p>
+    <form class="form" id="jlinkForm" novalidate>
+      <div class="field" style="grid-column:1/-1"><label for="jLink2">Invite link</label><input id="jLink2" autocomplete="off" placeholder="Paste the invite link"></div>
+      <button type="submit" id="jlinkGo">Join crew</button>
+    </form>
+    <details class="jbackup"><summary>Lost the link? Use the crew name and backup password</summary>
+    <div class="stack" style="margin-top:10px">
     <div class="field"><label for="jq">Crew name</label><input id="jq" type="search" autocomplete="off" placeholder="e.g. Bennetts" enterkeyhint="search"></div>
     <div class="jres" id="jres" aria-live="polite"></div>
     <form class="form" id="jpass" novalidate hidden>
@@ -348,7 +354,8 @@ function viewJoin(msg=""){
       <div class="field"><label for="jpw">Crew password</label><input id="jpw" type="password" autocomplete="off"></div>
       <button type="submit" id="jgo">Join crew</button>
     </form>
-    <p class="muted">Got an invite link instead? Just open it and you'll go straight in.</p>
+    <p class="muted">Ask your crew admin for the backup password, or for a fresh invite link.</p>
+    </div></details>
     <div class="row-btns">${myCrews.length?`<button type="button" class="ghost sm" id="jback">Back to my crew</button>`:""}</div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
@@ -362,7 +369,7 @@ function viewJoin(msg=""){
       const snap=await getDocs(query(collection(db,"crewNames"),where("slug",">=",q),where("slug","<=",q+"\uf8ff"),limit(10)));
       if(my!==seq) return;
       const hits=snap.docs.map(d=>d.data());
-      res.innerHTML=hits.length?hits.map(h=>`<button type="button" class="jhit" data-id="${esc(h.crewId)}" data-slug="${esc(h.slug)}" data-name="${esc(h.name)}">${esc(h.name)}</button>`).join(""):`<p class="muted">No crew found with that name. Check the spelling with your crew admin. If the crew was set up before crew passwords existed, the admin needs to add a crew password on their My Crew page first.</p>`;
+      res.innerHTML=hits.length?hits.map(h=>`<button type="button" class="jhit" data-id="${esc(h.crewId)}" data-slug="${esc(h.slug)}" data-name="${esc(h.name)}">${esc(h.name)}</button>`).join(""):`<p class="muted">No crew found with that name. Check the spelling with your crew admin, or ask them to send the invite link again.</p>`;
       res.querySelectorAll(".jhit").forEach(b=>b.onclick=()=>{
         pickId=b.dataset.id; pickSlug=b.dataset.slug; pickName=b.dataset.name;
         res.querySelectorAll(".jhit").forEach(x=>x.classList.toggle("on",x===b));
@@ -375,18 +382,24 @@ function viewJoin(msg=""){
     }
   };
   $("jq").addEventListener("input",()=>{clearTimeout(t);t=setTimeout(search,250)});
-  $("jq").focus();
+  $("jlinkForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const inv=parseInvite($("jLink2").value);
+    if(!inv) return famErr("That doesn't look like an invite link. Ask your crew admin to send it again.");
+    if(JOIN){location.href=REVIEW_PATH+"?crew="+encodeURIComponent(inv.crew)+"&code="+encodeURIComponent(inv.code);return}
+    $("jlinkGo").disabled=true; await joinCrew(inv); const b=$("jlinkGo"); if(b) b.disabled=false;
+  });
   if($("jback")) $("jback").onclick=()=>{if(JOIN){location.href=REVIEW_PATH;return}const last=loadLS();openCrew(myCrews.some(c=>c.id===last)?last:myCrews[0].id)};
   $("jpass").addEventListener("submit",async e=>{
     e.preventDefault();
-    const pw=$("jpw").value; if(!pickId) return; if(!pw) return famErr("Enter the crew password.");
+    const pw=$("jpw").value; if(!pickId) return; if(!pw) return famErr("Enter the backup password.");
     $("jgo").disabled=true;
     try{
       await setDoc(doc(db,"crews",pickId,"joins",user.uid),{pass:passHash(pickSlug,pw),name:user.displayName||"",at:Date.now()});
       try{await rememberCrew(pickId,pickName)}catch(e){}
       if(JOIN){saveLS(pickId);body.innerHTML=`<p class="muted">You're in! Opening ${esc(pickName)}…</p>`;location.href=REVIEW_PATH;return}
       openCrew(pickId);
-    }catch(x){famErr(x&&x.code==="permission-denied"?"That password isn't right. Check it with your crew admin.":errText(x));$("jgo").disabled=false}
+    }catch(x){famErr(x&&x.code==="permission-denied"?"That password isn't right, or this crew has no backup password. Ask your crew admin for the invite link.":errText(x));$("jgo").disabled=false}
   });
 }
 
@@ -508,7 +521,7 @@ function viewCrewShell(){
     <div class="invite" id="inviteBox" hidden>
       <label for="inviteLink">Invite link: send this to your crew so they can join</label>
       <div class="invite-row"><input id="inviteLink" readonly><button type="button" id="shareInvite" hidden>Share</button><button type="button" id="copyInvite">Copy</button><button type="button" class="ghost" id="newInvite">New link</button></div>
-      <p class="muted">Tap <b>Share</b> to send it by text, WhatsApp or email, or <b>Copy</b> to paste it yourself. Anyone who opens it goes straight into the crew without signing in, picks their name and starts reviewing. "New link" stops the old one working.</p>
+      <p class="muted">Tap <b>Share</b> to send it by text, WhatsApp or email, or <b>Copy</b> to paste it yourself. Your crew open the invite link and pick their name. No sign-in needed. "New link" stops the old one working.</p>
     </div>
     <p class="err" id="famErr" hidden></p>
     <div id="famResults"></div>
@@ -586,22 +599,22 @@ let passBoxKey="";
 function renderPassBox(){
   const box=$("passBox"), key=`${crew.slug||""}|${!!crew.passHash}|${crew.name}`;
   if(key===passBoxKey&&box.innerHTML) return; passBoxKey=key;
-  const has=!!(crew.slug&&crew.passHash);
-  box.innerHTML=has?`<label>Joining with the crew name and password</label>
-      <p class="muted">Your crew tap <b>Join A Crew</b>, search for <b>${esc(crew.name)}</b> and enter the crew password.</p>
-      <form class="invite-row" id="pwForm" novalidate><input id="pwNew" type="text" autocomplete="off" placeholder="New crew password (at least 6 characters)"><button type="submit">Change password</button></form>`
-    :`<label>Let your crew find you</label>
-      <p class="muted">Choose a unique crew name and a password. Your crew tap <b>Join A Crew</b>, search for the name and enter the password.</p>
+  const has=!!(crew.slug&&crew.passHash), named=!!crew.slug;
+  box.innerHTML=named?`<label>Backup: crew name and password</label>
+      <p class="muted">For anyone who loses the invite link: they tap <b>Join</b>, search for <b>${esc(crew.name)}</b> and enter this password.${has?"":" No backup password is set yet."}</p>
+      <form class="invite-row" id="pwForm" novalidate><input id="pwNew" type="text" autocomplete="off" placeholder="${has?"New backup password":"Backup password"} (at least 6 characters)"><button type="submit">${has?"Change password":"Set password"}</button></form>`
+    :`<label>Backup: crew name and password</label>
+      <p class="muted">For anyone who loses the invite link. Choose a unique crew name and a password. They tap <b>Join</b>, search for the name and enter the password.</p>
       <form class="form" id="pwForm" novalidate>
         <div class="field"><label for="pwName">Crew name</label><input id="pwName" autocomplete="off" value="${esc(crew.name)}"></div>
-        <div class="field"><label for="pwNew">Crew password</label><input id="pwNew" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
+        <div class="field"><label for="pwNew">Backup password</label><input id="pwNew" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
         <button type="submit">Save</button>
       </form>`;
   $("pwForm").addEventListener("submit",async e=>{
     e.preventDefault();
-    const pw=$("pwNew").value; if(pw.length<6) return famErr("Use a crew password of at least 6 characters.");
+    const pw=$("pwNew").value; if(pw.length<6) return famErr("Use a backup password of at least 6 characters.");
     try{
-      if(has){await updateDoc(doc(db,"crews",crewId),{passHash:passHash(crew.slug,pw)});$("pwNew").value="";toast("Crew password changed. Let your crew know the new one.")}
+      if(named){await updateDoc(doc(db,"crews",crewId),{passHash:passHash(crew.slug,pw)});$("pwNew").value="";passBoxKey="";toast(has?"Backup password changed.":"Backup password set.")}
       else{
         const name=$("pwName").value.trim().slice(0,60), slug=slugify(name);
         if(!slug) return famErr("Give your crew a name using letters or numbers.");
@@ -609,7 +622,7 @@ function renderPassBox(){
         const b=writeBatch(db);
         b.update(doc(db,"crews",crewId),{name,slug,passHash:passHash(slug,pw)});
         b.set(doc(db,"crewNames",slug),{crewId,name,slug});
-        await b.commit(); passBoxKey=""; toast("Saved. Your crew can now find you with Join A Crew.");
+        await b.commit(); passBoxKey=""; toast("Saved. Anyone who loses the invite link can now find the crew with Join.");
       }
       famErr("");
     }catch(x){famErr(x&&x.code==="permission-denied"?"That name is already taken. Try another.":errText(x))}

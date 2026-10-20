@@ -4,7 +4,7 @@ A one-page website for rating yourself, your mates and your family across the ar
 
 **Pages:** `index.html` is the landing page that introduces the site. `review.html` is the review tool, `mycrew.html` is for crew admins, and `join.html` is the Join A Crew page. The landing page links in with `review.html?who=me|family|mate` and `review.html?go=join`, and it forwards old invite links (`/?crew=…&code=…`) to `review.html`.
 
-**Getting started:** the top of the main page has **Rate Me**, **Join A Crew** (crew search right on the page) and **Create A Crew** (goes to My Crew). Under them, **Rate My Family** and **Rate My Mates** switch to the matching questions and wheel.
+**Getting started:** every page has the **About · Join · Create** menu (Create shows **My Crew** once you're signed in). **Join** is for opening or pasting the invite link and picking your name, no sign-in needed. Under the menu, **Rate My Family**, **Rate My Mates** and **Couple Check-in** switch to the matching questions and wheel.
 
 **End of the report card:** outside a crew it offers **Share Results**, **Join A Crew** and **Create A Crew**. In a crew it offers **Share Results** and **Save & Review Another** (saves the review and starts a clean one for the next person). Share Results makes a picture of the report card. On https, **Send picture** opens the phone's share sheet (Messages, WhatsApp and so on) with the picture attached. **WhatsApp** and **Text message** send a summary with an optional mobile number, **Save picture** downloads it, and email opens the mail app. Each send is recorded in the `shares` collection (channel, plus the email or mobile if given).
 
@@ -22,7 +22,7 @@ A one-page website for rating yourself, your mates and your family across the ar
 - **Me and family** (9 areas): Self (Self Care, Health, Cleanliness), Others (Mates, Family & Others, Love), Life (Action, Growth Mindset, Humour).
 - **Mates** (8 areas): Them (Vibe, Banter, Generous, Cleanliness), Us (Reliable, Loyalty), Life (Adventure, Social).
 
-Rate My Mates uses the mates questions. In a crew, anyone added as a mate is rated on the mates questions (including their own self review), and everyone else on the me and family questions. Crew reports show a separate table for each set. People sign in with Google to set up or join a **Review Crew**, then review each other. Crew admins see everyone's reports.
+Rate My Mates uses the mates questions. In a crew, anyone added as a mate is rated on the mates questions (including their own self review), and everyone else on the me and family questions. Crew reports show a separate table for each set. The crew admin signs in with Google to set up a **Review Crew**. Everyone else just opens the invite link and picks their name (no sign-in needed), then they review each other. Crew admins see everyone's reports.
 
 It runs on Firebase (Google), which is free at family and friends scale. Firebase hosts the page, handles Google sign-in, and stores the reviews.
 
@@ -30,10 +30,10 @@ It runs on Firebase (Google), which is free at family and friends scale. Firebas
 
 | File | What it does |
 |---|---|
-| `review.html` | The review page: questions, wheel, report card, joining a crew from the invite link |
-| `join.html` | The **Join A Crew** page: search for a crew by name and enter the crew password |
-| `mycrew.html` | The **My Crew** page for crew admins: set up a crew, people, invite link, Manage, and all the reports |
-| `firebase-config.js` | Leave this alone if you deploy with Firebase Hosting. Fill it in only if you host the page somewhere else |
+| `public/review.html` | The review page: questions, wheel, report card, joining a crew from the invite link |
+| `public/join.html` | The **Join A Crew** page: open or paste the invite link and pick your name (crew name + backup password if the link is lost) |
+| `public/mycrew.html` | The **My Crew** page for crew admins: set up a crew, people, invite link, Manage, and all the reports |
+| `public/firebase-config.js` | Leave this alone if you deploy with Firebase Hosting. Fill it in only if you host the page somewhere else |
 | `firestore.rules` | Database security: who can read and write what |
 | `firebase.json`, `.firebaserc` | Firebase project settings |
 | `tests/rules.test.mjs` | Automated checks for the security rules |
@@ -82,8 +82,8 @@ Run `firebase deploy` again whenever you change the files.
 ## How crews work
 - **Set up a crew (crew admin only):** tap **Create My Crew** at the top of the site. That opens the **My Crew** page: sign in with Google, then give the crew a name and your name. You become the crew's admin.
 - **My Crew page:** everything an admin does lives here: adding people, the invite link (Share / Copy / New link), **Manage** for each person, and the **All scores**, **Member reports** and **Crew report** tabs. The review page just has a **My Crew** button at the top for admins.
-- **Crew name and password:** every crew has a unique name and a crew password, both set when you create it (change the password any time on **My Crew**).
-- **Joining:** your crew tap **Join A Crew** at the top of the site (it opens the Join A Crew page), search for the crew name, and enter the crew password. They're then taken back to the review page with the crew open. Or send them the **invite link** (Share / Copy on My Crew), which takes them straight in with no password.
+- **Crew name and backup password:** every crew has a unique name. The admin can also set an optional backup password on **My Crew**, for anyone who loses the invite link.
+- **Joining:** send your crew the **invite link** (Share / Copy on My Crew). They open the invite link and pick their name. No sign-in needed. If someone loses the link, they tap **Join**, search for the crew name and enter the backup password.
 - **Joining needs no sign-in:** anyone who opens the invite link goes straight into the crew as a guest. They pick their own name under "I am" (or "I'm not on the list. Add me") and can review anyone.
 - **Guests are tied to their device.** If someone changes phone or clears their browser, they just open the invite link again. If their name shows as taken, the admin taps **Free up name** next to it.
 - **Who sees what:**
