@@ -464,7 +464,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
       <div class="endbar">
         <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send your report card by WhatsApp, text or email</small></button>
         <button type="button" class="endbtn" id="endJoin"><b>Join A Crew</b><small>Open the invite link and pick your name</small></button>
-        <a class="endbtn" id="endCreate" href="mycrew.html"><b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small></a>
+        <a class="endbtn" id="endCreate" href="mycrew.html"><b>Invite Your Family</b><small>Send them the link so they can review you, and each other</small></a>
         <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
       </div>
       <div class="sharebox" id="shareBox" hidden>
@@ -688,7 +688,7 @@ let state={who:"me",name:"",v:{},dk:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v)state=Object.assign(state,s)}catch(e){}
 /* Links from the landing page: ?who=me|family|mate picks what you're rating; ?go=join opens crew search. */
 const LAND=new URLSearchParams(location.search);
-if(["me","family","mate","partner"].includes(LAND.get("who"))){state.who=LAND.get("who");delete state.qset}
+if(["me","family","mate","partner"].includes(LAND.get("who"))){state.who=LAND.get("who");if(state.who!=="me")state.other=state.who;delete state.qset}
 if(state.who==="friend")state.who="mate";
 if(!state.dk)state.dk={};
 delete state.mode;delete state.src;delete state.dt;
@@ -839,7 +839,16 @@ const HEROES={
   family:{h:"End Of Year <span>Family Review</span>",t:"",awards:["🏆 Family Award","🤝 Family Support Required"]},
   mates:{h:"End Of Year <span>Mate Review</span>",t:"",awards:["🏆 MVP Mate Award","⚠️ Who's On Notice"]},
   partner:{h:"End Of Year <span>Couple Review</span>",t:"",awards:["💪 Our Top Qualities","💐 Date Night Required"]}};
+/* End of the report card: "Invite Your Family / Mates / Partner" (opens My Crew to set up or share the invite link). */
+function paintEndInvite(){
+  const eb=document.getElementById("endCreate"); if(!eb) return;
+  const k=reviewKind(), o=state.other;
+  const who=k==="partner"||(k==="me"&&o==="partner")?"partner":k==="mates"||(k==="me"&&o==="mate")?"mates":"family";
+  const txt={family:["Invite Your Family","Send them the link so they can review you, and each other"],mates:["Invite Your Mates","Send them the link so they can review you, and each other"],partner:["Invite Your Partner","Send them the link so you can both check in on your relationship"]}[who];
+  const html=`<b>${txt[0]}</b><small>${txt[1]}</small>`; if(eb.innerHTML!==html) eb.innerHTML=html;
+}
 function render(){
+  paintEndInvite();
   useSet(activeSet());
   const hk=reviewKind();
   $m("reviewKind").textContent=KIND_LABEL[hk];
@@ -1751,7 +1760,7 @@ function paintCreate(){
   const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
   try{localStorage.setItem("rmy-signedin",mine?"1":"0")}catch(e){}
   const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create";
-  const eb=$("endCreate"); if(eb) eb.innerHTML=mine?"<b>My Crew</b><small>Your crew, invite link and everyone's reports</small>":"<b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small>";
+  paintEndInvite();
 }
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;

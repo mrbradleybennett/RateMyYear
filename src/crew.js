@@ -740,7 +740,7 @@ function paintCreate(){
   const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
   try{localStorage.setItem("rmy-signedin",mine?"1":"0")}catch(e){}
   const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create";
-  const eb=$("endCreate"); if(eb) eb.innerHTML=mine?"<b>My Crew</b><small>Your crew, invite link and everyone's reports</small>":"<b>Create A Crew</b><small>Get others to review you, and let family &amp; friends review each other</small>";
+  paintEndInvite();
 }
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;
