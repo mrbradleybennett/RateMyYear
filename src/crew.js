@@ -734,7 +734,7 @@ function renderBoard(){
   if(ADMIN||!crew){sec.hidden=true;return}
   sec.hidden=false;
   const ms=members(), open=boardOpen(), mates=crew.type==="mates";
-  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Ranked by what your partner thinks.":"Ranked by what the rest of the crew thinks.";
+  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Each of you rates the relationship. Your relationship score is the average.":"Ranked by what the rest of the crew thinks.";
   const wrap=$("boardWrap"), lock=$("boardLock"), list=$("boardList");
   if(!open){
     const fake=["A","B+","B","C+","C","D"];
@@ -807,7 +807,7 @@ function refresh(){
   if(!cs.hidden){
     const v=scored.length?mean(scored.map(x=>x.b.v)):null, g=v==null?null:grade(v);
     cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
-    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>Crew score</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
+    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${crew.type==="partner"?"Relationship score":"Crew score"}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
   }
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
@@ -819,7 +819,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1));
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low">${CREW_TYPES[crewTypeOf(crew.type)].low}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low">${CREW_TYPES[crewTypeOf(crew.type)].low}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -1110,6 +1110,8 @@ if(REVIEW_PAGE){
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
     const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a", from=sender();
+    const rel=reviewKind()==="partner";
+    if(rel) return `${n?`${n},\n\n`:""}${from?`${from} rates our 2026 relationship ${an}: ${g}`:`Our relationship has been rated ${an} ${g} for 2026`}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
     if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
     return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
   };

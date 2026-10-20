@@ -382,7 +382,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
     <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
     <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>See how well your family is functioning</small></span></label>
     <label><input type="radio" name="who" id="who-mate" value="mate"><span><b>Rate My Mates</b><small>Make a leaderboard and see who your top mates are</small></span></label>
-    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Rate My Partner</b><small>See how you're really going as a couple</small></span></label>
+    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Rate My Partner</b><small>Rate the quality of your relationship</small></span></label>
   </div>
   <header class="join-only admin-hero">
     <div class="eyebrow">Rate My Year · Join a crew</div>
@@ -597,64 +597,64 @@ const MATE_GROUPS=[
   {id:"me",name:"Them",blurb:"What they bring",ids:["vibe","banter","generous","mclean"]},
   {id:"others",name:"Us",blurb:"How they are with their mates",ids:["reliable","loyal"]},
   {id:"life",name:"Life",blurb:"Getting out there",ids:["adventure","social"]}];
-/* Rate My Partner: nine areas in three groups (who they are, the relationship, running life together). */
+/* Rate My Partner: rates the relationship itself, not the other person. Nine areas in three groups. */
 const PARTNER_CATS=[
- {id:"kind",name:"Kindness",line:"How kind and patient {are} {you} with {your} partner?",lo:"Short fuse",hi:"Endlessly patient",qs:[
-  ["How patient {are} {you} when things go wrong?","Snaps","Calm as"],
-  ["Do {you} say sorry when {you}'re wrong?","Never wrong","Owns it"],
-  ["{are} {you} still kind on a bad day?","Takes it out on them","Still gentle"]],
-  recs:["Count to five before you answer when you're frustrated.","Say sorry first next time, even if it's only half your fault.","On a bad day, say so, rather than taking it out on them."]},
- {id:"trust",name:"Trust",line:"How much can {your} partner rely on {you}?",lo:"Flaky",hi:"Rock solid",qs:[
-  ["Do {you} do what {you} say {you}'ll do?","Rarely","Every time"],
-  ["{are} {you} honest, even when it's awkward?","Fibs to dodge it","Straight up"],
-  ["Can {your} partner count on {you} when it really matters?","Goes missing","First call"]],
-  recs:["Only promise what you'll actually do, then do it.","Tell the awkward truth early, and kindly.","Be there for the big moments: appointments, tough days and their wins."]},
- {id:"fun",name:"Fun",line:"How much fun {are} {you} to be around?",lo:"Buzzkill",hi:"Best company ever",qs:[
-  ["Do {you} make {your} partner laugh?","Never","All the time"],
-  ["Do {you} plan fun things to do together?","Never","Always planning"],
-  ["Can {you} laugh at {yourself}?","Precious","Laughs it off"]],
-  recs:["Share one funny thing with them every day.","Plan one new thing to do together this month.","Laugh at your own stuff-ups first."]},
- {id:"talk",name:"Communication",line:"How good {are} {you} at talking things through?",lo:"Silent treatment",hi:"Talks it out",qs:[
-  ["Do {you} really listen?","Just waiting to talk","All ears"],
-  ["Do {you} raise problems calmly and early?","Bottles it up","Talks it through"],
-  ["Do {you} share what's going on for {you}?","Closed book","Open book"]],
-  recs:["Put the phone down and listen until they've finished.","Raise small things early and calmly, before they become big things.","Tell them one thing on your mind each day, good or bad."]},
- {id:"romance",name:"Romance",line:"How loving and affectionate {are} {you}?",lo:"Flatmates",hi:"Still swooning",qs:[
-  ["Do {you} show affection every day?","Cold fish","Can't keep hands off"],
-  ["Do {you} still make an effort with dates and surprises?","Stopped trying","Still courting"],
-  ["Do {you} say the nice stuff out loud?","Never","Every day"]],
-  recs:["A proper hug and kiss hello and goodbye, every day.","Book a date night this month, and plan it yourself.","Tell them one thing you love about them, out loud, this week."]},
- {id:"support",name:"Support",line:"How much {are} {you} in {your} partner's corner?",lo:"Own planet",hi:"Biggest fan",qs:[
-  ["Do {you} back {your} partner's goals and dreams?","Not interested","Biggest fan"],
-  ["Do {you} have {your} partner's back in front of others?","Throws them under the bus","Always backs them"],
-  ["Do {you} notice when {your} partner is struggling?","Oblivious","Spots it straight away"]],
-  recs:["Ask about their goals and help with one step this month.","Back them in public. Disagree in private.","When they go quiet, ask how they're really going."]},
- {id:"qtime",name:"Quality Time",line:"How present {are} {you} when you're together?",lo:"Phone face",hi:"Fully there",qs:[
-  ["Do {you} put the phone away when you're together?","Glued to it","Phone away"],
-  ["Do {you} make time just for the two of you?","Never","Every week"],
-  ["{are} {you} interested in {your} partner's day?","Couldn't care less","Wants every detail"]],
-  recs:["Phone-free dinners, at least three nights a week.","Lock in one night a week that's just the two of you.","Ask about their day, then ask a follow-up question."]},
- {id:"share",name:"Fair Share",line:"Do {you} pull {your} weight at home?",lo:"Leaves it to them",hi:"Equal partner",qs:[
-  ["Do {you} do {your} share of the chores?","Barely lifts a finger","Does more than half"],
-  ["Do {you} carry {your} share of the mental load (planning, remembering, organising)?","Leaves it all to them","Shares it"],
-  ["Do {you} step up without being asked?","Needs reminding","Just does it"]],
-  recs:["Pick two chores that are always yours, and own them.","Take over one thing they usually remember, like birthdays or bills.","Do one job a day before anyone has to ask."]},
- {id:"money",name:"Money & Plans",line:"How sorted {are} {you} with money and plans?",lo:"Chaos",hi:"Sorted",qs:[
-  ["{are} {you} sensible with money?","Spends like crazy","Smart with it"],
-  ["{are} {you} open about money and spending?","Keeps secrets","Open book"],
-  ["Do {you} plan for the future together?","Lives for today","Has a plan"]],
+ {id:"kind",name:"Kindness",line:"How kind and patient are you with each other?",lo:"Short fuses",hi:"Endlessly patient",qs:[
+  ["How patient are you with each other when things go wrong?","Snappy","Calm as"],
+  ["Do you both say sorry when you're wrong?","Never","Always"],
+  ["Are you kind to each other on a bad day?","Take it out on each other","Still gentle"]],
+  recs:["Count to five before answering when you're frustrated with each other.","Whoever is more in the wrong says sorry first, tonight.","On a bad day, say so, rather than taking it out on each other."]},
+ {id:"trust",name:"Trust",line:"How much do you trust each other?",lo:"Walking on eggshells",hi:"Rock solid",qs:[
+  ["Do you both do what you say you'll do?","Rarely","Every time"],
+  ["Are you honest with each other, even when it's awkward?","Little white lies","Straight up"],
+  ["Can you count on each other when it really matters?","Not really","Always"]],
+  recs:["Only promise each other what you'll actually do.","Tell each other the awkward truth early, and kindly.","Show up for each other's big moments: appointments, tough days and wins."]},
+ {id:"fun",name:"Fun",line:"How much fun do you have together?",lo:"Groundhog Day",hi:"Best of friends",qs:[
+  ["Do you make each other laugh?","Never","All the time"],
+  ["Do you plan fun things to do together?","Never","Always planning"],
+  ["Can you laugh at yourselves together?","Too serious","Laugh it off"]],
+  recs:["Share one funny thing with each other every day.","Plan one new thing to do together this month.","Laugh together at your stuff-ups."]},
+ {id:"talk",name:"Communication",line:"How well do you talk things through?",lo:"Silent treatment",hi:"Talk it out",qs:[
+  ["Do you really listen to each other?","Talk over each other","All ears"],
+  ["Do you raise problems calmly and early?","Bottle it up","Talk it through"],
+  ["Do you share what's going on for each of you?","Closed books","Open books"]],
+  recs:["Phones down, and listen until the other one has finished.","Raise small things early and calmly, before they become big things.","Each night, share one thing on your mind, good or bad."]},
+ {id:"romance",name:"Romance",line:"How much romance and affection is there?",lo:"Flatmates",hi:"Still swooning",qs:[
+  ["Do you show each other affection every day?","Rarely","All the time"],
+  ["Do you still make an effort with dates and surprises?","Stopped trying","Still courting"],
+  ["Do you say the nice stuff out loud?","Never","Every day"]],
+  recs:["A proper hug and kiss hello and goodbye, every day.","Book a date night this month, and take turns planning it.","Tell each other one thing you love about the other, out loud, this week."]},
+ {id:"support",name:"Support",line:"How much are you in each other's corner?",lo:"Separate planets",hi:"Biggest fans",qs:[
+  ["Do you back each other's goals and dreams?","Not interested","Biggest fans"],
+  ["Do you have each other's backs in front of others?","Throw each other under the bus","Always"],
+  ["Do you notice when the other one is struggling?","Oblivious","Straight away"]],
+  recs:["Share one goal each and help each other with the next step this month.","Back each other in public. Disagree in private.","When one of you goes quiet, the other asks how they're really going."]},
+ {id:"qtime",name:"Quality Time",line:"How much quality time do you spend together?",lo:"Ships in the night",hi:"Fully present",qs:[
+  ["Do you put the phones away when you're together?","Glued to them","Phones away"],
+  ["Do you make time just for the two of you?","Never","Every week"],
+  ["Are you interested in each other's day?","Not really","Want every detail"]],
+  recs:["Phone-free dinners, at least three nights a week.","Lock in one night a week that's just the two of you.","Ask about each other's day, then ask a follow-up question."]},
+ {id:"share",name:"Fair Share",line:"How fairly do you share the load at home?",lo:"One does it all",hi:"Equal partners",qs:[
+  ["Are the chores shared fairly?","One does it all","Fifty-fifty"],
+  ["Is the mental load (planning, remembering, organising) shared?","One carries it","Shared"],
+  ["Do you both step up without being asked?","Need reminding","Just do it"]],
+  recs:["Agree on two chores each that are always yours.","Split the remembering: birthdays, bills and bookings each get an owner.","Do one job a day before anyone has to ask."]},
+ {id:"money",name:"Money & Plans",line:"How sorted are you with money and plans?",lo:"Chaos",hi:"Sorted",qs:[
+  ["Are you on the same page with money?","Constant fights","Same page"],
+  ["Are you open with each other about spending?","Secrets","Open book"],
+  ["Are you planning the future together?","Living for today","Shared plan"]],
   recs:["Set a monthly money date to check in on spending and goals.","No secret spending. Talk before any big purchase.","Write down one shared goal for 2027 and the first step."]}
 ];
 const PARTNER_GROUPS=[
-  {id:"me",name:"Them",blurb:"Who they are",ids:["kind","trust","fun"]},
-  {id:"others",name:"Us",blurb:"The relationship",ids:["talk","romance","support","qtime"]},
+  {id:"me",name:"Heart",blurb:"The foundations",ids:["kind","trust","fun"]},
+  {id:"others",name:"Connection",blurb:"How close you are",ids:["talk","romance","support","qtime"]},
   {id:"life",name:"Life",blurb:"Running life together",ids:["share","money"]}];
 const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_GROUPS},mates:{key:"mates",label:"Mates",cats:MATE_CATS,groups:MATE_GROUPS},partner:{key:"partner",label:"Partner",cats:PARTNER_CATS,groups:PARTNER_GROUPS}};
 /* Crew types: which member type, words and leaderboard awards go with each. */
 const CREW_TYPES={
   family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",low:"🤝 Family Support Required"},
   mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 Best Bloke Award",low:"⚠️ Who's On Notice"},
-  partner:{member:"partner",word:"Partner",review:"Partner Review",crew:"Partner crew",top:"💘 Partner of the Year",low:"💐 Date Night Required"}};
+  partner:{member:"partner",word:"Relationship",review:"Relationship Review",crew:"Partner crew",top:"",low:""}};
 const crewTypeOf=t=>CREW_TYPES[t]?t:"family";
 const MEMBER_WORD={family:"Family",mate:"Mate",partner:"Partner"};
 /* One tip per detailed question (same order as the questions), so ideas can target the lowest-scoring ones. */
@@ -821,12 +821,13 @@ function words(){
   return {poss: me?(n?n+"'s":"Your"):(n?n+"'s":"Their")};
 }
 /* What kind of review this is: a crew review follows the crew's type; otherwise the button picked. */
-const KIND_LABEL={me:"Personal Review",family:"Family Review",mates:"Mate Review",partner:"Partner Review"};
+const KIND_LABEL={me:"Personal Review",family:"Family Review",mates:"Mate Review",partner:"Relationship Review"};
 const reviewKind=()=>state.qset?(state.qset==="mates"?"mates":state.qset==="partner"?"partner":"family"):state.who==="family"?"family":state.who==="mate"?"mates":state.who==="partner"?"partner":"me";
 /* Report card title: "<Name> Family Report Card", "<Name> Mate Report Card", "<Name> Personal Report Card". */
 const KIND_WORD={me:"Personal",family:"Family",mates:"Mate",partner:"Partner"};
 function cardTitle(){const n=(state.name||"").trim(), kk=reviewKind(), k=KIND_WORD[kk];
   if(kk==="me") return n?`${n} Report Card`:"Your Report Card";
+  if(kk==="partner") return n?`You & ${n} Relationship Report Card`:"Relationship Report Card";
   return n?`${n} ${k} Report Card`:isMe()?`Your ${k} Report Card`:`${k} Report Card`}
 /* Ideas for an area: tips for its two lowest-scoring detailed questions, or its general tips if none were answered. */
 function tipsFor(c,max){const qs=c.qs.map((q,i)=>({i,v:state.dk[c.id+i]?null:state.v[c.id+i]})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
@@ -835,7 +836,7 @@ const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
   family:{h:"End Of Year <span>Family Review</span>",t:"",awards:["🏆 Family Award","🤝 Family Support Required"]},
   mates:{h:"End Of Year <span>Mate Review</span>",t:"",awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]},
-  partner:{h:"End Of Year <span>Partner Review</span>",t:"",awards:["💘 Partner of the Year","💐 Date Night Required"]}};
+  partner:{h:"End Of Year <span>Relationship Review</span>",t:"",awards:["💘 Couple of the Year","💐 Date Night Required"]}};
 function render(){
   useSet(activeSet());
   const hk=reviewKind();
@@ -1741,7 +1742,7 @@ function renderBoard(){
   if(ADMIN||!crew){sec.hidden=true;return}
   sec.hidden=false;
   const ms=members(), open=boardOpen(), mates=crew.type==="mates";
-  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Ranked by what your partner thinks.":"Ranked by what the rest of the crew thinks.";
+  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Each of you rates the relationship. Your relationship score is the average.":"Ranked by what the rest of the crew thinks.";
   const wrap=$("boardWrap"), lock=$("boardLock"), list=$("boardList");
   if(!open){
     const fake=["A","B+","B","C+","C","D"];
@@ -1814,7 +1815,7 @@ function refresh(){
   if(!cs.hidden){
     const v=scored.length?mean(scored.map(x=>x.b.v)):null, g=v==null?null:grade(v);
     cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
-    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>Crew score</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
+    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${crew.type==="partner"?"Relationship score":"Crew score"}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
   }
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
@@ -1826,7 +1827,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1));
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low">${CREW_TYPES[crewTypeOf(crew.type)].low}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low">${CREW_TYPES[crewTypeOf(crew.type)].low}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -2117,6 +2118,8 @@ if(REVIEW_PAGE){
     if(!last||last.avg==null) return "";
     const g=grade(last.avg), top=[...last.rows].filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg).slice(0,3).map(r=>r.c.name).join(", ");
     const n=(state.name||"").trim(), an=/^[AE]/.test(g)?"an":"a", from=sender();
+    const rel=reviewKind()==="partner";
+    if(rel) return `${n?`${n},\n\n`:""}${from?`${from} rates our 2026 relationship ${an}: ${g}`:`Our relationship has been rated ${an} ${g} for 2026`}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
     if(from&&!isMe()) return `${n?`${n},\n\n`:""}${from} rates your 2026 ${KIND_WORD[reviewKind()]} Rating ${an}: ${g}\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
     return `${n?`${n}, you have`:"You have"} been rated ${an} ${g} for 2026\n\n${cardTitle()}: ${g} (${last.avg.toFixed(1)}/10).\n${VERDICTS[g[0]]}${top?` Top areas: ${top}.`:""}\n\nFeedback is a GIFT 🎁\nRate your family and friends at:\nwww.ratemyyear.com`;
   };
