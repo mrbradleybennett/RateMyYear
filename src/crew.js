@@ -290,16 +290,28 @@ function viewLobby(msg=""){
     if(pw&&pw.length<6) return famErr("Use a backup password of at least 6 characters, or leave it blank.");
     $("createGo").disabled=true;
     try{
-      if((await getDoc(doc(db,"crewNames",slug))).exists()){$("createGo").disabled=false;return famErr(`"${name}" is already taken. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
+      const nm=await getDoc(doc(db,"crewNames",slug));
+      if(nm.exists()){
+        /* If this name belongs to a crew you already own (say an earlier attempt got halfway), just open it. */
+        const cid=nm.data().crewId; let mine=false;
+        try{const cs=await getDoc(doc(db,"crews",cid));mine=cs.exists()&&cs.data().ownerUid===user.uid}catch(e){}
+        if(mine){try{await rememberCrew(cid,nm.data().name||name)}catch(e){}openCrew(cid);return}
+        $("createGo").disabled=false;return famErr(`"${name}" is already taken by another crew. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
       const ctype=crewTypeOf($("cType").value);
       b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,...(pw?{passHash:passHash(slug,pw)}:{}),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:CREW_TYPES[ctype].member}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
-      await b.commit();
-      await claimMember(id,myId,"");
-      await rememberCrew(id,name);
+      try{await b.commit()}
+      catch(x){
+        $("createGo").disabled=false;
+        if(x&&x.code==="permission-denied") return famErr(ctype==="partner"?"Couldn't create a Couple crew yet. Publish the latest security rules in Firebase (they add the Couple type), then try again.":"Couldn't create the crew: the security rules said no. Publish the latest security rules in Firebase, then try again.");
+        return famErr(errText(x));
+      }
+      /* The crew exists now, so open it even if one of these finishing steps fails. */
+      try{await claimMember(id,myId,"")}catch(x){console.warn("claim",x)}
+      try{await rememberCrew(id,name)}catch(x){console.warn("remember",x)}
       openCrew(id);
-    }catch(x){famErr(x&&x.code==="permission-denied"?`"${name}" is already taken. Try another name.`:errText(x));const b=$("createGo");if(b)b.disabled=false}
+    }catch(x){famErr(errText(x));const b=$("createGo");if(b)b.disabled=false}
   });
 }
 
