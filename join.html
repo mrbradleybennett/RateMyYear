@@ -383,7 +383,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
     <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
     <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>See how well your family is functioning</small></span></label>
     <label><input type="radio" name="who" id="who-mate" value="mate"><span><b>Rate My Mates</b><small>Make a leaderboard and see who your top mates are</small></span></label>
-    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Rate My Partner</b><small>Couple Check-in</small></span></label>
+    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Couple Check-in</b><small>Your Love Report</small></span></label>
   </div>
   <header class="join-only admin-hero">
     <div class="eyebrow">Rate My Year · Join a crew</div>
@@ -654,7 +654,7 @@ const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_
 /* Crew types: which member type, words and leaderboard awards go with each. */
 const CREW_TYPES={
   family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",low:"🤝 Family Support Required"},
-  mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 Best Bloke Award",low:"⚠️ Who's On Notice"},
+  mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 MVP Mate Award",low:"⚠️ Who's On Notice"},
   partner:{member:"partner",word:"Relationship",review:"Couple Review",crew:"Partner crew",top:"",low:""}};
 const crewTypeOf=t=>CREW_TYPES[t]?t:"family";
 const MEMBER_WORD={family:"Family",mate:"Mate",partner:"Partner"};
@@ -836,8 +836,8 @@ function tipsFor(c,max){const qs=c.qs.map((q,i)=>({i,v:state.dk[c.id+i]?null:sta
 const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
   family:{h:"End Of Year <span>Family Review</span>",t:"",awards:["🏆 Family Award","🤝 Family Support Required"]},
-  mates:{h:"End Of Year <span>Mate Review</span>",t:"",awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]},
-  partner:{h:"End Of Year <span>Couple Review</span>",t:"",awards:["💪 Our Strength Award","💐 Date Night Required"]}};
+  mates:{h:"End Of Year <span>Mate Review</span>",t:"",awards:["🏆 MVP Mate Award","⚠️ Who's On Notice"]},
+  partner:{h:"End Of Year <span>Couple Review</span>",t:"",awards:["💪 Our Top Qualities","💐 Date Night Required"]}};
 function render(){
   useSet(activeSet());
   const hk=reviewKind();
@@ -886,7 +886,7 @@ function render(){
   const sorted=[...scored].sort((a,b)=>b.avg-a.avg||a.i-b.i);
   const top=sorted.slice(0,3), bottom=sorted.slice(Math.max(3,sorted.length-3)).reverse();
   const couple=reviewKind()==="partner";
-  const li=(r,k,which)=>`<li style="--g:${gcol(r.g)}"><span class="chip">${r.g}</span><span class="nm">${r.c.name}${couple&&k===0?` <span class="ltag${which==="low"?" low":""}">${which==="low"?"💐 Date Night Required":"💪 Our Strength Award"}</span>`:""}<small>${esc(r.avg>=5.5?fill(r.c.hi):r.c.lo)}</small></span><span class="sc">${r.avg.toFixed(1)}</span></li>`;
+  const li=(r,k,which)=>`<li style="--g:${gcol(r.g)}"><span class="chip">${r.g}</span><span class="nm">${r.c.name}${couple&&k===0?` <span class="ltag${which==="low"?" low":""}">${which==="low"?"💐 Date Night Required":"💪 Our Top Qualities"}</span>`:""}<small>${esc(r.avg>=5.5?fill(r.c.hi):r.c.lo)}</small></span><span class="sc">${r.avg.toFixed(1)}</span></li>`;
   const none=`<li class="none-li">Not enough answers yet</li>`;
   $m("top3").innerHTML=top.length?top.map((r,k)=>li(r,k,"top")).join(""):none;
   $m("bottom3").innerHTML=bottom.length?bottom.map((r,k)=>li(r,k,"low")).join(""):none;

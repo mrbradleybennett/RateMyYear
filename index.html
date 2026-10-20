@@ -188,7 +188,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <nav class="choicebar two" aria-label="Get started">
       <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
       <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
-      <a href="review.html?who=partner"><b>Rate My Partner</b><small>Couple Check-in</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Your Love Report</small></a>
     </nav>
   </header>
 
@@ -292,7 +292,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
         <div class="crewcard" aria-label="Example mates leaderboard">
           <div class="ch"><b>Friday Footy</b><span class="eyebrow">Mates crew</span></div>
           <div class="crewscore" style="--g:var(--gC)"><span class="cc">C+</span><div><b>Crew score</b><span>6.6 / 10</span></div></div>
-          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 Best Bloke Award</span></div>
+          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 MVP Mate Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
           <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Who's On Notice</span></div>
@@ -330,7 +330,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <nav class="choicebar two" aria-label="Get started" style="width:100%">
       <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
       <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
-      <a href="review.html?who=partner"><b>Rate My Partner</b><small>Couple Check-in</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Your Love Report</small></a>
     </nav>
   </section>
 
@@ -362,12 +362,12 @@ const SETS={
          title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
          text:"See who the BEST BLOKE is, and who needs to be PUT ON NOTICE.",
          perfect:["Groups of mates","Sporting clubs"],
-         awards:["🏆 Best Bloke Award","⚠️ Who's On Notice"]},
+         awards:["🏆 MVP Mate Award","⚠️ Who's On Notice"]},
   partner:{groups:[["Heart","var(--green)",["Kindness","Trust","Fun"]],["Connection","var(--gold)",["Communication","Romance","Support","Quality Time"]],["Life","var(--blue)",["Fair Share","Money & Plans"]]],
          title:"Couple Review",go:"review.html?who=partner",cta:"Try a Couple Check-in →",
          text:"Rate the relationship itself, not each other, and see where you both see things differently.",
          perfect:["Couples","Date night conversation starter"],
-         awards:["💪 Our Strength Award","💐 Date Night Required"]}};
+         awards:["💪 Our Top Qualities","💐 Date Night Required"]}};
 const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
 const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
 const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
