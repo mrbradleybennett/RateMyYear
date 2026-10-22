@@ -658,6 +658,8 @@ const CREW_TYPES={
   mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 MVP Mate Award",low:"⚠️ Who's On Notice"},
   partner:{member:"partner",word:"Relationship",review:"Couple Review",crew:"Partner crew",top:"",low:""}};
 const crewTypeOf=t=>CREW_TYPES[t]?t:"family";
+const CREW_SUFFIX={family:"family",mates:"mates",partner:"love"};
+const AUTO_NAME=/^(\d+)-(family|mates|love)$/;
 const MEMBER_WORD={family:"Family",mate:"Mate",partner:"Partner"};
 /* One tip per detailed question (same order as the questions), so ideas can target the lowest-scoring ones. */
 const TIPS={
@@ -1278,11 +1280,10 @@ function viewLobby(msg=""){
     </form>
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
-      <div class="field"><label for="cName">Crew name</label><input id="cName" autocomplete="off" placeholder="e.g. Bennetts or Friday Footy"></div>
-      <div class="field"><label for="cType">Review type</label><select id="cType"><option value="family">Family Review: see how well your family is functioning</option><option value="mates">Mate Review: a leaderboard of your top mates</option><option value="partner">Couple Review: check in on your relationship</option></select></div>
+      <div class="field"><label for="cType">Crew type</label><select id="cType"><option value="family">Family</option><option value="mates">Mates</option><option value="partner">Couple</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
       <div class="field"><label for="cPw">Backup password <span class="muted">(optional)</span></label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
-      <p class="muted" style="grid-column:1/-1">Once it's set up, send your crew the invite link. They open it and pick their name. No sign-in needed. The backup password is only for anyone who loses the link. The crew name must be unique, so if it's taken, add your suburb or surname (e.g. Bennetts Melbourne).</p>
+      <p class="muted" style="grid-column:1/-1">Once it's set up, send your crew the invite link. They open it and pick their name. No sign-in needed. The backup password is only for anyone who loses the link. Your crew gets its own unique name, a number followed by the crew type, like <b>482-family</b>, <b>482-mates</b> or <b>482-love</b>.</p>
       <button type="submit" id="createGo">Create crew</button>
     </form>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
@@ -1303,21 +1304,20 @@ function viewLobby(msg=""){
   });
   $("createForm").addEventListener("submit",async e=>{
     e.preventDefault();
-    const name=$("cName").value.trim().slice(0,60), myName=$("cMe").value.trim().slice(0,40), pw=$("cPw").value, slug=slugify(name);
-    if(!slug) return famErr("Give your crew a name using letters or numbers.");
+    const myName=$("cMe").value.trim().slice(0,40), pw=$("cPw").value, ctype=crewTypeOf($("cType").value);
     if(!myName) return famErr("Enter your name so the crew knows who you are.");
     if(pw&&pw.length<6) return famErr("Use a backup password of at least 6 characters, or leave it blank.");
     $("createGo").disabled=true;
     try{
-      const nm=await getDoc(doc(db,"crewNames",slug));
-      if(nm.exists()){
-        /* If this name belongs to a crew you already own (say an earlier attempt got halfway), just open it. */
-        const cid=nm.data().crewId; let mine=false;
-        try{const cs=await getDoc(doc(db,"crews",cid));mine=cs.exists()&&cs.data().ownerUid===user.uid}catch(e){}
-        if(mine){try{await rememberCrew(cid,nm.data().name||name)}catch(e){}openCrew(cid);return}
-        $("createGo").disabled=false;return famErr(`"${name}" is already taken by another crew. Try adding your suburb or surname, e.g. ${name} Melbourne.`)}
+      /* Unique crew name: a number followed by the crew type, e.g. 482-love. */
+      let name="", slug="";
+      for(let i=0;i<12&&!slug;i++){
+        const n=Math.floor(i<6?100+Math.random()*900:1000+Math.random()*99000);
+        const cand=`${n}-${CREW_SUFFIX[ctype]}`;
+        if(!(await getDoc(doc(db,"crewNames",cand))).exists()){name=cand;slug=cand}
+      }
+      if(!slug){$("createGo").disabled=false;return famErr("Couldn't find a free crew number. Please try again.")}
       const id=rid(10), myId=rid(10), b=writeBatch(db);
-      const ctype=crewTypeOf($("cType").value);
       b.set(doc(db,"crews",id),{name,slug,type:ctype,showBoard:true,...(pw?{passHash:passHash(slug,pw)}:{}),ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:[{id:myId,name:myName,type:CREW_TYPES[ctype].member}],createdAt:Date.now()});
       b.set(doc(db,"crewNames",slug),{crewId:id,name,slug});
       try{await b.commit()}
@@ -1378,7 +1378,7 @@ function viewJoin(msg=""){
     </form>
     <details class="jbackup"><summary>Lost the link? Use the crew name and backup password</summary>
     <div class="stack" style="margin-top:10px">
-    <div class="field"><label for="jq">Crew name</label><input id="jq" type="search" autocomplete="off" placeholder="e.g. Bennetts" enterkeyhint="search"></div>
+    <div class="field"><label for="jq">Crew name</label><input id="jq" type="search" autocomplete="off" placeholder="e.g. 482-family" enterkeyhint="search"></div>
     <div class="jres" id="jres" aria-live="polite"></div>
     <form class="form" id="jpass" novalidate hidden>
       <p class="jpick" id="jpick" style="grid-column:1/-1"></p>
@@ -1813,7 +1813,13 @@ function refresh(){
   const tkey=`${crew.type||""}|${typeArmed}`;
   if(!tbx.hidden&&tbx.dataset.k!==tkey){
     tbx.dataset.k=tkey;
-    const setType=async t=>{try{await updateDoc(doc(db,"crews",crewId),{type:t,members:members().map(m=>({...m,type:CREW_TYPES[t].member}))});typeArmed="";toast(`Switched to ${CREW_TYPES[t].review}.`)}catch(x){famErr(errText(x))}};
+    const setType=async t=>{try{
+      const upd={type:t,members:members().map(m=>({...m,type:CREW_TYPES[t].member}))}, m=AUTO_NAME.exec(crew.name||""), b=writeBatch(db);
+      /* Auto-named crews (e.g. 482-love) keep their number and take the new type: 482-family. */
+      if(m&&crew.slug===crew.name){const nn=`${m[1]}-${CREW_SUFFIX[t]}`;if(nn!==crew.name&&!(await getDoc(doc(db,"crewNames",nn))).exists()){upd.name=nn;upd.slug=nn;b.set(doc(db,"crewNames",nn),{crewId,name:nn,slug:nn});b.delete(doc(db,"crewNames",crew.slug))}}
+      b.update(doc(db,"crews",crewId),upd);await b.commit();
+      if(upd.name){try{await rememberCrew(crewId,upd.name)}catch(e){}}
+      typeArmed="";toast(`Switched to ${CREW_TYPES[t].review}${upd.name?`. Your crew is now ${upd.name}`:""}.`)}catch(x){famErr(errText(x))}};
     if(!crew.type){
       tbx.innerHTML=`<p><b>What kind of crew is this?</b> Family crews answer the family questions, Mates crews the mates questions and Partner crews the partner questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns">${Object.keys(CREW_TYPES).map(t=>`<button type="button" data-ctype="${t}">${CREW_TYPES[t].crew}</button>`).join("")}</div>`;
       tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>setType(b.dataset.ctype));

@@ -82,7 +82,7 @@ Run `firebase deploy` again whenever you change the files.
 ## How crews work
 - **Set up a crew (crew admin only):** tap **Create My Crew** at the top of the site. That opens the **My Crew** page: sign in with Google, then give the crew a name and your name. You become the crew's admin.
 - **My Crew page:** everything an admin does lives here: adding people, the invite link (Share / Copy / New link), **Manage** for each person, and the **All scores**, **Member reports** and **Crew report** tabs. The review page just has a **My Crew** button at the top for admins.
-- **Crew name and backup password:** every crew has a unique name. The admin can also set an optional backup password on **My Crew**, for anyone who loses the invite link.
+- **Crew name and backup password:** every crew gets a unique name made automatically: a number followed by the crew type, like `482-family`, `482-mates` or `482-love` (Couple). Switching type keeps the number. The admin can also set an optional backup password on **My Crew**, for anyone who loses the invite link.
 - **Joining:** send your crew the **invite link** (Share / Copy on My Crew). They open the invite link and pick their name. No sign-in needed. If someone loses the link, they tap **Join**, search for the crew name and enter the backup password.
 - **Joining needs no sign-in:** anyone who opens the invite link goes straight into the crew as a guest. They pick their own name under "I am" (or "I'm not on the list. Add me") and can review anyone.
 - **Guests are tied to their device.** If someone changes phone or clears their browser, they just open the invite link again. If their name shows as taken, the admin taps **Free up name** next to it.
