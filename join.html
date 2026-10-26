@@ -489,7 +489,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
   </section>
 
   <div class="admin-only ratecrew-wrap"><a class="endbtn ratecrew" id="rateCrew" href="review.html" hidden><b>Rate My Crew</b><small>Review everyone in your crew and see the leaderboard</small></a></div>
-  <p class="foot review-only">Scores: A 8.5+ · B 7+ · C 5.5+ · D 4+ · E under 4, out of 10. Each area's grade comes from its quick question, which moves to the average of any detailed questions you answer. Don't know answers are left out. A + means the top third of that band and a − the bottom third, so B+ is 8.0–8.4 and B− is 7.0–7.4.</p>
+  <p class="foot review-only">Grades run from E− (lowest) up to A+ (highest). Each area's grade comes from its quick question, which moves to the average of any detailed questions you answer. Don't know answers are left out. Behind the scenes each grade is also a score out of 10, used for averages: A 8.5+ · B 7+ · C 5.5+ · D 4+ · E under 4.</p>
 
   <section class="boardsec review-only" id="boardSec" hidden>
     <h2>Crew leaderboard</h2>
@@ -703,7 +703,12 @@ const grade=a=>{
   return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"");
 };
 const gcol=g=>`var(--g${g[0]})`;
-const val=(c,i)=>state.v[c+i]??5;
+/* Sliders score in 15 grade steps, E- up to A+. Each step is stored as the middle of its grade band (1-10 scale),
+   so averages, the wheel and saved reviews keep working. */
+const GSTEPS=["E-","E","E+","D-","D","D+","C-","C","C+","B-","B","B+","A-","A","A+"];
+const GVAL=[1.5,2.5,3.5,4.25,4.75,5.25,5.75,6.25,6.75,7.25,7.75,8.25,8.75,9.25,9.75];
+const toStep=v=>Math.max(0,GSTEPS.indexOf(grade(v)));
+const val=(c,i)=>state.v[c+i]??GVAL[7];
 const isMe=()=>state.who==="me";
 const activeSet=()=>SETS[state.qset]?state.qset:setForType(state.who);
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
@@ -722,8 +727,8 @@ const $m=id=>document.getElementById(id);
 
 /* ---------- category cards ---------- */
 const qHTML=(key,lo,hi)=>`<div class="q" id="q-${key}"><p id="l-${key}"></p><div class="ends"><span>${lo}</span><span id="e-${key}">${hi}</span></div>
-   <input type="range" id="r-${key}" min="1" max="10" step="1" aria-labelledby="l-${key}">
-   <div class="q-ctrl"><label class="dk"><input type="checkbox" id="k-${key}"> Don't know</label><span class="q-val" id="v-${key}">5</span></div></div>`;
+   <input type="range" id="r-${key}" min="0" max="14" step="1" aria-labelledby="l-${key}">
+   <div class="q-ctrl"><label class="dk"><input type="checkbox" id="k-${key}"> Don't know</label><span class="q-val" id="v-${key}">C</span></div></div>`;
 const host=$m("cats");
 function buildCards(){
 host.innerHTML="";
@@ -737,9 +742,9 @@ CATS.forEach((c,ci)=>{
   host.appendChild(s);
   ["t",0,1,2].forEach(i=>{
     const key=c.id+i, r=s.querySelector(`#r-${key}`), k=s.querySelector(`#k-${key}`), isTop=i==="t";
-    r.value=val(c.id,i);
-    r.addEventListener("input",()=>{state.v[key]=+r.value;delete state.dk[key];if(!isTop)syncTop(c);save();render()});
-    k.addEventListener("change",()=>{if(k.checked)state.dk[key]=true;else{delete state.dk[key];if(state.v[key]==null)state.v[key]=+r.value}if(!isTop)syncTop(c);save();render()});
+    r.value=toStep(val(c.id,i));
+    r.addEventListener("input",()=>{state.v[key]=GVAL[+r.value];delete state.dk[key];if(!isTop)syncTop(c);save();render()});
+    k.addEventListener("change",()=>{if(k.checked)state.dk[key]=true;else{delete state.dk[key];if(state.v[key]==null)state.v[key]=GVAL[+r.value]}if(!isTop)syncTop(c);save();render()});
   });
 });
 }
@@ -857,7 +862,7 @@ function render(){
   if($m("heroH1").dataset.k!==hk){$m("heroH1").dataset.k=hk;$m("heroH1").innerHTML=HEROES[hk].h;$m("heroTag").textContent=HEROES[hk].t;$m("heroTag").hidden=!HEROES[hk].t;
     const aw=HEROES[hk].awards||[];$m("heroAwards").innerHTML=aw.map((t,i)=>`<span class="pop${i?" low":""}">${t}</span>`).join("");$m("heroAwards").hidden=!aw.length}
   const me=isMe(),w=words();
-  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, one quick question each.`,"More detail under any area (if needed).","Drag each slider to score.","Tick Don't know to skip it."].map(t=>`<li>${t}</li>`).join("");
+  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, one quick question each.`,"More detail under any area (if needed).","Drag each slider to a grade, from E− up to A+.","Tick Don't know to skip it."].map(t=>`<li>${t}</li>`).join("");
   $m("nameLabel").textContent="Name:";
   $m("whoMe").setAttribute("aria-pressed",me); $m("whoOther").setAttribute("aria-pressed",!me);
   nameEl.placeholder=me?"e.g. Brad":(state.who==="mate"?"e.g. Dave":state.who==="partner"?"e.g. Sam":"e.g. Mum");
@@ -868,14 +873,15 @@ function render(){
     c.qs.forEach((q,i)=>{$m(`l-${c.id}${i}`).textContent=fill(q[0])});
     ["t",0,1,2].forEach(i=>{
       const key=c.id+i, r=$m("r-"+key), dk=!!state.dk[key];
-      r.value=val(c.id,i); r.disabled=dk;
-      r.style.setProperty("--p",((r.value-1)/9*100)+"%");
+      r.value=toStep(val(c.id,i)); r.disabled=dk;
+      r.setAttribute("aria-valuetext",grade(val(c.id,i)));
+      r.style.setProperty("--p",(r.value/14*100)+"%");
       $m("k-"+key).checked=dk;
-      $m("v-"+key).textContent=dk?"–":(i==="t"?fmt(val(c.id,"t")):r.value);
+      $m("v-"+key).textContent=dk?"–":grade(val(c.id,i));
       $m("q-"+key).classList.toggle("is-dk",dk);
     });
     const ds=detailScore(c), n=answeredDetails(c).length;
-    $m("ds-"+c.id).textContent=ds==null?"3 more questions, optional":`${n} of 3 answered · average ${ds.toFixed(1)}`;
+    $m("ds-"+c.id).textContent=ds==null?"3 more questions, optional":`${n} of 3 answered · average ${grade(ds)}`;
     const avg=catScore(c), g=avg==null?null:grade(avg);
     const ge=$m("g-"+c.id);ge.textContent=g||"?";ge.style.setProperty("--g",g?gcol(g):"var(--track)");
     ge.classList.toggle("unknown",!g);
