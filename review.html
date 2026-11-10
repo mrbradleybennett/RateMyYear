@@ -204,7 +204,9 @@ details.more summary::before{content:"";width:8px;height:8px;border-right:2.5px 
 details.more[open] summary::before{transform:rotate(45deg)}
 details.more summary small{font-weight:500;color:var(--muted)}
 details.more summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
-.more-body{display:flex;flex-direction:column;gap:16px;padding-top:14px}
+.more-body{display:flex;flex-direction:column;gap:16px}
+/* All detailed questions show; the old summary question and the expand bar are hidden. */
+.src-block>.q:first-child,details.more>summary{display:none}
 .more-body>button{align-self:flex-start}
 input[type=range]:disabled{cursor:default;opacity:.6}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:16px 24px;align-items:center}
@@ -250,7 +252,7 @@ input[type=range]:disabled{cursor:default;opacity:.6}
 .dk input{width:16px;height:16px;accent-color:var(--green);margin:0}
 .q.is-dk .ends,.q.is-dk input[type=range]{opacity:.4}
 .src-block{border-radius:10px;padding:14px;border:1.5px solid var(--gold);background:var(--soft);display:flex;flex-direction:column;gap:12px}
-details.more{border-top:1px dashed var(--line);padding-top:12px}
+details.more{border-top:0;padding-top:0}
 .none-li{display:block!important;color:var(--muted);background:transparent!important;padding:4px 0!important}
 .stack{display:flex;flex-direction:column;gap:14px}
 .gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1f1f1f;box-shadow:inset 0 0 0 1px #747775;font-weight:600;padding:10px 18px;border-radius:999px}
@@ -489,7 +491,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
   </section>
 
   <div class="admin-only ratecrew-wrap"><a class="endbtn ratecrew" id="rateCrew" href="review.html" hidden><b>Rate My Crew</b><small>Review everyone in your crew and see the leaderboard</small></a></div>
-  <p class="foot review-only">You score each question E, D, C, B or A. Each area's grade comes from its quick question, which moves to the average of any detailed questions you answer. Don't know answers are left out. Averages can land on a + or −, so B+ is the top of the B band and B− the bottom. Behind the scenes each grade is also a score out of 10, used for averages: A 8.5+ · B 7+ · C 5.5+ · D 4+ · E under 4.</p>
+  <p class="foot review-only">You score each question E, D, C, B or A. Each area's grade is the average of its three questions (any you don't move stay at C). Don't know answers are left out. Averages can land on a + or −, so B+ is the top of the B band and B− the bottom. Behind the scenes each grade is also a score out of 10, used for averages: A 8.5+ · B 7+ · C 5.5+ · D 4+ · E under 4.</p>
 
   <section class="boardsec review-only" id="boardSec" hidden>
     <h2>Crew leaderboard</h2>
@@ -718,7 +720,11 @@ const answeredDetails=c=>c.qs.map((_,i)=>c.id+i).filter(k=>state.v[k]!=null&&!st
 const detailScore=c=>{const ks=answeredDetails(c);return ks.length?mean(ks.map(k=>state.v[k])):null};
 const catScore=c=>topScore(c);
 const fmt=v=>Number.isInteger(v)?String(v):v.toFixed(1);
-function syncTop(c){const d=detailScore(c);if(d!=null){state.v[c.id+"t"]=Math.round(d*10)/10;delete state.dk[c.id+"t"]}}
+/* Each area is scored by its three detailed questions (unanswered ones sit at C). The area score is kept in the
+   hidden "t" slot so saved reviews, crew reports and the leaderboard keep working. All Don't know = no score. */
+function syncTop(c){const ks=c.qs.map((_,i)=>i).filter(i=>!state.dk[c.id+i]);
+  if(!ks.length){state.dk[c.id+"t"]=true;delete state.v[c.id+"t"];return}
+  state.v[c.id+"t"]=Math.round(mean(ks.map(i=>val(c.id,i)))*100)/100;delete state.dk[c.id+"t"]}
 function fill(t){const p=isMe()?P.me:P.other;
   return t.replace(/\{(you|your|yourself|are)\}/g,(_,k)=>p[k])
           .replace(/(^|[.?!]\s+)([a-z])/g,(m,a,b)=>a+b.toUpperCase());}
@@ -743,13 +749,13 @@ CATS.forEach((c,ci)=>{
   ["t",0,1,2].forEach(i=>{
     const key=c.id+i, r=s.querySelector(`#r-${key}`), k=s.querySelector(`#k-${key}`), isTop=i==="t";
     r.value=toStep(val(c.id,i));
-    r.addEventListener("input",()=>{state.v[key]=GVAL[+r.value];delete state.dk[key];if(!isTop)syncTop(c);save();render()});
-    k.addEventListener("change",()=>{if(k.checked)state.dk[key]=true;else{delete state.dk[key];if(state.v[key]==null)state.v[key]=GVAL[+r.value]}if(!isTop)syncTop(c);save();render()});
+    r.addEventListener("input",()=>{state.v[key]=GVAL[+r.value];delete state.dk[key];syncTop(c);save();render()});
+    k.addEventListener("change",()=>{if(k.checked)state.dk[key]=true;else{delete state.dk[key];if(state.v[key]==null)state.v[key]=GVAL[+r.value]}syncTop(c);save();render()});
   });
 });
 }
-/* Every assessment starts in summary mode: detailed questions closed until someone opens them. */
-function applyMode(){CATS.forEach(c=>{const d=$m("d-"+c.id);if(d)d.open=false})}
+/* All detailed questions are always open. */
+function applyMode(){CATS.forEach(c=>{const d=$m("d-"+c.id);if(d)d.open=true})}
 /* Me / Someone else: "Someone else" keeps the last family-or-mates choice (family by default). */
 const pickWho=w=>{const r=$m("who-"+w);if(r&&!r.checked){r.checked=true;r.dispatchEvent(new Event("change",{bubbles:true}))}};
 $m("whoMe").onclick=()=>pickWho("me");
@@ -839,7 +845,7 @@ function cardTitle(){const n=(state.name||"").trim(), kk=reviewKind(), k=KIND_WO
   if(kk==="partner") return "Your Love Report";
   return n?`${n} ${k} Report Card`:isMe()?`Your ${k} Report Card`:`${k} Report Card`}
 /* Ideas for an area: tips for its two lowest-scoring detailed questions, or its general tips if none were answered. */
-function tipsFor(c,max){const qs=c.qs.map((q,i)=>({i,v:state.dk[c.id+i]?null:state.v[c.id+i]})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
+function tipsFor(c,max){const qs=c.qs.map((q,i)=>({i,v:state.dk[c.id+i]?null:val(c.id,i)})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v||a.i-b.i);
   return {targeted:qs.length>0,tips:qs.length?qs.slice(0,2).map(x=>c.tips[x.i]):c.tips.slice(0,max||3)}}
 const HEROES={
   me:{h:"End Of Year <span>Review</span>",t:""},
@@ -855,6 +861,7 @@ function paintEndInvite(){
   const html=`<b>${txt[0]}</b><small>${txt[1]}</small>`; if(eb.innerHTML!==html) eb.innerHTML=html;
 }
 function render(){
+  CATS.forEach(syncTop);
   paintEndInvite();
   useSet(activeSet());
   const hk=reviewKind();
@@ -862,7 +869,7 @@ function render(){
   if($m("heroH1").dataset.k!==hk){$m("heroH1").dataset.k=hk;$m("heroH1").innerHTML=HEROES[hk].h;$m("heroTag").textContent=HEROES[hk].t;$m("heroTag").hidden=!HEROES[hk].t;
     const aw=HEROES[hk].awards||[];$m("heroAwards").innerHTML=aw.map((t,i)=>`<span class="pop${i?" low":""}">${t}</span>`).join("");$m("heroAwards").hidden=!aw.length}
   const me=isMe(),w=words();
-  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, one quick question each.`,"More detail under any area (if needed).","Drag each slider to a grade: E, D, C, B or A.","Tick Don't know to skip it."].map(t=>`<li>${t}</li>`).join("");
+  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, three quick questions each.`,"Drag each slider to a grade: E, D, C, B or A.","Tick Don't know to skip it."].map(t=>`<li>${t}</li>`).join("");
   $m("nameLabel").textContent="Name:";
   $m("whoMe").setAttribute("aria-pressed",me); $m("whoOther").setAttribute("aria-pressed",!me);
   nameEl.placeholder=me?"e.g. Brad":(state.who==="mate"?"e.g. Dave":state.who==="partner"?"e.g. Sam":"e.g. Mum");
@@ -916,7 +923,7 @@ function render(){
     const T=tipsFor(r.c);
     const body=T.targeted
       ?`<ul>${T.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`
-      :`<ul>${T.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul><p class="muted qnote">Open <b>Detailed questions</b> on ${esc(r.c.name)} to get ideas aimed at the exact things to work on.</p>`;
+      :`<ul>${T.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`;
     return `<div class="rec" style="--g:${gcol(r.g)}"><h4>${r.c.name} <span class="tag">${r.g} · ${r.avg.toFixed(1)}</span></h4>${body}</div>`}).join(""):`<p class="muted">Score at least four areas to see ideas for the bottom two.</p>`;
 
   if(window.afterRender) window.afterRender(rows,avg,g);
