@@ -729,7 +729,7 @@ let state={who:"me",name:"",v:{},dk:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v)state=Object.assign(state,s)}catch(e){}
 /* Links from the landing page: ?who=me|family|mate picks what you're rating; ?go=join opens crew search. */
 const LAND=new URLSearchParams(location.search);
-if(["me","family","mate","partner"].includes(LAND.get("who"))){state.who=LAND.get("who");if(state.who!=="me")state.other=state.who;delete state.qset}
+if(["me","family","mate","partner"].includes(LAND.get("who"))){if(state.who!==LAND.get("who"))state.revealed=false;state.who=LAND.get("who");if(state.who!=="me")state.other=state.who;delete state.qset}
 if(state.who==="friend")state.who="mate";
 if(!state.dk)state.dk={};
 delete state.mode;delete state.src;delete state.dt;
@@ -801,7 +801,7 @@ const nameEl=$m("name");nameEl.value=state.name||"";
 nameEl.addEventListener("input",()=>{state.name=nameEl.value.trim();save();render()});
 document.querySelectorAll('input[name=who]').forEach(r=>{
   r.checked=r.value===state.who;
-  r.addEventListener("change",()=>{state.who=r.value;if(r.value!=="me")state.other=r.value;delete state.qset;save();render()});
+  r.addEventListener("change",()=>{if(state.who!==r.value)state.revealed=false;state.who=r.value;if(r.value!=="me")state.other=r.value;delete state.qset;save();render()});
 });
 
 /* ---------- wheel (drawn twice: header and report card) ---------- */
@@ -2566,6 +2566,14 @@ async function loadConfig(){
     if(invite&&!ADMIN) return joinCrew(invite);
     if(REVIEW_PAGE&&entry==="join"&&!landJoin){landJoin=true;return startJoin()}
     const lastCrew=loadLS();
+    /* Picked Rate My Family / Mates / Couple Check-in? Only open a group of that type. With none, do a fresh
+       review of that type; See How Others Rate You then makes a new group for it. */
+    const want=REVIEW_PAGE?{family:"family",mate:"mates",partner:"partner"}[LAND.get("who")]:"";
+    if(want&&myCrews.length){
+      const order=[...myCrews.filter(c=>c.id===lastCrew),...myCrews.filter(c=>c.id!==lastCrew)];
+      for(const c of order){try{const d=await withTimeout(getDoc(doc(db,"crews",c.id)),8000,"Loading");if(d.exists()&&crewTypeOf(d.data().type)===want)return openCrew(c.id)}catch(e){}}
+      return viewLobby();
+    }
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);
     else if(myCrews.length===1) openCrew(myCrews[0].id);
     else viewLobby();
