@@ -364,6 +364,21 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 @media (max-width:560px){.split{grid-template-columns:1fr}}
 @media (max-width:440px){.big{width:96px;height:96px;font-size:48px}.seg span{padding:9px 14px}}
+/* Review first, then ask others */
+.askbox .asklead{margin:0;font-size:18px;font-weight:700;line-height:1.35}
+.askbox .stack{display:flex;flex-direction:column;gap:10px}.askbox [hidden]{display:none!important}
+.welcome{border:2px solid var(--green);border-radius:12px;padding:14px 16px;background:var(--panel);display:flex;flex-direction:column;gap:10px}
+.welcome[hidden],.nextbox[hidden]{display:none}
+.welcome .wtitle{margin:0;font-size:20px;line-height:1.25}.welcome p{margin:0}
+.wform{display:flex;gap:8px;flex-wrap:wrap}
+.wform input{flex:1 1 160px;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.nextbox{border-radius:12px;background:var(--soft);padding:12px 16px;display:flex;flex-direction:column}
+.nextbox h3{margin:0 0 4px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.nrow{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line)}
+.nrow:first-of-type{border-top:0}.nrow>span:first-child{flex:1 1 180px;min-width:0}
+.nextbox .keep{margin:8px 0 0;font-size:14px;color:var(--muted)}
+.linkbtn{background:none;border:0;padding:0;color:var(--green);text-decoration:underline;font:inherit;font-weight:700;cursor:pointer}
+.lockline2{color:var(--muted)}
 </style>
 </head>
 <body class="entry-rate">
@@ -371,7 +386,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
 <div class="wrap">
   <nav class="topnav" aria-label="Main">
     <div class="menu">
-      <a id="navAbout" href="./">About</a>
+      <a id="navAbout" href="./">Home</a>
       <a id="choiceJoin" href="review.html?go=join">Join</a>
       <a id="choiceCreate" href="mycrew.html">Create</a>
     </div>
@@ -464,10 +479,20 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
         <div id="recs" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
       <div class="endbar">
+        <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>See How Others Rate You</b><small>Send a link. They rate you in 2 minutes, then rate themselves.</small></button>
         <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send your report card by WhatsApp, text or email</small></button>
-        <button type="button" class="endbtn" id="endJoin"><b>Join A Crew</b><small>Open the invite link and pick your name</small></button>
-        <a class="endbtn" id="endCreate" href="mycrew.html"><b>Invite Your Family</b><small>Send them the link so they can review you, and each other</small></a>
+        <button type="button" class="endbtn" id="endJoin"><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
         <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
+      </div>
+      <div class="sharebox askbox" id="askBox" hidden>
+        <p class="asklead" id="askLead"></p>
+        <div id="askForm" class="stack">
+          <div class="field"><label for="askName">Your first name</label><input id="askName" type="text" autocomplete="given-name" maxlength="40" placeholder="e.g. Sam"></div>
+          <div class="field" id="askThemF"><label for="askThem" id="askThemL">Their first name</label><input id="askThem" type="text" autocomplete="off" maxlength="40" placeholder="e.g. Dave"></div>
+          <div class="sharebtns"><button type="button" id="askGo">Create my link</button></div>
+        </div>
+        <div class="sharebtns" id="askSend" hidden><button type="button" id="askShare">Send the link</button><button type="button" class="ghost" id="askCopy">Copy link</button></div>
+        <p class="muted" id="askNote"></p>
       </div>
       <div class="sharebox" id="shareBox" hidden>
         <div class="cardwrap"><img id="cardImg" alt="Your report card as a picture" hidden><p class="muted" id="cardMaking">Making your report card picture…</p></div>
@@ -478,7 +503,7 @@ body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHin
           <a id="saveImg" class="ghost btnlike" download="rate-my-year-report-card.png" href="#">Save Report</a>
         </div>
         <p class="muted" id="shareNote"></p>
-        <a class="endbtn" id="share360" href="mycrew.html"><b>Set Up a FREE 360 Self Assessment</b><small>Don't believe one single rating. Do a self assessment, get all your family and friends to review you, and get some solid feedback on how you can be even more awesome in 2027!</small></a>
+        <button type="button" class="endbtn" id="share360"><b>Get Others To Rate You, Free</b><small>Don't trust one rating. Send a link to family and friends, see how they rate you, and get ideas to be even more awesome in 2027.</small></button>
       </div>
       <div class="actions">
         <button id="famSave" type="button" hidden>Save to crew</button>
@@ -1271,7 +1296,7 @@ function viewSignedOut(msg=""){
     <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Sign in with Google</button></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`:`<div class="stack">
-    <p class="muted">A crew is your family, your mates, or your partner. To join yours, open the invite link your crew admin sent you and pick your name. No sign-in needed. Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a>. You can also do a review on your own below.</p>
+    <p class="muted">Do your own review below. At the end, tap <b>See How Others Rate You</b> to send a link to your family, mates or partner. Got an invite link? Just tap it in your message.</p>
     <div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
@@ -1459,6 +1484,7 @@ async function joinCrew(inv){
     return;
   }
   invite=null; history.replaceState(null,"",location.pathname);
+  if(inviteFrom){setFrom(inv.crew,inviteFrom);inviteFrom=""}
   let name="Your crew";
   try{const snap=await getDoc(doc(db,"crews",inv.crew));if(snap.exists())name=snap.data().name||name}catch(e){}
   try{await rememberCrew(inv.crew,name)}catch(e){}
@@ -1487,7 +1513,13 @@ function openCrew(id){
   },x=>{leaveLocal(x&&x.code==="permission-denied"?"You're no longer in that crew.":errText(x))}));
   boardById={}; boardSubOn=false;
   let myMember="";
-  const pickMe=()=>{me=myMember&&isMember(myMember)?myMember:"";syncReviewSubs();refresh()};
+  const pickMe=()=>{
+    me=myMember&&isMember(myMember)?myMember:"";syncReviewSubs();refresh();
+    if(afterOpen&&me&&crew&&isMember(afterOpen.id)){
+      const a=afterOpen; afterOpen=null;
+      setTimeout(()=>{if(a.fresh){state.v={};state.dk={}}startReview(a.id,a.quiet);if(!a.fresh)savedSig=sig();render()},60);
+    }
+  };
   unsubs.push(onSnapshot(doc(db,"crews",id,"accounts",user.uid),s=>{
     myMember=s.exists()?(s.data().member||""):""; pickMe();
   },()=>{}));
@@ -1542,6 +1574,7 @@ function viewCrewShell(){
     <p class="adminlink" id="toMyCrew" hidden>You're the crew admin. <a href="${MYCREW_PATH}">Open My Crew</a> to add people, send the invite link and see all the reports.</p>
     <p class="menote" id="meNote" hidden></p>
     <p class="crewnote" id="crewNote" hidden></p>
+    <div class="welcome" id="welcomeBox" hidden></div>
     <div class="form" id="meWrap">
       <div class="field" id="meField"><label for="meSel">I am</label><select id="meSel"></select><p class="err" id="meErr" hidden></p><small class="muted">Picked the wrong name? Just choose the right one here.</small></div>
     </div>
@@ -1550,6 +1583,7 @@ function viewCrewShell(){
       <div class="field" id="addMeTypeF"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
       <button type="submit">Add me</button>
     </form>
+    <div class="nextbox" id="nextBox" hidden></div>
     <div class="typebox" id="typeBox" hidden></div>
     <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">On by default: everyone in the crew sees the leaderboard. Untick it to blur the scores out for the crew. You can always see them here under All scores.</span></label>
     <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
@@ -1734,7 +1768,7 @@ const legacyKey=reviewId=>"L"+sha256hex("rmy-board:"+reviewId).slice(0,19);
 function boardScore(id){
   const by=(boardById&&boardById[id]&&boardById[id].by)||{}, es=Object.values(by).filter(e=>e&&typeof e.o==="number");
   const others=es.filter(e=>!e.self), use=others.length?others:es;
-  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length};
+  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length,o:others.length};
 }
 /* Crew admins can read every review, so their device keeps the leaderboard in step: it adds older reviews
    that were saved before the leaderboard existed and removes entries for deleted reviews or people. */
@@ -1861,9 +1895,10 @@ function refresh(){
   const open=boardOpen();
   $("boardTitle").textContent=ADMIN?"":"Crew leaderboard";
   $("boardNote").hidden=ADMIN||!ms.length;
-  if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone.")+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
+  if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):($("welcomeBox")&&!$("welcomeBox").hidden?"Type your first name above to get started.":"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone."))+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
   const fake=["A","B+","B","C+","C","D"];
-  const ranked=ms.map(m=>({m,b:open&&boardById?boardScore(m.id):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  const lockOne=b=>crew.type!=="partner"&&b.o===1?{v:null,n:b.n,o:1,locked:true}:b;
+  const ranked=ms.map(m=>({m,b:open&&boardById?lockOne(boardScore(m.id)):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
   /* Crew score: the average of everyone's leaderboard score (people with at least one review). */
   const scored=ranked.filter(x=>x.b.v!=null), cs=$("crewScore");
   cs.hidden=ADMIN||!ms.length;
@@ -1875,7 +1910,7 @@ function refresh(){
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
-    const score=open?(b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
+    const score=open?(b.locked?`<span class="lockline2">🔒 Score shows after 2 reviews</span>`:b.v==null?"Not reviewed yet":b.o===0?`${b.v.toFixed(1)} / 10 · ${m.id===me?"your":"their"} own rating`:`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     const award=open&&i===0&&b.v!=null&&nScored>=2;
     /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
@@ -1914,6 +1949,7 @@ function refresh(){
   if(showAdmin) renderAdmin();
   if(admin) syncBoardSoon();
   if(target&&!isMember(target.id)) target=null;
+  paintWelcome(); paintNext();
   render();
 }
 
@@ -1941,6 +1977,8 @@ function setSliders(rv){
 }
 function needMe(id){
   pending=id;
+  const wb=$("welcomeBox");
+  if(wb&&!wb.hidden){wb.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});const w=$("wName");if(w)w.focus({preventScroll:true});return}
   const n=$("meNote"), f=$("meField"), s=$("meSel");
   if(!n) return;
   n.textContent=id?`First, pick your own name in "I am". Then ${memberName(id)}'s review opens.`:`First, pick your own name in "I am", then tap Review next to who you're reviewing.`;
@@ -1948,7 +1986,7 @@ function needMe(id){
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   s.focus();
 }
-function startReview(id){
+function startReview(id,quiet){
   if(!crew) return;
   if(!me) return needMe(id);
   const wasTarget=!!target;
@@ -1964,7 +2002,7 @@ function startReview(id){
   document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===state.who);
   nameInput.value=target.name;
   save(); render();
-  $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
+  if(!quiet) $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 }
 function stopReview(){target=null;delete state.qset;render()}
 const toTop=()=>$("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
@@ -2019,6 +2057,16 @@ function selfVsCrew(rows,avg){
   let selfV;
   if(isSelf) selfV=avg;
   else{ const se=Object.values(by).find(e=>e.self); selfV=se?se.o:(selfRev?selfRev.overall:null); if(avg!=null) crewVals=[...crewVals,avg]; }
+  if(crew.type==="partner"&&isSelf){
+    const theirs=members().filter(m=>m.id!==me).map(m=>{const b2=(boardById&&boardById[m.id]&&boardById[m.id].by)||{};const e=Object.values(b2).find(x=>x&&x.self);return e?e.o:null}).filter(v=>typeof v==="number");
+    const pr=liveReviews().find(r=>r.member!==me&&r.reviewer===r.member);
+    const theirsV=theirs.length?mean(theirs):(pr?pr.overall:null);
+    const live0=Object.fromEntries(rows.filter(r=>r.avg!=null).map(r=>[r.c.id,r.avg]));
+    const g0=pr&&pr.cats?CATS.filter(c=>live0[c.id]!=null&&pr.cats[c.id]!=null).map(c=>({c,s:live0[c.id],k:pr.cats[c.id],d:live0[c.id]-pr.cats[c.id]})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)):null;
+    return {self:avg,crew:theirsV,crewN:theirs.length,isSelf:true,nm,gaps:g0,couple:true,selfNote:"How you rate the relationship",crewNote:theirsV==null?"Waiting on your partner's side":"How your partner rates it"};
+  }
+  if(isSelf&&crew.type!=="partner"&&crewVals.length===1)
+    return {self:selfV,crew:null,crewN:1,isSelf,nm,gaps:null,selfNote:"How you rate yourself",crewNote:"🔒 Shows after 2 reviews (1 in so far), so nobody's rating stands out on its own"};
   const crewV=crewVals.length?mean(crewVals):null;
   // per-area: needs the person's own review and the crew's (readable for yourself, or for crew admins)
   const live=Object.fromEntries(rows.filter(r=>r.avg!=null).map(r=>[r.c.id,r.avg]));
@@ -2042,16 +2090,17 @@ function paintViews(rows,avg){
   vb.hidden=true;
   if(!v){hs.hidden=true;hc.hidden=true;gb.hidden=true;$("bigGrade").hidden=false;return}
   $("bigGrade").hidden=true;
-  HV(hs,"Self",v.self,v.selfNote); HV(hc,"Crew",v.crew,v.crewNote);
+  HV(hs,v.couple?"You":"Self",v.self,v.selfNote); HV(hc,v.couple?"Partner":"Crew",v.crew,v.crewNote);
   if(v.self==null||v.crew==null){gb.hidden=true;return}
   const you=v.isSelf, them=esc(v.nm), d=v.self-v.crew;
-  const subj=you?"You rate yourself":`${them} rates themselves`;
-  const overall=Math.abs(d)<0.5?`Overall, ${you?"your view":`${them}'s view`} and the crew's are pretty much in line (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`
-    :`Overall, ${subj.charAt(0).toLowerCase()+subj.slice(1)} <b>${Math.abs(d).toFixed(1)} ${d>0?"higher":"lower"}</b> than the crew does (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`;
+  const subj=v.couple?"You rate the relationship":you?"You rate yourself":`${them} rates themselves`;
+  const crewW=v.couple?"your partner":"the crew";
+  const overall=Math.abs(d)<0.5?`Overall, ${you?"your view":`${them}'s view`} and ${v.couple?"your partner's":"the crew's"} are pretty much in line (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`
+    :`Overall, ${subj.charAt(0).toLowerCase()+subj.slice(1)} <b>${Math.abs(d).toFixed(1)} ${d>0?"higher":"lower"}</b> than ${v.couple?"your partner":"the crew"} does (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`;
   const big=(v.gaps||[]).filter(x=>Math.abs(x.d)>=1).slice(0,3);
-  const line=x=>x.d>0?`<b>${x.c.name}</b>: ${subj.charAt(0).toLowerCase()+subj.slice(1)} ${Math.abs(x.d).toFixed(1)} higher than the crew does (${x.s.toFixed(1)} vs ${x.k.toFixed(1)}).`
-    :`<b>${x.c.name}</b>: the crew rates ${you?"you":them} ${Math.abs(x.d).toFixed(1)} higher than ${you?"you do":"they do"} (${x.k.toFixed(1)} vs ${x.s.toFixed(1)}).`;
-  gb.innerHTML=`<h3>Biggest gaps: self vs crew</h3><p>${overall}</p>`+(big.length?`<ul>${big.map(x=>`<li>${line(x)}</li>`).join("")}</ul>`:v.gaps?`<p class="muted">No area differs by a full point or more.</p>`:`<p class="muted">${you?"Area-by-area gaps show once someone in the crew has reviewed you.":`Only ${them} and the crew admin see the area-by-area gaps.`}</p>`);
+  const line=x=>x.d>0?`<b>${x.c.name}</b>: ${subj.charAt(0).toLowerCase()+subj.slice(1)} ${Math.abs(x.d).toFixed(1)} higher than ${crewW} does (${x.s.toFixed(1)} vs ${x.k.toFixed(1)}).`
+    :`<b>${x.c.name}</b>: ${crewW} rates ${v.couple?"it":you?"you":them} ${Math.abs(x.d).toFixed(1)} higher than ${you?"you do":"they do"} (${x.k.toFixed(1)} vs ${x.s.toFixed(1)}).`;
+  gb.innerHTML=`<h3>${v.couple?"Biggest gaps: you vs your partner":"Biggest gaps: self vs crew"}</h3><p>${overall}</p>`+(big.length?`<ul>${big.map(x=>`<li>${line(x)}</li>`).join("")}</ul>`:v.gaps?`<p class="muted">No area differs by a full point or more.</p>`:`<p class="muted">${you?"Area-by-area gaps show once someone in the crew has reviewed you.":`Only ${them} and the crew admin see the area-by-area gaps.`}</p>`);
   gb.hidden=false;
 }
 
@@ -2066,10 +2115,11 @@ window.afterRender=function(rows,avg){
   document.body.classList.toggle("in-crew",!!crew);
   document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
   paintEntry();
+  if(window.__paintAsk) window.__paintAsk();
   syncPick();
   const on=!!(crew&&target&&me), pickFirst=!!(crew&&!target&&REVIEW_PAGE);
   banner.hidden=!on&&!pickFirst;
-  if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":"<b>Pick your name</b> under I am first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
+  if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":($("welcomeBox")&&!$("welcomeBox").hidden)?"<b>Type your first name</b> to get started":"<b>Pick your name</b> under I am first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
   else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
   document.body.classList.toggle("has-bar",on||pickFirst);
   if(on){
@@ -2162,6 +2212,59 @@ if(REVIEW_PAGE){
   /* Share Results: a picture of the report card, sent by the share sheet, WhatsApp, text or email.
      Each send is recorded in the shares collection (channel plus email or mobile if given). */
   const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote");
+  /* See How Others Rate You: solo, it opens a small box for names, then makes your group and link.
+     Inside a group it sends your invite link straight away. */
+  const askBox=$("askBox"), askBtn=$("endAsk");
+  const askNote=(m,err)=>{$("askNote").textContent=m||"";$("askNote").className=err?"err":"muted"};
+  const askFor=()=>state.who==="me"?"me":state.who==="partner"?"partner":"other";
+  window.__paintAsk=()=>{
+    const k=reviewKind(), them=esc((state.name||"").trim()), inGroup=!!crew, partner=inGroup?crew.type==="partner":askFor()==="partner";
+    const t=inGroup?(partner?["Send Your Partner The Link","They add their side, then you see how your views compare"]:["Invite More People","Each person rates you, then the rest of the group"])
+      :askFor()==="me"?["See How Others Rate You","Send a link. They rate you in 2 minutes, then rate themselves."]
+      :askFor()==="partner"?["Ask Your Partner","Send them the link so they can add their side"]
+      :[`Send ${them||"Them"} The Link`,`${them||"They"} can rate themselves and see how it compares with your rating`];
+    const html=`<b>${t[0]}</b><small>${t[1]}</small>`; if(askBtn.innerHTML!==html) askBtn.innerHTML=html;
+    if(!askBox.hidden){$("askForm").hidden=inGroup;$("askSend").hidden=!inGroup;if(inGroup)$("askLead").textContent=partner?"✓ Your link is ready. Send it to your partner.":"✓ Your link is ready. Send it to your family and friends."}
+  };
+  function openAsk(){
+    const who=askFor();
+    $("askName").value=(who==="me"?(state.name||""):"")||$("shareFrom").value.trim()||"";
+    $("askThemF").hidden=who==="me"; $("askThem").value=who==="me"?"":(state.name||"");
+    $("askThemL").textContent=who==="partner"?"Your partner's first name (optional)":"Their first name";
+    $("askLead").textContent=who==="me"?`We'll make a private link just for your ${KIND_WORD[reviewKind()]==="Personal"?"family and friends":KIND_WORD[reviewKind()].toLowerCase()}. Anyone who opens it rates you, then rates themselves. No sign-up needed.`
+      :who==="partner"?"We'll make a private link for the two of you. Your partner adds their side, then you both see how your views compare."
+      :`We'll make a private link for you and ${(state.name||"them").trim()}. They can rate themselves and see how it compares with your rating.`;
+    askNote(""); $("askGo").disabled=false; askBox.hidden=false; askBtn.setAttribute("aria-expanded","true"); window.__paintAsk();
+    askBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"});
+    if(!$("askName").value) setTimeout(()=>$("askName").focus({preventScroll:true}),250);
+  }
+  askBtn.onclick=()=>{
+    if(!last||last.avg==null){toast("Answer at least one area first, so there's a review to send.");return}
+    if(crew){if(!me){needMe("");return}shareLink("invite");return}
+    if(!askBox.hidden){askBox.hidden=true;askBtn.setAttribute("aria-expanded","false");return}
+    openAsk();
+  };
+  $("share360").onclick=()=>askBtn.click();
+  $("askGo").onclick=async()=>{
+    const who=askFor(), myName=$("askName").value.trim().slice(0,40), them=who==="me"?"":$("askThem").value.trim().slice(0,40);
+    if(!myName){askNote("Type your first name, so people know whose link it is.",true);$("askName").focus();return}
+    if(who==="other"&&!them){askNote("Type their first name too.",true);$("askThem").focus();return}
+    try{localStorage.setItem("rmy-from",myName)}catch(e){} $("shareFrom").value=myName;
+    if(who==="me"){state.name=myName;nameInput.value=myName;save()}
+    $("askGo").disabled=true; askNote("Setting up your link…");
+    try{
+      const g=await startQuickGroup(myName,them);
+      openCrew(g.id);
+      askNote("Pick WhatsApp, Messages or email. Each person who opens it rates you, then themselves.");
+      window.__paintAsk();
+    }catch(x){
+      afterOpen=null; $("askGo").disabled=false;
+      if(x&&x.code==="permission-denied") askNote("Couldn't make your link yet: the site needs a quick update to allow it. For now, use Create at the top of the page to set up a crew with Google.",true);
+      else askNote(x&&x.code==="no-config"?"Crews aren't connected yet.":errText(x),true);
+    }
+  };
+  $("askShare").onclick=()=>shareLink("invite");
+  $("askCopy").onclick=copyLink;
   let cardBlob=null, cardUrl="";
   const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
   /* Who the report card is from: your crew name if you've joined a crew, otherwise the From box. */
@@ -2214,6 +2317,130 @@ if(REVIEW_PAGE){
   $("saveImg").addEventListener("click",e=>{if(!cardBlob){e.preventDefault();return}record("saved",{})});
 }
 
+/* ---------- Review first, then ask others ----------
+   Finish your own review, tap "See How Others Rate You", and a small group is made for you behind the
+   scenes (no Google sign-in). The invite link carries &from=<member> so whoever opens it is asked to rate
+   that person first, then themselves, and gets their own link to pass on. */
+let afterOpen=null;           // {id, fresh, quiet}: the review to open once "I am" is known
+let inviteFrom="";            // member id from ?from= on the invite link
+const FROM_KEY=id=>"rmy-from-"+id;
+function getFrom(id){try{return localStorage.getItem(FROM_KEY(id))||""}catch(e){return ""}}
+function setFrom(id,v){try{v?localStorage.setItem(FROM_KEY(id),v):localStorage.removeItem(FROM_KEY(id))}catch(e){}}
+const linkFrom=id=>inviteLink()+(id?`&from=${encodeURIComponent(id)}`:"");
+const GROUP_WORD={family:"Family",mates:"Mates",partner:"Check-In"};
+function selfScoreOf(id){const by=(boardById&&boardById[id]&&boardById[id].by)||{};const e=Object.values(by).find(x=>x&&x.self&&typeof x.o==="number");return e?e.o:null}
+function inviteText(kind){
+  const nm=me?memberName(me):"Someone", T=crewTypeOf(crew&&crew.type), so=me?selfScoreOf(me):null;
+  if(kind==="nudge") return T==="partner"?`Just a reminder: I'm waiting on your side of our Couple Check-In 💕 It takes about 2 minutes:`:`Just a reminder: ${nm} is waiting on your rating 🙂 It takes about 2 minutes:`;
+  if(T==="partner") return `${nm} just did our Couple Check-In for 2026 💕 Add your side (about 2 minutes) and we'll see how we compare:`;
+  const hook=so!=null?`${nm} rated themselves ${/^[AE]/.test(grade(so))?"an":"a"} ${grade(so)} for 2026. Reckon that's fair?`:`${nm} wants to know how they've gone this year.`;
+  return `${hook} Rate ${nm} in about 2 minutes, then rate yourself and see how you compare:`;
+}
+async function recordShare(channel){
+  try{ if(db&&user) await addDoc(collection(db,"shares"),{uid:user.uid,channel,crewId:crewId||"",type:(crew&&crew.type)||"",at:Date.now()}) }catch(x){console.warn("share not recorded",x)}
+}
+/* Send the invite link from the phone's share sheet (WhatsApp, Messages, email…), or WhatsApp where that isn't available. */
+async function shareLink(kind){
+  if(!crew){toast("Your group is still loading. Try again in a moment.");return}
+  if(!me){needMe("");return}
+  const text=inviteText(kind), link=linkFrom(me);
+  recordShare(kind==="nudge"?"nudge":"invite");
+  if(navigator.share){
+    try{await navigator.share({text:`${text}\n${link}`});return}
+    catch(x){if(x&&x.name==="AbortError")return}
+  }
+  const u=`https://wa.me/?text=${encodeURIComponent(`${text}\n${link}`)}`;
+  if(!window.open(u,"_blank")) location.href=u;
+}
+async function copyLink(){
+  if(!crew||!me) return;
+  const v=linkFrom(me); let ok=false;
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(v);ok=true}}catch(e){}
+  if(!ok){const t=document.createElement("textarea");t.value=v;t.setAttribute("readonly","");t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();try{ok=document.execCommand("copy")}catch(e){}t.remove()}
+  toast(ok?"Link copied. Paste it into a text, WhatsApp or email.":v,ok?3500:9000);
+  if(ok) recordShare("invite");
+}
+/* Make a small group from the review just done: you, plus the person you rated (if it wasn't you). */
+async function startQuickGroup(myName,themName){
+  if(!auth||!db) throw Object.assign(new Error("Crews aren't connected yet"),{code:"no-config"});
+  if(!auth.currentUser) await withTimeout(signInAnonymously(auth),15000,"Getting ready");
+  user=auth.currentUser;
+  const k=reviewKind(), type=k==="partner"?"partner":k==="mates"?"mates":"family", mt=CREW_TYPES[type].member;
+  const rateSelf=state.who==="me"||state.who==="partner";
+  const myId=rid(10), themId=rid(10), ms=[{id:myId,name:myName,type:mt}];
+  if(themName) ms.push({id:themId,name:themName,type:mt});
+  const targetId=rateSelf?myId:themId;
+  const id=rid(10), r=snapshotResult(), boardKey=rid(16);
+  const name=type==="partner"?(themName?`${myName} & ${themName}'s Check-In`:`${myName}'s Check-In`):`${myName}'s ${GROUP_WORD[type]}`;
+  await setDoc(doc(db,"crews",id),{name,type,quick:true,showBoard:true,ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:ms,createdAt:Date.now()});
+  afterOpen={id:targetId,fresh:false,quiet:true};
+  try{await claimMember(id,myId,"")}catch(x){console.warn("claim",x)}
+  try{
+    const b=writeBatch(db);
+    b.set(doc(db,"crews",id,"reviews",`${user.uid}_${targetId}`),{member:targetId,reviewer:myId,reviewerUid:user.uid,...r,boardKey});
+    b.set(doc(db,"crews",id,"board",targetId),{by:{[boardKey]:{o:r.overall,self:targetId===myId}}},{merge:true});
+    await b.commit();
+  }catch(x){console.warn("first review",x)}
+  try{await rememberCrew(id,name)}catch(x){console.warn("remember",x)}
+  return {id,name};
+}
+/* Someone opened an invite link and hasn't said who they are yet: one friendly box instead of the crew tools. */
+function paintWelcome(){
+  const box=$("welcomeBox"); if(!box) return;
+  const show=REVIEW_PAGE&&!!crew&&!me&&members().length>0;
+  box.hidden=!show; if(show){$("meWrap").hidden=true;$("meNote").hidden=true;$("meField").classList.remove("attention")}
+  if(!show){box.dataset.k="";return}
+  const from=getFrom(crewId), fromM=members().find(m=>m.id===from)||members()[0], partner=crew.type==="partner";
+  const free=members().filter(m=>m.id!==fromM.id&&!claims[m.id]);
+  if(!box.dataset.shown){box.dataset.shown="1";setTimeout(()=>{if(!box.hidden)box.scrollIntoView({behavior:"auto",block:"start"})},350)}
+  const key=JSON.stringify([fromM.id,fromM.name,partner,free.map(m=>m.id+m.name)]); if(box.dataset.k===key) return; box.dataset.k=key;
+  const fn=esc(fromM.name);
+  box.innerHTML=`<p class="wtitle">${partner?`<b>${fn}</b> wants your side of the Couple Check-In 💕`:`<b>${fn}</b> wants your honest take`}</p>
+    <p class="muted">${partner?"Type your first name, then rate the relationship. It takes about 2 minutes, then you'll see how your views compare.":`Type your first name, then rate ${fn}. It takes about 2 minutes. After that you can rate yourself and see how you compare.`}</p>
+    ${free.length?`<div class="row-btns">${free.map(m=>`<button type="button" class="ghost" data-iam="${m.id}">I'm ${esc(m.name)}</button>`).join("")}</div>`:""}
+    <form class="wform" id="wForm" novalidate><input id="wName" autocomplete="given-name" maxlength="40" placeholder="Your first name" aria-label="Your first name"><button type="submit" id="wGo">Let's go</button></form>`;
+  box.querySelectorAll("[data-iam]").forEach(b=>b.onclick=()=>welcomeGo(b.dataset.iam,"",fromM.id));
+  $("wForm").addEventListener("submit",e=>{e.preventDefault();const n=$("wName").value.trim().slice(0,40);if(!n){famErr("Type your first name first.");$("wName").focus();return}welcomeGo("",n,fromM.id)});
+}
+async function welcomeGo(id,name,fromId){
+  const go=$("wGo"); if(go) go.disabled=true; famErr("");
+  try{
+    if(!id){
+      const hit=members().find(m=>m.name.trim().toLowerCase()===name.toLowerCase());
+      if(hit) id=hit.id;
+      else{id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name,type:crew.type?crewMemberType():"family"}]})}
+    }
+    const first=crew.type==="partner"?id:(fromId&&fromId!==id&&isMember(fromId)?fromId:id);
+    afterOpen={id:first,fresh:true,quiet:false};
+    await claimMember(crewId,id,me);
+  }catch(x){afterOpen=null;famErr(errText(x));if(go)go.disabled=false}
+}
+/* Your next steps, at the top of the crew box: rate yourself, who you're waiting on, invite more people. */
+function paintNext(){
+  const box=$("nextBox"); if(!box) return;
+  const show=REVIEW_PAGE&&!!crew&&!!me; box.hidden=!show;
+  if(!show){box.dataset.k="";return}
+  const partner=crew.type==="partner";
+  const selfDone=reviews().some(r=>r.member===me&&(r.reviewerUid===user.uid||r.reviewer===me));
+  const waiting=members().filter(m=>m.id!==me&&!claims[m.id]);
+  const mine=boardOpen()&&boardById?boardScore(me):null, need=partner||!mine?0:Math.max(0,2-mine.o);
+  const guestOwner=isGuest()&&isOwner();
+  const key=JSON.stringify([selfDone,waiting.map(m=>m.name),need,guestOwner,partner]); if(box.dataset.k===key) return; box.dataset.k=key;
+  const rows=[];
+  if(!selfDone) rows.push(`<div class="nrow"><span><b>Next:</b> ${partner?"add your side of the check-in.":"rate yourself, so you can see how you compare."}</span><button type="button" data-next="self">${partner?"Start":"Rate myself"}</button></div>`);
+  else if(need) rows.push(`<div class="nrow"><span>🔒 Your crew score unlocks after <b>${need} more review${need===1?"":"s"}</b> of you.</span></div>`);
+  if(partner&&!waiting.length&&members().length>=2) rows.push(`<div class="nrow"><span>${selfDone?"You've both had your say. Your report card shows how your views compare.":"Your partner is in. Add your side to compare."}</span>${selfDone?`<button type="button" class="ghost sm" data-next="self">See our report</button>`:""}</div>`);
+  else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
+  box.innerHTML=`<h3>Your next steps</h3>${rows.join("")}${guestOwner?`<p class="keep">Your group is saved on this phone. <button type="button" class="linkbtn" data-next="keep">Keep it with Google</button> to open it on other devices too.</p>`:""}`;
+  box.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{
+    const a=b.dataset.next;
+    if(a==="self") startReview(me);
+    else if(a==="invite") shareLink("invite");
+    else if(a==="nudge") shareLink("nudge");
+    else if(a==="keep") googleSignIn();
+  });
+}
+
 /* ---------- boot ---------- */
 async function loadConfig(){
   if(window.RATEMYYEAR_FIREBASE_CONFIG&&window.RATEMYYEAR_FIREBASE_CONFIG.apiKey) return window.RATEMYYEAR_FIREBASE_CONFIG;
@@ -2224,6 +2451,7 @@ async function loadConfig(){
   status("Connecting…");
   const p=new URLSearchParams(location.search);
   if(p.get("crew")&&p.get("code")) invite={crew:p.get("crew"),code:p.get("code")};
+  if(invite&&/^[a-z0-9]{4,40}$/i.test(p.get("from")||"")) inviteFrom=p.get("from");
   const cfg=await loadConfig();
   if(!cfg){body.innerHTML=`<p class="muted">Crews aren't connected yet. Follow the setup guide to link this site to Firebase. You can still do a review on your own below.</p>`;render();return}
   /* Sign-in start-up. Firebase normally keeps the signed-in person in IndexedDB, which can freeze in Safari

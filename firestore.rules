@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Rate My Year Review Crew security rules.
-// - Only signed-in people can touch crew data.
+// - Only signed-in people can touch crew data (guests sign in anonymously).
 // - You join a crew by holding its current invite code.
 // - Crew members see the crew and its people, write their own reviews,
 //   and read reviews they wrote or reviews about the person they claimed.
@@ -27,9 +27,15 @@ service cloud.firestore {
       allow get: if isMember(c) || isSuper();
       allow list: if isSuper();
 
-      // Only a Google-signed-in crew admin can set up a crew; guests join by invite link.
+      // A Google-signed-in crew admin can set up a full crew. A guest can start a small "quick" group
+      // from their report card (themselves, plus at most the one person they just rated); everyone
+      // else then joins by the invite link and adds themselves, one at a time.
       allow create: if signedIn()
-        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && (request.auth.token.firebase.sign_in_provider != 'anonymous'
+            || (request.resource.data.get('quick', false) == true
+                && request.resource.data.members.size() <= 2
+                && !('slug' in request.resource.data)
+                && !('passHash' in request.resource.data)))
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.adminUids == [request.auth.uid]
         && validCode(request.resource.data)
@@ -141,7 +147,7 @@ service cloud.firestore {
     match /shares/{id} {
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.channel in ['email', 'whatsapp', 'sms', 'picture', 'saved']
+        && request.resource.data.channel in ['email', 'whatsapp', 'sms', 'picture', 'saved', 'invite', 'nudge']
         && request.resource.data.get('email', '') is string
         && request.resource.data.get('email', '').size() <= 200
         && request.resource.data.get('phone', '') is string

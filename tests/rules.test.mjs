@@ -57,6 +57,28 @@ await t("solo result read by other fails",assertFails(getDoc(doc(brad,"results/r
 await t("nobody can delete a crew",assertFails(deleteDoc(doc(brad,"crews/c1"))));
 await t("rejoining with the current code works",assertSucceeds(setDoc(doc(nikki,"crews/c1/joins/nikki"),{code:"newcode9"})));
 await t("nikki leaves (deletes join)",assertSucceeds(deleteDoc(doc(nikki,"crews/c1/joins/nikki"))));
+/* Review-first quick groups: a guest (anonymous sign-in) starts a small group from their report card. */
+const guest=uid=>env.authenticatedContext(uid,{firebase:{sign_in_provider:"anonymous"}}).firestore();
+const sam=guest("sam"), jo=guest("jo");
+const quick={name:"Sam's Family",type:"family",quick:true,showBoard:true,ownerUid:"sam",adminUids:["sam"],joinCode:"quick123",members:[{id:"qS",name:"Sam",type:"family"}],createdAt:2};
+await t("guest cannot create a full crew",assertFails(setDoc(doc(sam,"crews/q0"),{...quick,quick:false})));
+await t("guest cannot create a quick group with 3 people",assertFails(setDoc(doc(sam,"crews/q0"),{...quick,members:[...quick.members,{id:"a",name:"A"},{id:"b",name:"B"}]})));
+await t("guest cannot give a quick group a searchable name",assertFails(setDoc(doc(sam,"crews/q0"),{...quick,slug:"482-family"})));
+await t("guest cannot give a quick group a password",assertFails(setDoc(doc(sam,"crews/q0"),{...quick,passHash:"x"})));
+await t("guest cannot create a quick group owned by someone else",assertFails(setDoc(doc(jo,"crews/q1"),quick)));
+await t("guest creates a quick group",assertSucceeds(setDoc(doc(sam,"crews/q1"),quick)));
+await t("guest cannot claim a crew name",assertFails(setDoc(doc(sam,"crewNames/sams-family"),{crewId:"q1",name:"Sam's Family",slug:"sams-family"})));
+await t("guest owner claims themselves",assertSucceeds(claim(sam,"q1","qS","sam")));
+const selfRv={member:"qS",reviewer:"qS",reviewerUid:"sam",cats:{self:8},overall:8,boardKey:"samkey0000001"};
+await t("guest owner saves self review + leaderboard",assertSucceeds((()=>{const b=writeBatch(sam);b.set(doc(sam,"crews/q1/reviews/sam_qS"),selfRv);b.set(doc(sam,"crews/q1/board/qS"),{by:{samkey0000001:{o:8,self:true}}},{merge:true});return b.commit()})()));
+await t("outsider guest cannot read the group",assertFails(getDoc(doc(jo,"crews/q1"))));
+await t("invited guest joins with the code",assertSucceeds(setDoc(doc(jo,"crews/q1/joins/jo"),{code:"quick123"})));
+await t("invited guest adds themselves",assertSucceeds(updateDoc(doc(jo,"crews/q1"),{members:[...quick.members,{id:"qJ",name:"Jo",type:"family"}]})));
+await t("invited guest claims their name",assertSucceeds(claim(jo,"q1","qJ","jo")));
+await t("invited guest rates the sender + leaderboard",assertSucceeds((()=>{const b=writeBatch(jo);b.set(doc(jo,"crews/q1/reviews/jo_qS"),{member:"qS",reviewer:"qJ",reviewerUid:"jo",cats:{self:6},overall:6,boardKey:"jokey00000001"});b.set(doc(jo,"crews/q1/board/qS"),{by:{jokey00000001:{o:6,self:false}}},{merge:true});return b.commit()})()));
+await t("invited guest cannot read the sender's self review",assertFails(getDoc(doc(jo,"crews/q1/reviews/sam_qS"))));
+await t("guest owner reads every review (admin)",assertSucceeds(getDocs(collection(sam,"crews/q1/reviews"))));
+await t("invited guest cannot make themselves admin",assertFails(updateDoc(doc(jo,"crews/q1"),{adminUids:["sam","jo"]})));
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail?1:0);

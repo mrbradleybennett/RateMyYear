@@ -54,6 +54,12 @@ h1{font-size:clamp(40px,8.5vw,76px)}
 h2{font-size:clamp(30px,5.5vw,46px)}
 h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;padding:0 .16em;transform:rotate(-1.5deg)}
 .lede{font-size:clamp(18px,2.4vw,21px);max-width:44ch;margin:0}
+.startbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:18px;padding:16px 22px;border-radius:14px;background:var(--green);color:var(--panel);text-decoration:none;box-shadow:inset 0 -5px 0 var(--gold);max-width:100%}
+.startbtn b{font-family:var(--display);font-weight:400;font-size:clamp(22px,4vw,28px);line-height:1.05}
+.startbtn small{font-size:15px;opacity:.9}
+.startbtn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.startnote{margin:10px 0 0;color:var(--muted);font-size:15px}
+@media (max-width:560px){.startbtn{display:flex;width:100%}}
 .hero{display:block}
 .hero-text{display:flex;flex-direction:column;gap:16px}
 .sec{display:flex;flex-direction:column;gap:18px}
@@ -181,7 +187,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
   <header class="top">
     <nav aria-label="Main"><div class="menu">
-      <a href="./" aria-current="page">About</a>
+      <a href="./" aria-current="page">Home</a>
       <a href="review.html?go=join">Join</a>
       <a id="navCreate" href="mycrew.html">Create</a>
     </div></nav>
@@ -196,7 +202,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <div class="hero-text">
       <div class="eyebrow">Rate My Year · Season 2026</div>
       <h1>Your End of Year <span>Performance Review</span></h1>
-      <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Review your own performance, or set up a crew and get anonymous feedback from family and friends.</p>
+      <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Rate your own year, then send a link and see how your family and friends rate you.</p>
+      <a class="startbtn" href="review.html?who=me"><b>Start My Free Review</b><small>About 3 minutes · no sign-up</small></a>
+      <p class="startnote">At the end, tap <b>See How Others Rate You</b> to send it on.</p>
     </div>
   </section>
 
