@@ -2306,11 +2306,27 @@ function paintDone(){
   const t=!show?null:solo?(open?null:["Save &amp; See My Results","Your answers are saved on this device"])
     :!open?["Save &amp; See Results",target.id===me?"Saves your review to the crew, then shows your report card":`Saves your review of ${esc(target.name)} to the crew`]
     :dirty?["Save Changes","Update your saved review"]:null;
+  const pn=inRev?pendingName():""; if(t&&pn&&!(target&&target.name.trim().toLowerCase()===pn.toLowerCase())) t[1]=`Adds ${esc(pn)} to your crew and saves your review of them`;
   const btn=$("doneBtn"); btn.hidden=!t;
   if(t){const h=`<b>${t[0]}</b><small>${t[1]}</small>`;if(btn.innerHTML!==h)btn.innerHTML=h}
   $("doneSaved").hidden=!(inRev&&open&&!dirty);
   const nb=$("reviewNext"), nh=inRev&&open&&!dirty?`<b>Rate Someone Else</b><small>Pick the next person in your crew, or add someone new</small>`:`<b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small>`;
   if(nb&&nb.innerHTML!==nh) nb.innerHTML=nh;
+}
+/* A name typed in "Rate someone who isn't here yet" but not added yet: Save & See Results adds them and saves the answers on screen as the review of them. */
+const pendingName=()=>REVIEW_PAGE&&crew&&me&&$("addRateName")?$("addRateName").value.trim().slice(0,40):"";
+async function adoptPending(){
+  const n=pendingName(); if(!n) return true;
+  let hit=members().find(m=>m.name.trim().toLowerCase()===n.toLowerCase());
+  try{
+    if(!hit){hit={id:rid(10),name:n,type:crew.type?crewMemberType():"family"};const next=[...members(),hit];await updateDoc(doc(db,"crews",crewId),{members:next});crew={...crew,members:next}}
+  }catch(x){famErr(errText(x));return false}
+  $("addRateName").value="";famErr("");
+  if(target&&target.id===hit.id) return true;
+  /* someone on a different question set: open their review instead of saving these answers against them */
+  if(setForType(memberType(hit.id))!==activeSet()){startReview(hit.id);toast(`${hit.name} is added. They're rated on different questions, so start their review here.`,6000);return false}
+  target={id:hit.id,name:memberName(hit.id)}; state.who=hit.id===me?"me":memberType(hit.id); state.name=target.name;
+  return true;
 }
 /* Before showing results: you need at least one answer, and you're told how many are still unanswered. */
 const firstUnanswered=()=>{for(const c of CATS)for(let i=0;i<c.qs.length;i++)if(!isAnswered(c.id+i))return $("q-"+c.id+i);return null};
@@ -2324,6 +2340,7 @@ $("doneBtn").addEventListener("click",async()=>{
   if(pr.n<pr.t&&!doneOk){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent=`You've answered ${pr.n} of ${pr.t} questions. Unanswered ones are left out of the grades.`;$("doneAnyway").hidden=false;a.hidden=false;a.scrollIntoView({block:"nearest"});return}
   doneOk=false;$("doneAsk").hidden=true;
   const b=$("doneBtn"); b.disabled=true;
+  if(pendingName()&&!(await adoptPending())){b.disabled=false;return}
   if(!crew){state.revealed=true;save()}
   else if(target&&me){if(!(await saveReview())){b.disabled=false;return}revealed=true}
   b.disabled=false; render();
@@ -2596,6 +2613,7 @@ function paintNext(){
   else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
   rows.push(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
   box.innerHTML=`<h3>Your next steps</h3>${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
+  $("addRateName").addEventListener("input",paintDone);
   $("addRate").addEventListener("submit",async e=>{
     e.preventDefault();
     const n=$("addRateName").value.trim().slice(0,40); if(!n){$("addRateName").focus();return}
