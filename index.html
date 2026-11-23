@@ -40,6 +40,7 @@ a{color:inherit}
 .menu a:hover{border-bottom-color:var(--line)}
 .menu a[aria-current="page"],.menu a[aria-pressed="true"]{border-bottom-color:var(--gold)}
 .menu a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.invitehint{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none}
 .choicebar.two{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -191,9 +192,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 
   <header class="top">
     <nav aria-label="Main"><div class="menu">
-      <a href="./" aria-current="page">Home</a>
-      <a href="join.html">Join</a>
-      <a id="navCreate" href="mycrew.html">Create</a>
+      <a href="./" aria-current="page">About</a>
+      <a href="review.html">Rate</a>
+      <a id="navCreate" href="mycrew.html">Log in</a>
     </div></nav>
     <nav class="choicebar two" aria-label="Get started">
       <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
@@ -208,7 +209,8 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <h1>Your End of Year <span>Performance Review</span></h1>
       <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Rate your own year, then send a link and see how your family and friends rate you.</p>
       <a class="startbtn" href="review.html?who=me"><b>Start My Free Review</b><small>About 5 minutes · 27 quick questions · no sign-up</small></a>
-      <p class="startnote">At the end, tap <b>See How Others Rate You</b> to send it on.</p>
+      <p class="startnote">At the end, tap <b>Invite Others To Rate You</b> to send it on.</p>
+      <p class="invitehint">Got an invite? Tap the link in your message. Lost it? <a href="join.html">Find your crew</a></p>
     </div>
   </section>
 
@@ -358,7 +360,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     </div>
   </section>
 
-  <p class="foot">Rate My Year · ratemyyear.com · <a href="privacy.html">Privacy: who sees what</a></p>
+  <p class="foot">Rate My Year · ratemyyear.com · <a href="privacy.html">Privacy: who sees what</a> · <a href="join.html">Lost your invite link?</a></p>
 </div>
 
 <script>

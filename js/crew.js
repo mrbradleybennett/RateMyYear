@@ -16,6 +16,7 @@ const HOME_PATH=location.pathname.replace(/[^/]*$/,"");      // the landing page
 /* Menu: mark the page you're on; show "My Crew" straight away if this device was signed in last time. */
 if(ADMIN) document.getElementById("choiceCreate").setAttribute("aria-current","page");
 if(JOIN) document.getElementById("choiceJoin").setAttribute("aria-current","page");
+if(!ADMIN&&!JOIN) document.getElementById("navRate").setAttribute("aria-current","page");
 try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("choiceCreate").textContent="My Crew"}catch(e){}
 const REVIEW_PATH=HOME_PATH+"review.html";
 const MYCREW_PATH=HOME_PATH+"mycrew.html";
@@ -243,10 +244,10 @@ function viewSignedOut(msg=""){
   body.innerHTML=ADMIN?`<div class="stack">
     <p>Sign in with Google to set up a crew you can manage from any device. You add the people, send the invite link and see everyone's reports.</p>
     <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Sign in with Google</button></div>
-    <p class="muted">No account? Do your own review, then tap <b>See How Others Rate You</b> at the end to make a quick link without signing in. <a href="review.html?who=me">Start a review</a></p>
+    <p class="muted">No account? Do your own review, then tap <b>Invite Others To Rate You</b> at the end to make a quick link without signing in. <a href="review.html?who=me">Start a review</a></p>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`:`<div class="stack">
-    <p class="muted">Do your own review below. At the end, tap <b>See How Others Rate You</b> to send a link to your family, mates or partner. Got an invite link? Just tap it in your message.</p>
+    <p class="muted">Do your own review below. At the end, tap <b>Invite Others To Rate You</b> to send a link to your family, mates or partner. Got an invite link? Just tap it in your message.</p>
     <div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
@@ -283,7 +284,7 @@ function viewLobby(msg=""){
   $("tabJoin").onclick=()=>tab("join"); $("tabCreate").onclick=()=>tab("create");
   body.querySelector(".tabs").hidden=true;
   if(ADMIN){tab("create");$("joinForm").hidden=true}
-  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Create</a> at the top.</p>`;$("joinForm").after(n)}
+  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Log in</a> at the top.</p>`;$("joinForm").after(n)}
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const inv=parseInvite($("jLink").value);
@@ -642,10 +643,10 @@ function renderPassBox(){
   if(key===passBoxKey&&box.innerHTML) return; passBoxKey=key;
   const has=!!(crew.slug&&crew.passHash), named=!!crew.slug;
   box.innerHTML=named?`<label>Backup: crew name and password</label>
-      <p class="muted">For anyone who loses the invite link: they tap <b>Join</b>, search for <b>${esc(crew.name)}</b> and enter this password.${has?"":" No backup password is set yet."}</p>
+      <p class="muted">For anyone who loses the invite link: they tap <b>Lost your invite link?</b> at the bottom of any page, search for <b>${esc(crew.name)}</b> and enter this password.${has?"":" No backup password is set yet."}</p>
       <form class="invite-row" id="pwForm" novalidate><input id="pwNew" type="password" autocomplete="new-password" placeholder="${has?"New backup password":"Backup password"} (at least 6 characters)"><button type="button" class="ghost sm pwshow" data-for="pwNew" aria-pressed="false">Show</button><button type="submit">${has?"Change password":"Set password"}</button></form>`
     :`<label>Backup: crew name and password</label>
-      <p class="muted">For anyone who loses the invite link. Choose a unique crew name and a password. They tap <b>Join</b>, search for the name and enter the password.</p>
+      <p class="muted">For anyone who loses the invite link. Choose a unique crew name and a password. They tap <b>Lost your invite link?</b> at the bottom of any page, search for the name and enter the password.</p>
       <form class="form" id="pwForm" novalidate>
         <div class="field"><label for="pwName">Crew name</label><input id="pwName" autocomplete="off" value="${esc(crew.name)}"></div>
         <div class="field"><label for="pwNew">Backup password</label><input id="pwNew" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
@@ -780,7 +781,7 @@ async function resetAll(){
 function paintCreate(){
   const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
   try{localStorage.setItem("rmy-signedin",mine?"1":"0")}catch(e){}
-  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Create";
+  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Log in";
   paintEndInvite();
 }
 function renderBoard(){
@@ -1241,7 +1242,7 @@ if(REVIEW_PAGE){
   /* Share Results: a picture of the report card, sent by the share sheet, WhatsApp, text or email.
      Each send is recorded in the shares collection (channel plus email or mobile if given). */
   const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote");
-  /* See How Others Rate You: solo, it opens a small box for names, then makes your group and link.
+  /* Invite Others To Rate You: solo, it opens a small box for names, then makes your group and link.
      Inside a group it sends your invite link straight away. */
   const askBox=$("askBox"), askBtn=$("endAsk");
   const askNote=(m,err)=>{$("askNote").textContent=m||"";$("askNote").className=err?"err":"muted"};
@@ -1295,7 +1296,7 @@ if(REVIEW_PAGE){
       if(crew&&me) shareLink("invite",true);
     }catch(x){
       afterOpen=null; $("askGo").disabled=false;
-      if(x&&x.code==="permission-denied") askNote("Couldn't make your link right now. For now, use Create at the top of the page to set up a crew with Google.",true);
+      if(x&&x.code==="permission-denied") askNote("Couldn't make your link right now. For now, use Log in at the top of the page to set up a crew with Google.",true);
       else askNote(x&&x.code==="no-config"?"Crews aren't connected yet.":errText(x),true);
     }
   };
@@ -1352,7 +1353,7 @@ if(REVIEW_PAGE){
 }
 
 /* ---------- Review first, then ask others ----------
-   Finish your own review, tap "See How Others Rate You", and a small group is made for you behind the
+   Finish your own review, tap "Invite Others To Rate You", and a small group is made for you behind the
    scenes (no Google sign-in). The invite link carries &from=<member> so whoever opens it is asked to rate
    that person first, then themselves, and gets their own link to pass on. */
 let afterOpen=null;           // {id, fresh, quiet}: the review to open once "I am" is known
@@ -1575,7 +1576,7 @@ async function loadConfig(){
     if(REVIEW_PAGE&&entry==="join"&&!landJoin){landJoin=true;return startJoin()}
     const lastCrew=loadLS();
     /* Picked Rate My Family / Mates / Couple Check-in? Only open a group of that type. With none, do a fresh
-       review of that type; See How Others Rate You then makes a new group for it. */
+       review of that type; Invite Others To Rate You then makes a new group for it. */
     const want=REVIEW_PAGE?{family:"family",mate:"mates",partner:"partner"}[LAND.get("who")]:"";
     if(want&&myCrews.length){
       const order=[...myCrews.filter(c=>c.id===lastCrew),...myCrews.filter(c=>c.id!==lastCrew)];
