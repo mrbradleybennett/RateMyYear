@@ -332,6 +332,8 @@ body.admin-page .review-only{display:none!important}
 body.join-page .join-only{display:flex!important}
 body.join-page .review-only{display:none!important}
 body.join-page #famTitle,body.join-page #famLeave{display:none!important}
+/* Crew housekeeping (which crew, guest status, other crews, leave, admin link) lives on My Crew, not the review page. */
+body.in-crew:not(.admin-page) #famTitle,body.in-crew:not(.admin-page) #famLeave,body.in-crew:not(.admin-page) #famBody .who-row,body.in-crew:not(.admin-page) #toMyCrew{display:none!important}
 .admin-hero{flex-direction:column;gap:12px}
 .adminlink{margin:0;background:var(--soft);border-radius:8px;padding:10px 14px;font-weight:600}
 .adminlink a,.muted a{color:var(--green)}
@@ -594,7 +596,7 @@ body.report-locked .report{display:none}
 
 <script src="firebase-config.js"></script>
 <script>window.RMY_PAGE="admin";</script>
-<script type="module" src="js/crew.js?v=964e4090d2"></script>
+<script type="module" src="js/crew.js?v=732610b2ac"></script>
 
 </body>
 </html>

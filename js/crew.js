@@ -529,7 +529,7 @@ async function doLeave(){
 }
 
 function viewCrewShell(){
-  leaveBtn.hidden=ADMIN;
+  leaveBtn.hidden=false;
   body.innerHTML=`<div class="stack">
     ${whoRow(myCrews.length>1?`<select id="crewSwitch" aria-label="Switch crew">${myCrews.map(c=>`<option value="${esc(c.id)}"${c.id===crewId?" selected":""}>${esc(c.name)}</option>`).join("")}<option value="__lobby">Join or set up another crew…</option></select>`:`<button type="button" class="ghost sm" id="toLobby">Other crews</button>`)}
     <p class="menote" id="notAdmin" hidden>Only the crew admin can manage this crew. <a href="${REVIEW_PATH}">Go to the reviews</a> to review your crew.</p>
@@ -1238,7 +1238,7 @@ function paintEntry(){
   if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate");
   if($("choiceJoin")) $("choiceJoin").setAttribute("aria-pressed",entry==="join");
   if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate"&&state.who==="me");
-  if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Who are you rating?");
+  if(REVIEW_PAGE) $("famH2").textContent=crew?`Review ${crew.name}`:entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Who are you rating?");
 }
 if(REVIEW_PAGE){
   $("choiceRate").onclick=()=>{
