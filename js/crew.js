@@ -1368,9 +1368,11 @@ function inviteText(kind){
   const nm=me?memberName(me):"Someone", T=crewTypeOf(crew&&crew.type), so=me?selfScoreOf(me):null;
   if(kind==="nudge") return T==="partner"?`Just a reminder: I'm waiting on your side of our Couple Check-in 💕 It takes about 5 minutes:`:`Just a reminder: ${nm} is waiting on your rating 🙂 It takes about 5 minutes:`;
   if(T==="partner") return `${nm} just did our Couple Check-in for 2026 💕 Add your side (about 5 minutes) and we'll see how we compare:`;
-  /* The invite never reveals the sender's own grade. */
-  const hook=`${nm} wants to know how they've gone this year.`;
-  return `${hook} Rate ${nm} in about 5 minutes, then rate yourself and see how you compare:`;
+  /* Once you've rated yourself, the invite leads with your own grade. */
+  const own=me?reviews().find(r=>r.member===me&&r.reviewer===me&&typeof r.overall==="number"):null;
+  const self=so!=null?so:own?own.overall:null;
+  if(self!=null) return `${nm} rates themselves ${/^[AE]/.test(grade(self))?"an":"a"} ${grade(self)} for their 2026 ${CREW_TYPES[T].review}.\nMake ${nm} even more awesome 💪\nFeedback is a GIFT 🎁`;
+  return `${nm} wants to know how they've gone this year. Rate ${nm} in about 5 minutes, then rate yourself and see how you compare:`;
 }
 async function recordShare(channel){
   try{ if(db&&user) await addDoc(collection(db,"shares"),{uid:user.uid,channel,crewId:crewId||"",type:(crew&&crew.type)||"",at:Date.now()}) }catch(x){console.warn("share not recorded",x)}
