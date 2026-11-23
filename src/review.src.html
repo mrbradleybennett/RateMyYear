@@ -1419,7 +1419,7 @@ function viewLobby(msg=""){
   $("tabJoin").onclick=()=>tab("join"); $("tabCreate").onclick=()=>tab("create");
   body.querySelector(".tabs").hidden=true;
   if(ADMIN){tab("create");$("joinForm").hidden=true}
-  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Create My Crew</a> at the top.</p>`;$("joinForm").after(n)}
+  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Create</a> at the top.</p>`;$("joinForm").after(n)}
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const inv=parseInvite($("jLink").value);
