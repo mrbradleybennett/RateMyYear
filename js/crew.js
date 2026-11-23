@@ -485,6 +485,8 @@ function openCrew(id){
     pickMe();
   },()=>{}));
 }
+/* Reviews written by whoever is picked under "Your name" (not every name used on this device). */
+const byMe=r=>me&&r.reviewer?r.reviewer===me:r.reviewerUid===user.uid;
 function syncReviewSubs(){
   if(!crew) return;
   const key=`${isAdmin()}|${me}`;
@@ -867,7 +869,7 @@ function refresh(){
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
   else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"Your name\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
-  const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid||(me&&r.reviewer===me)).map(r=>r.member));
+  const doneIds=new Set(reviews().filter(byMe).map(r=>r.member));
   const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
   const open=boardOpen();
   $("boardTitle").textContent=ADMIN?"":"Crew leaderboard";
@@ -896,14 +898,14 @@ function refresh(){
     const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1))&&(isAdmin()||m.id===me);
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?(m.id===me?"✓ You rated yourself":"✓ You rated them"):(m.id===me?"Rate yourself":"You haven't rated them")}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"✗ Not reviewed"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
       </span></div>`}).join("")
     :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
-    const mine=reviews().some(r=>r.member===m.id&&(r.reviewerUid===user.uid||(me&&r.reviewer===me)));
+    const mine=reviews().some(r=>r.member===m.id&&byMe(r));
     const canSee=ADMIN?admin:m.id===me;
     const joined=!!claims[m.id], isAdm=joined&&crew.adminUids.includes(claims[m.id]);
     return `<div class="member"${g&&canSee?` style="--g:${gcol(g)}"`:""}>
@@ -977,7 +979,7 @@ function startReview(id,quiet){
   const wasTarget=!!target;
   target={id,name:memberName(id)};
   // this device's review, or else the latest one this person saved on another device
-  const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid)||reviews().filter(r=>r.member===id&&r.reviewer===me).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0))[0];
+  const existing=reviews().filter(r=>r.member===id&&byMe(r)).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0))[0];
   /* Answers on screen only carry over to the same person: your own review to "yourself", or a review of Mum to Mum. */
   const samePerson=id===me?state.who==="me":(state.who!=="me"&&(state.name||"").trim().toLowerCase()===memberName(id).trim().toLowerCase());
   const carry=!wasTarget&&!existing&&samePerson&&(Object.keys(state.v).length||Object.keys(state.dk).length)&&setForType(memberType(id))===activeSet();
@@ -1485,7 +1487,7 @@ function paintNext(){
   const show=REVIEW_PAGE&&!!crew&&!!me; box.hidden=!show; if($("nextAdd")) $("nextAdd").hidden=!show;
   if(!show){box.dataset.k="";return}
   const partner=crew.type==="partner";
-  const selfDone=reviews().some(r=>r.member===me&&(r.reviewerUid===user.uid||r.reviewer===me));
+  const selfDone=reviews().some(r=>r.member===me&&byMe(r));
   const waiting=members().filter(m=>m.id!==me&&!claims[m.id]);
   const mine=boardOpen()&&boardById?boardScore(me):null, need=partner||!mine?0:Math.max(0,2-mine.o);
   const guestOwner=isGuest()&&isOwner();
