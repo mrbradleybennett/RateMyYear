@@ -2417,7 +2417,13 @@ async function saveReview(){
 saveBtn.addEventListener("click",saveReview);
 nextBtn.addEventListener("click",async()=>{
   /* No crew: the review is already kept on this device, so start a new one for someone else. */
-  if(!crew){const nm=$("name"),wp=$("whoPick");if(nm&&state.who!=="me")nm.dispatchEvent(new Event("change"));if(wp){wp.value="new";wp.dispatchEvent(new Event("change"))}toTop();return}
+  if(!crew){
+    const nm=$("name"),wp=$("whoPick");if(nm&&state.who!=="me")nm.dispatchEvent(new Event("change"));
+    nextBtn.disabled=true;
+    try{const g=await soloToCrew();if(g){const who=state.name;clearReview();try{sessionStorage.setItem("rmy-flash",`Saved. Your ${CREW_TYPES[g.type].crew} is set up${who?` with ${who}`:""}. Pick who to rate next.`)}catch(e){}location.href=REVIEW_PATH;return}}
+    catch(x){toast(`Saved on this device. Couldn't set up your crew yet: ${errText(x)}`,6000)}
+    nextBtn.disabled=false;
+    if(wp){wp.value="new";wp.dispatchEvent(new Event("change"))}toTop();return}
   if(!target){
     if(!me){needMe("");return}
     if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in your crew list. Your answers are kept.`,true);toTop();return}
@@ -2489,12 +2495,8 @@ $("doneBtn").addEventListener("click",async()=>{
   if(pendingName()&&!(await adoptPending())){b.disabled=false;return}
   if(!crew){
     state.revealed=true;save();
-    /* With your name filled in, saving sets up your crew of this type (with the person you rated) and saves the review into it. */
-    const myN=REVIEW_PAGE&&$("myName")?$("myName").value.trim().slice(0,40):"", them=state.who!=="me"&&state.who!=="partner"?(state.name||"").trim().slice(0,40):"";
-    if(myN&&db&&(state.who==="me"||state.who==="partner"||them)){
-      try{const g=await startQuickGroup(myN,them);openCrew(g.id);toast(`Saved. Your ${CREW_TYPES[crewTypeOf(reviewKind()==="mates"?"mates":reviewKind()==="partner"?"partner":"family")].crew} is set up: invite people at the end of your report card.`,6000,false)}
-      catch(x){toast(`Saved on this device. Couldn't set up your crew yet: ${errText(x)}`,6000)}
-    }
+    try{const g=await soloToCrew();if(g){openCrew(g.id);toast(`Saved. Your ${CREW_TYPES[g.type].crew} is set up with everyone you've rated. Invite people at the end of your report card.`,6000,false)}}
+    catch(x){toast(`Saved on this device. Couldn't set up your crew yet: ${errText(x)}`,6000)}
   }
   else if(target&&me){if(!(await saveReview())){b.disabled=false;return}revealed=true}
   b.disabled=false; render();
@@ -2700,6 +2702,36 @@ async function copyLink(){
   if(ok) recordShare("invite");
 }
 /* Make a small group from the review just done: you, plus the person you rated (if it wasn't you). */
+/* No crew yet: saving sets up your crew of this type. The review on screen goes in first, then any other
+   reviews of the same type kept on this device (people you rated before) are added and saved too. */
+async function soloToCrew(){
+  const myN=REVIEW_PAGE&&$("myName")?$("myName").value.trim().slice(0,40):"";
+  const selfish=state.who==="me"||state.who==="partner", them=selfish?"":(state.name||"").trim().slice(0,40);
+  if(!myN||!db||(!selfish&&!them)) return false;
+  const set=activeSet();
+  const g=await startQuickGroup(myN,them);
+  const extras=Object.entries(state.drafts||{}).filter(([k,d])=>k.startsWith("o:")&&d&&d.name&&lc(d.name)!==lc(them)&&lc(d.name)!==lc(myN)
+    &&Object.keys(d.v||{}).length&&setForType(["family","mate","partner"].includes(d.who)?d.who:"family")===set);
+  if(extras.length){
+    const keep={v:state.v,dk:state.dk,name:state.name,who:state.who,qset:state.qset};
+    let ms=[...g.ms];
+    for(const [,d] of extras){
+      try{
+        const tid=rid(10); ms=[...ms,{id:tid,name:d.name.trim().slice(0,40),type:g.mt}];
+        await updateDoc(doc(db,"crews",g.id),{members:ms});
+        state.v=d.v||{};state.dk=d.dk||{};state.who=d.who||keep.who;state.name=d.name;if(d.qset)state.qset=d.qset;else delete state.qset;render();
+        if(!last||last.avg==null) continue;
+        const r=snapshotResult(), boardKey=rid(16), b=writeBatch(db);
+        b.set(doc(db,"crews",g.id,"reviews",`${user.uid}_${tid}`),{member:tid,reviewer:g.myId,reviewerUid:user.uid,...r,boardKey});
+        b.set(doc(db,"crews",g.id,"board",tid),{by:{[boardKey]:{o:r.overall,self:false}}},{merge:true});
+        await b.commit(); await markDone(g.id,g.myId,tid);
+      }catch(x){console.warn("carry over",d.name,x)}
+    }
+    state.v=keep.v;state.dk=keep.dk;state.name=keep.name;state.who=keep.who;if(keep.qset)state.qset=keep.qset;else delete state.qset;save();render();
+  }
+  try{localStorage.setItem("rmy-last-type",{family:"family",mates:"mate",partner:"partner"}[g.type])}catch(e){}
+  return g;
+}
 async function startQuickGroup(myName,themName){
   if(!auth||!db) throw Object.assign(new Error("Crews aren't connected yet"),{code:"no-config"});
   if(!auth.currentUser) await withTimeout(signInAnonymously(auth),15000,"Getting ready");
@@ -2721,7 +2753,7 @@ async function startQuickGroup(myName,themName){
     await b.commit(); await markDone(id,myId,targetId);
   }catch(x){console.warn("first review",x)}
   try{await rememberCrew(id,name)}catch(x){console.warn("remember",x)}
-  return {id,name};
+  return {id,name,myId,type,mt,ms};
 }
 /* Someone opened an invite link and hasn't said who they are yet: one friendly box instead of the crew tools. */
 function paintWelcome(){
