@@ -386,7 +386,17 @@ body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHin
 .cs-txt{display:flex;flex-direction:column;min-width:0}.cs-txt b{font-size:16px;font-weight:800;color:#14231b}
 .cs-num{font-family:var(--mono);font-weight:700;font-size:22px}.cs-txt small{opacity:.85;font-size:14px}.lockline{display:block;margin-top:4px;color:var(--muted)}
 .rstat{display:inline-block;font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;margin-top:2px}.rstat.ok{background:#e3f1e8;color:#14532d}.boardtoggle{cursor:pointer}.boardtoggle input{width:18px;height:18px;vertical-align:-3px}
-.member.board-row{grid-template-columns:auto auto 1fr auto}
+.member.board-row{grid-template-columns:auto auto 1fr auto;grid-template-areas:"rank chip nm btns" "rank chip meta btns";row-gap:2px}
+.board-row .rank{grid-area:rank}.board-row .chip{grid-area:chip}.board-row .nm{grid-area:nm;line-height:1.5}.board-row .btns{grid-area:btns}
+.board-row .meta{grid-area:meta;font-weight:500;font-size:13px;color:var(--muted);min-width:0}
+/* Phones: two lines per person: rank, grade and name (with badges); then the counts and the button. */
+@media (max-width:600px){
+  .member.board-row{grid-template-areas:"rank chip nm nm" "rank chip meta btns";column-gap:10px;padding:10px}
+  .board-row .rank{font-size:17px;min-width:16px}
+  .board-row .award{font-size:12px;padding:1px 7px;margin-left:2px}
+  .board-row .youbadge{font-size:11px;padding:1px 6px}
+  .board-row .btns button{padding:6px 10px;font-size:13px;min-height:36px}
+}
 .board-row .rank{font-family:var(--display);font-size:20px;color:var(--muted);min-width:22px;text-align:center;flex:none}
 .typebox{border:1.5px dashed var(--gold);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.typebox p{margin:0}
 .typebox[hidden]{display:none}
@@ -597,11 +607,11 @@ button.reviewed{color:var(--green);border-color:var(--green)}
   </section>
 </div>
 
-<script src="js/app.js?v=5752660c96"></script>
+<script src="js/app.js?v=916a4142b1"></script>
 
 <script src="firebase-config.js"></script>
 <script>window.RMY_PAGE="join";</script>
-<script type="module" src="js/crew.js?v=d932d98f25"></script>
+<script type="module" src="js/crew.js?v=a1873f8365"></script>
 
 </body>
 </html>

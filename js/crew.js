@@ -917,7 +917,7 @@ function refresh(){
     const bottom=!!lowName;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}">${lowName}</span>`:""}<small>${score}</small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}">${lowName}</span>`:""}</span><small class="meta">${score}</small>
       <span class="btns">
         <button type="button" data-review="${m.id}"${mine?' class="ghost reviewed" title="Reviewed. Tap to change your review"':""}>${mine?"✓ Reviewed":m.id===me?"Review myself":"Review"}</button>
       </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show once someone has 2 reviews, so nobody's rating stands out on its own.</p>`:"")

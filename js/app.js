@@ -153,7 +153,7 @@ const PARTNER_GROUPS=[
 const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_GROUPS},mates:{key:"mates",label:"Mates",cats:MATE_CATS,groups:MATE_GROUPS},partner:{key:"partner",label:"Partner",cats:PARTNER_CATS,groups:PARTNER_GROUPS}};
 /* Crew types: which member type, words and leaderboard awards go with each. */
 const CREW_TYPES={
-  family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",eye:"👀 Keep an Eye on Them",low:"🤝 Family Support Required"},
+  family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",eye:"👀 Keep an Eye on Them",low:"🤝 Family Support"},
   mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 MVP Mate Award",eye:"👀 Keep an Eye on Them",low:"⚠️ Who's On Notice"},
   partner:{member:"partner",word:"Relationship",review:"Couple Check-in",crew:"Couple crew",top:"",eye:"",low:""}};
 const crewTypeOf=t=>CREW_TYPES[t]?t:"family";

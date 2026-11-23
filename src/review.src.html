@@ -385,7 +385,17 @@ body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHin
 .cs-txt{display:flex;flex-direction:column;min-width:0}.cs-txt b{font-size:16px;font-weight:800;color:#14231b}
 .cs-num{font-family:var(--mono);font-weight:700;font-size:22px}.cs-txt small{opacity:.85;font-size:14px}.lockline{display:block;margin-top:4px;color:var(--muted)}
 .rstat{display:inline-block;font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;margin-top:2px}.rstat.ok{background:#e3f1e8;color:#14532d}.boardtoggle{cursor:pointer}.boardtoggle input{width:18px;height:18px;vertical-align:-3px}
-.member.board-row{grid-template-columns:auto auto 1fr auto}
+.member.board-row{grid-template-columns:auto auto 1fr auto;grid-template-areas:"rank chip nm btns" "rank chip meta btns";row-gap:2px}
+.board-row .rank{grid-area:rank}.board-row .chip{grid-area:chip}.board-row .nm{grid-area:nm;line-height:1.5}.board-row .btns{grid-area:btns}
+.board-row .meta{grid-area:meta;font-weight:500;font-size:13px;color:var(--muted);min-width:0}
+/* Phones: two lines per person: rank, grade and name (with badges); then the counts and the button. */
+@media (max-width:600px){
+  .member.board-row{grid-template-areas:"rank chip nm nm" "rank chip meta btns";column-gap:10px;padding:10px}
+  .board-row .rank{font-size:17px;min-width:16px}
+  .board-row .award{font-size:12px;padding:1px 7px;margin-left:2px}
+  .board-row .youbadge{font-size:11px;padding:1px 6px}
+  .board-row .btns button{padding:6px 10px;font-size:13px;min-height:36px}
+}
 .board-row .rank{font-family:var(--display);font-size:20px;color:var(--muted);min-width:22px;text-align:center;flex:none}
 .typebox{border:1.5px dashed var(--gold);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.typebox p{margin:0}
 .typebox[hidden]{display:none}
@@ -752,7 +762,7 @@ const PARTNER_GROUPS=[
 const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_GROUPS},mates:{key:"mates",label:"Mates",cats:MATE_CATS,groups:MATE_GROUPS},partner:{key:"partner",label:"Partner",cats:PARTNER_CATS,groups:PARTNER_GROUPS}};
 /* Crew types: which member type, words and leaderboard awards go with each. */
 const CREW_TYPES={
-  family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",eye:"👀 Keep an Eye on Them",low:"🤝 Family Support Required"},
+  family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",eye:"👀 Keep an Eye on Them",low:"🤝 Family Support"},
   mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 MVP Mate Award",eye:"👀 Keep an Eye on Them",low:"⚠️ Who's On Notice"},
   partner:{member:"partner",word:"Relationship",review:"Couple Check-in",crew:"Couple crew",top:"",eye:"",low:""}};
 const crewTypeOf=t=>CREW_TYPES[t]?t:"family";
@@ -2107,7 +2117,7 @@ function refresh(){
     const bottom=!!lowName;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}">${lowName}</span>`:""}<small>${score}</small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}">${lowName}</span>`:""}</span><small class="meta">${score}</small>
       <span class="btns">
         <button type="button" data-review="${m.id}"${mine?' class="ghost reviewed" title="Reviewed. Tap to change your review"':""}>${mine?"✓ Reviewed":m.id===me?"Review myself":"Review"}</button>
       </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show once someone has 2 reviews, so nobody's rating stands out on its own.</p>`:"")
