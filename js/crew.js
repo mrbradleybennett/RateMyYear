@@ -1250,6 +1250,7 @@ if(REVIEW_PAGE){
     /* One panel at a time: opening this one closes Share. */
     if($("shareBox")){$("shareBox").hidden=true;$("shareBtn").setAttribute("aria-expanded","false")}
     askNote(""); $("askGo").disabled=false; askBox.hidden=false; askBtn.setAttribute("aria-expanded","true"); window.__paintAsk();
+    window.__resetInviteCard&&window.__resetInviteCard(); try{inviteCard()}catch(e){}
     askBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"});
     if(!$("askName").value) setTimeout(()=>$("askName").focus({preventScroll:true}),250);
   }
@@ -1269,8 +1270,12 @@ if(REVIEW_PAGE){
     try{
       const g=await startQuickGroup(myName,them);
       openCrew(g.id);
-      askNote("Pick WhatsApp, Messages or email. Each person who opens it rates you, then themselves.");
       window.__paintAsk();
+      /* One tap: make the link and open the share list straight away. If the phone blocks that
+         (it only allows sharing right after a tap), the "Send the link" button below does it. */
+      const t0=Date.now(); while(!(crew&&me)&&Date.now()-t0<4000) await new Promise(r=>setTimeout(r,100));
+      askNote("Your link is ready. Pick WhatsApp, Messages or email. Each person who opens it rates you, then themselves.");
+      if(crew&&me) shareLink("invite",true);
     }catch(x){
       afterOpen=null; $("askGo").disabled=false;
       if(x&&x.code==="permission-denied") askNote("Couldn't make your link right now. For now, use Create at the top of the page to set up a crew with Google.",true);
@@ -1353,15 +1358,23 @@ async function recordShare(channel){
   try{ if(db&&user) await addDoc(collection(db,"shares"),{uid:user.uid,channel,crewId:crewId||"",type:(crew&&crew.type)||"",at:Date.now()}) }catch(x){console.warn("share not recorded",x)}
 }
 /* Send the invite link from the phone's share sheet (WhatsApp, Messages, email…), or WhatsApp where that isn't available. */
-async function shareLink(kind){
+/* The invite goes with a picture of your report card (made ahead of time, so sharing starts straight away). */
+let inviteCardP=null;
+const inviteCard=()=>{if(!inviteCardP&&window.makeCard&&last&&last.avg!=null) inviteCardP=window.makeCard().catch(()=>null);return inviteCardP||Promise.resolve(null)};
+window.__resetInviteCard=()=>{inviteCardP=null};
+async function shareLink(kind,auto){
   if(!crew){toast("Your crew is still loading. Try again in a moment.");return}
   if(!me){needMe("");return}
   const text=inviteText(kind), link=linkFrom(me);
-  recordShare(kind==="nudge"?"nudge":"invite");
   if(navigator.share){
-    try{await navigator.share({text:`${text}\n${link}`});return}
-    catch(x){if(x&&x.name==="AbortError")return}
+    const blob=kind==="invite"?await inviteCard():null;
+    const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
+    const withPic=file&&navigator.canShare&&navigator.canShare({files:[file]});
+    try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");return}
+    catch(x){if(x&&x.name==="AbortError")return;if(auto)return}   // auto: the phone wanted a fresh tap, so leave it to the Send button
   }
+  if(auto) return;
+  recordShare(kind==="nudge"?"nudge":"invite");
   const u=`https://wa.me/?text=${encodeURIComponent(`${text}\n${link}`)}`;
   if(!window.open(u,"_blank")) location.href=u;
 }
