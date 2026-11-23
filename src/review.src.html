@@ -2444,7 +2444,7 @@ function paintDone(){
   bar.hidden=!show;
   const open=solo?!!state.revealed:revealed, dirty=inRev&&sig()!==savedSig;
   document.body.classList.toggle("report-locked",show&&!open);
-  const t=!show?null:solo?(open?null:["Save &amp; See My Results","Your answers are saved on this device"])
+  const t=!show?null:solo?(open?null:["Save &amp; See My Results",$("myName")&&$("myName").value.trim()?"Saves your review and sets up your crew":"Your answers are saved on this device"])
     :!open?["Save &amp; See Results",target.id===me?"Saves your review to the crew, then shows your report card":`Saves your review of ${esc(target.name)} to the crew`]
     :dirty?["Save Changes","Update your saved review"]:null;
   const pn=inRev?pendingName():""; if(t&&pn&&!(target&&target.name.trim().toLowerCase()===pn.toLowerCase())) t[1]=`Adds ${esc(pn)} to your crew and saves your review of them`;
@@ -2483,7 +2483,15 @@ $("doneBtn").addEventListener("click",async()=>{
   doneOk=false;$("doneAsk").hidden=true;
   const b=$("doneBtn"); b.disabled=true;
   if(pendingName()&&!(await adoptPending())){b.disabled=false;return}
-  if(!crew){state.revealed=true;save()}
+  if(!crew){
+    state.revealed=true;save();
+    /* With your name filled in, saving sets up your crew of this type (with the person you rated) and saves the review into it. */
+    const myN=REVIEW_PAGE&&$("myName")?$("myName").value.trim().slice(0,40):"", them=state.who!=="me"&&state.who!=="partner"?(state.name||"").trim().slice(0,40):"";
+    if(myN&&db&&(state.who==="me"||state.who==="partner"||them)){
+      try{const g=await startQuickGroup(myN,them);openCrew(g.id);toast(`Saved. Your ${CREW_TYPES[crewTypeOf(reviewKind()==="mates"?"mates":reviewKind()==="partner"?"partner":"family")].crew} is set up: invite people at the end of your report card.`,6000,false)}
+      catch(x){toast(`Saved on this device. Couldn't set up your crew yet: ${errText(x)}`,6000)}
+    }
+  }
   else if(target&&me){if(!(await saveReview())){b.disabled=false;return}revealed=true}
   b.disabled=false; render();
   setTimeout(()=>document.querySelector(".report").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"}),50);
