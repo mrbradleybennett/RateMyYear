@@ -2091,9 +2091,9 @@ function refresh(){
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     /* Count reviews from other people (what unlocks the score); a self-rating is shown separately. */
     const o=b.o||0, cnt=`<span class="revcount">${o?`${o} review${o===1?"":"s"}${b.s?" + self":""}`:b.s?"Self-rated only":"No reviews yet"}</span>`;
-    const gv=givenCount(m.id), given=` · <span class="givecount">Has rated ${gv} ${gv===1?"person":"people"}</span>`;
-    const score0=open?(b.locked?`<span class="lockline2">🔒</span> ${cnt}`:b.v==null?cnt:b.o===0?`${b.v.toFixed(1)} / 10 · ${cnt}`:`${b.v.toFixed(1)} / 10 · ${cnt}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span> · ${cnt}`;
-    const score=score0+given;
+    /* The letter grade carries the score, so the line just counts reviews received and given. */
+    const gv=givenCount(m.id), rc=b.t||0;
+    const score=`${open&&b.locked?`<span class="lockline2">🔒</span> `:""}<span class="revcount">Received: ${rc}</span> · <span class="givecount">Given: ${gv}</span>`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     const award=open&&i===0&&b.v!=null&&nScored>=2;
     /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
