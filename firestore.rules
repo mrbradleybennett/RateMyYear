@@ -53,9 +53,8 @@ service cloud.firestore {
           && request.resource.data.members.size() == resource.data.members.size() + 1
           && request.resource.data.members.hasAll(resource.data.members));
 
-      // Crews are never deleted from the site, so a crew id can't be re-created
-      // by someone else to read leftover data.
-      allow delete: if false;
+      // Only the site owner deletes crews (from admin.html, which deletes everything inside first).
+      allow delete: if isSuper();
 
       // One doc per account that joined; created only with the current invite code.
       match /joins/{uid} {
@@ -64,24 +63,24 @@ service cloud.firestore {
         allow create, update: if signedIn() && uid == request.auth.uid
           && (request.resource.data.get('code', '') == crewData(c).joinCode
               || ('passHash' in crewData(c) && request.resource.data.get('pass', '') == crewData(c).passHash));
-        allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
+        allow delete: if isAdmin(c) || isSuper() || (signedIn() && uid == request.auth.uid);
       }
 
       // Which person each account is in the crew ("I am"): accounts/{uid} = {member}.
       // Several accounts (devices) can be the same person. claims/{memberId} records the
       // latest account to pick that name, for the admin tools.
       match /accounts/{uid} {
-        allow read: if isMember(c);
+        allow read: if isMember(c) || isSuper();
         allow create, update: if isMember(c) && uid == request.auth.uid
           && request.resource.data.member is string;
-        allow delete: if isAdmin(c) || (signedIn() && uid == request.auth.uid);
+        allow delete: if isAdmin(c) || isSuper() || (signedIn() && uid == request.auth.uid);
       }
       match /claims/{memberId} {
-        allow read: if isMember(c);
+        allow read: if isMember(c) || isSuper();
         allow create, update: if isMember(c)
           && request.resource.data.uid == request.auth.uid
           && getAfter(docAt(c, 'accounts', request.auth.uid)).data.member == memberId;
-        allow delete: if isAdmin(c) || (signedIn() && resource.data.uid == request.auth.uid);
+        allow delete: if isAdmin(c) || isSuper() || (signedIn() && resource.data.uid == request.auth.uid);
       }
 
       match /reviews/{reviewId} {
@@ -100,8 +99,8 @@ service cloud.firestore {
           && request.resource.data.member == resource.data.member
           && (!('boardKey' in resource.data) || request.resource.data.get('boardKey', '') == resource.data.boardKey)
           && get(docAt(c, 'accounts', request.auth.uid)).data.member == request.resource.data.reviewer;
-        // Only crew admins delete reviews, so nobody can delete and re-add to stack the leaderboard.
-        allow delete: if isAdmin(c);
+        // Only crew admins (and the site owner) delete reviews, so nobody can delete and re-add to stack the leaderboard.
+        allow delete: if isAdmin(c) || isSuper();
       }
 
       // Crew leaderboard: board/{memberId} = {by: {<key>: {o: overall, self: bool}}}.
@@ -116,7 +115,7 @@ service cloud.firestore {
             && request.resource.data.by[k].self == (myReview().reviewer == memberId);
         }
         // The crew sees the leaderboard unless the admin turns it off (showBoard: false); admins always can.
-        allow read: if isAdmin(c) || (isMember(c) && crewData(c).get('showBoard', true) != false);
+        allow read: if isAdmin(c) || isSuper() || (isMember(c) && crewData(c).get('showBoard', true) != false);
         allow create: if isAdmin(c)
           || (isMember(c) && request.resource.data.keys().hasOnly(['by'])
               && request.resource.data.by.keys().hasOnly([myReview().boardKey])
@@ -125,7 +124,7 @@ service cloud.firestore {
           || (isMember(c) && request.resource.data.keys().hasOnly(['by'])
               && request.resource.data.by.diff(resource.data.by).affectedKeys().hasOnly([myReview().boardKey])
               && entryOk(myReview().boardKey));
-        allow delete: if isAdmin(c);
+        allow delete: if isAdmin(c) || isSuper();
       }
     }
 
@@ -139,7 +138,7 @@ service cloud.firestore {
         && request.auth.uid in getAfter(crewPath(request.resource.data.crewId)).data.adminUids
         && getAfter(crewPath(request.resource.data.crewId)).data.slug == slug;
       allow update: if false;
-      allow delete: if isAdmin(resource.data.crewId);
+      allow delete: if isSuper() || isAdmin(resource.data.crewId);
     }
 
     // Share Results: a record of each report card sent (channel, plus the email or mobile if given).
@@ -152,21 +151,21 @@ service cloud.firestore {
         && request.resource.data.get('email', '').size() <= 200
         && request.resource.data.get('phone', '') is string
         && request.resource.data.get('phone', '').size() <= 30;
-      allow read: if isSuper();
-      allow update, delete: if false;
+      allow read, delete: if isSuper();
+      allow update: if false;
     }
 
     // Each person's list of crews, private to them.
     match /users/{uid} {
       allow read, write: if signedIn() && uid == request.auth.uid;
-      allow list: if isSuper();
+      allow list, update, delete: if isSuper();
     }
 
     // Solo reviews saved outside a crew, private to the person who saved them.
     match /results/{id} {
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
       allow read: if isSuper() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow delete: if isSuper() || (signedIn() && resource.data.uid == request.auth.uid);
     }
   }
 }

@@ -49,6 +49,10 @@ table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
 td.n{text-align:right;font-family:var(--mono)}
+.danger{background:#c2362b;color:#fff;border:0}.sm{font-size:14px;padding:8px 14px;min-height:40px}
+tr.confirm td{background:var(--soft)}tr.confirm .row{margin-top:8px}
+.dangerzone{margin-top:28px;padding:16px;border:2px solid #c2362b;border-radius:12px;display:flex;flex-direction:column;gap:8px}
+.dangerzone input{font:inherit;padding:10px 12px;border:1.5px solid var(--muted);border-radius:8px;background:var(--panel);color:var(--ink);max-width:200px}
 .pill{display:inline-block;font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--soft)}
 .pill.mates{background:#fff4d6;color:#6b4e00}.pill.family{background:#e3f1e8;color:#14532d}.pill.partner{background:#fde4ec;color:#8a1c46}
 @media (prefers-color-scheme: dark){.pill.mates{background:#3a2f0a;color:#f5d77a}.pill.family{background:#163a26;color:#a9e3bf}.pill.partner{background:#3d1626;color:#f3b3c9}}
@@ -67,7 +71,7 @@ td.n{text-align:right;font-family:var(--mono)}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {initializeAuth,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithCredential,linkWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,collection,query,orderBy,limit,getDocs,getCountFromServer} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,query,orderBy,limit,getDocs,getCountFromServer,doc,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* Only these Google accounts see the numbers. The same list is in the Firestore security rules (isSuper),
    which is what actually protects the data. */
@@ -139,20 +143,67 @@ async function load(user){
       </div>
       <h2>Crews</h2>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Crew</th><th>Owner email</th><th>Type</th><th>Created</th><th style="text-align:right">People</th><th style="text-align:right">Joined</th><th style="text-align:right">Reviews</th><th>Leaderboard</th></tr></thead>
-        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td>${ownerMail(c)?`<a href="mailto:${esc(ownerMail(c))}">${esc(ownerMail(c))}</a>`:`<span class="muted">Not seen yet</span>`}</td><td><span class="pill ${c.type==="mates"?"mates":c.type==="partner"?"partner":"family"}">${c.type==="mates"?"Mates":c.type==="partner"?"Couple":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td></tr>`).join("")||`<tr><td colspan="8" class="muted">No crews yet.</td></tr>`}</tbody>
+        <thead><tr><th>Crew</th><th>Owner email</th><th>Type</th><th>Created</th><th style="text-align:right">People</th><th style="text-align:right">Joined</th><th style="text-align:right">Reviews</th><th>Leaderboard</th><th></th></tr></thead>
+        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td>${ownerMail(c)?`<a href="mailto:${esc(ownerMail(c))}">${esc(ownerMail(c))}</a>`:`<span class="muted">Not seen yet</span>`}</td><td><span class="pill ${c.type==="mates"?"mates":c.type==="partner"?"partner":"family"}">${c.type==="mates"?"Mates":c.type==="partner"?"Couple":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td><td><button class="danger sm" data-del="${esc(c.id)}">Delete</button></td></tr>
+          <tr class="confirm" id="ask-${esc(c.id)}" hidden><td colspan="9"><span class="err">Delete <b>${esc(c.name||c.id)}</b>? This removes the crew, its ${c.reviews??0} review${c.reviews===1?"":"s"} and ${Array.isArray(c.members)?c.members.length:0} people. It can't be undone.</span>
+            <span class="row"><button class="danger sm" data-yes="${esc(c.id)}">Yes, delete ${esc(c.name||"this crew")}</button><button class="ghost sm" data-no="${esc(c.id)}">Cancel</button></span></td></tr>`).join("")||`<tr><td colspan="9" class="muted">No crews yet.</td></tr>`}</tbody>
       </table></div>
       <h2>Latest shares</h2>
       <div class="tbl-wrap"><table>
         <thead><tr><th>When</th><th>How</th><th>Contact</th><th>Review</th><th>Grade</th></tr></thead>
         <tbody>${shares.map(s=>`<tr><td>${when(s.at)}</td><td>${esc(s.channel||"email")}</td><td>${s.email||s.phone?"(old record)":"–"}</td><td>${s.who==="me"?"Self":s.set==="mates"?"Mate":s.set==="partner"?"Couple":"Family"}</td><td>${esc(s.grade||"")}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">No shares yet${sharesSnap?"":" (or not readable: publish the latest security rules)"}.</td></tr>`}</tbody>
       </table></div>
-      <p class="muted">Updated ${when(Date.now())}.</p>`;
+      <p class="muted">Updated ${when(Date.now())}.</p>
+      <div class="dangerzone"><h2>Delete everything</h2>
+        <p>Deletes <b>every</b> crew, review, solo result, share record and user list on the site, for a clean start. It can't be undone.</p>
+        <label for="wipeTxt">Type <b>DELETE</b> to confirm</label>
+        <div class="row"><input id="wipeTxt" autocomplete="off" autocapitalize="characters"><button class="danger" id="wipeGo" disabled>Delete everything</button></div>
+        <p class="muted" id="wipeMsg" role="status"></p></div>`;
     $("again").onclick=()=>load(user);
+    const msg=t=>{$("wipeMsg").textContent=t};
+    main.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{$("ask-"+b.dataset.del).hidden=false});
+    main.querySelectorAll("[data-no]").forEach(b=>b.onclick=()=>{$("ask-"+b.dataset.no).hidden=true});
+    main.querySelectorAll("[data-yes]").forEach(b=>b.onclick=async()=>{
+      const c=per.find(x=>x.id===b.dataset.yes); if(!c) return; b.disabled=true; b.textContent="Deleting…";
+      try{await deleteCrew(c);load(user)}catch(x){b.disabled=false;b.textContent="Try again";$("ask-"+c.id).querySelector(".err").textContent=`Couldn't delete it${x&&x.code==="permission-denied"?": publish the latest security rules first (they let your account delete)":""}.`}
+    });
+    $("wipeTxt").oninput=()=>{$("wipeGo").disabled=$("wipeTxt").value.trim()!=="DELETE"};
+    $("wipeGo").onclick=async()=>{
+      if($("wipeTxt").value.trim()!=="DELETE") return; $("wipeGo").disabled=true; $("wipeTxt").disabled=true;
+      try{const n=await deleteEverything(msg);msg(`Done. Deleted ${n} crew${n===1?"":"s"} and everything else.`);setTimeout(()=>load(user),1500)}
+      catch(x){msg(`Stopped: ${x&&x.code==="permission-denied"?"publish the latest security rules first (they let your account delete).":"something went wrong. Refresh and try again; anything already deleted stays deleted."}`);$("wipeTxt").disabled=false}
+    };
   }catch(x){
     main.innerHTML=`<p class="err">Couldn't load the numbers${x&&x.code?` (${esc(x.code)})`:""}.</p><p class="muted">${x&&x.code==="permission-denied"?"Publish the latest security rules in Firebase (they give this account read access).":"Check your connection and tap Refresh."}</p><div><button class="ghost" id="again">Refresh</button></div>`;
     $("again").onclick=()=>load(user);
   }
+}
+/* ---------- Deleting (site owner only; the security rules allow this for the isSuper account) ---------- */
+const CREW_SUBS=["reviews","joins","accounts","claims","board"];
+async function deleteDocs(refs,progress){
+  for(let i=0;i<refs.length;i+=400){const b=writeBatch(db);refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit();if(progress)progress(Math.min(i+400,refs.length),refs.length)}
+}
+/* Deletes one crew: everything inside it, its searchable name, then the crew itself. */
+async function deleteCrew(c,cleanUsers=true){
+  const refs=[];
+  for(const sub of CREW_SUBS){const snap=await getDocs(collection(db,"crews",c.id,sub));snap.docs.forEach(d=>refs.push(d.ref))}
+  if(c.slug) refs.push(doc(db,"crewNames",c.slug));
+  refs.push(doc(db,"crews",c.id));
+  await deleteDocs(refs);
+  if(cleanUsers){
+    const us=await getDocs(collection(db,"users")), b=writeBatch(db); let n=0;
+    us.docs.forEach(d=>{const cs=d.data().crews;if(Array.isArray(cs)&&cs.some(x=>(x&&x.id||x)===c.id)){b.set(d.ref,{crews:cs.filter(x=>(x&&x.id||x)!==c.id)},{merge:true});n++}});
+    if(n) await b.commit();
+  }
+  return refs.length;
+}
+async function deleteEverything(say){
+  const crews=(await getDocs(collection(db,"crews"))).docs.map(d=>({id:d.id,...d.data()}));
+  let i=0; for(const c of crews){say(`Deleting crews… ${++i} of ${crews.length}`);await deleteCrew(c,false)}
+  for(const col of ["crewNames","results","shares","users"]){
+    say(`Deleting ${col}…`);const snap=await getDocs(collection(db,col));await deleteDocs(snap.docs.map(d=>d.ref));
+  }
+  return crews.length;
 }
 let got=false;
 onAuthStateChanged(auth,u=>{got=true;$("navCreate").textContent=u&&!u.isAnonymous?"My Crew":"Create";if(!u||u.isAnonymous)signedOut();else load(u)});
