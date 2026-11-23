@@ -785,6 +785,15 @@ function paintCreate(){
   const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Log in";
   paintEndInvite();
 }
+/* My results open right under your own row in the leaderboard. */
+let resultsOpen=false;
+function placeResults(){
+  const list=$("memList"); if(!list) return;
+  const old=list.querySelector(".myresults"); if(old) old.remove();
+  if(!resultsOpen||!me||ADMIN) return;
+  const b=list.querySelector(`[data-results="${me}"]`), row=b&&b.closest(".member"); if(!row) return;
+  const d=document.createElement("div"); d.className="myresults"; d.innerHTML=memberReportHTML(me,false); row.after(d);
+}
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
@@ -873,7 +882,7 @@ function refresh(){
   if(!cs.hidden){
     const v=scored.length?mean(scored.map(x=>x.b.v)):null, g=v==null?null:grade(v);
     cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
-    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${crew.type==="partner"?"Love score":"Crew score"}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
+    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${esc(crew.type==="partner"?`${crew.name} Love Score`:/crew$/i.test(crew.name.trim())?`${crew.name} Score`:`${crew.name} Crew Score`)}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
   }
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
@@ -907,7 +916,8 @@ function refresh(){
       </span></div>${ADMIN&&admin&&managing===m.id?managePanel(m,joined,isAdm,a):""}`}).join("")
     :`<p class="muted">No one in the crew yet. Add everyone below.</p>`;
   $("memList").querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>startReview(b.dataset.review));
-  $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{const box=$("famResults");box.innerHTML=box.innerHTML?"":memberReportHTML(me,false)});
+  $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{resultsOpen=!resultsOpen;placeResults()});
+  placeResults();
   $("memList").querySelectorAll("[data-manage]").forEach(b=>b.onclick=()=>{managing=managing===b.dataset.manage?"":b.dataset.manage;removeArmed="";refresh()});
   $("memList").querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>manageAction(b.dataset.act,b.dataset.id));
   $("memList").querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{removeArmed="";refresh()});
@@ -915,7 +925,7 @@ function refresh(){
   $("inviteBox").hidden=!showAdmin;
   if(showAdmin) $("inviteLink").value=inviteLink();
   $("passBox").hidden=!showAdmin; if(showAdmin) renderPassBox();
-  if($("famResults").innerHTML&&me&&!ADMIN) $("famResults").innerHTML=memberReportHTML(me,false); else if(ADMIN) $("famResults").innerHTML="";
+  $("famResults").innerHTML=""; placeResults();
   $("adminArea").hidden=!showAdmin;
   if(showAdmin) renderAdmin();
   if(admin) syncBoardSoon();

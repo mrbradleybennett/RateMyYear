@@ -379,7 +379,7 @@ body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHin
 .award .sr-note{font-family:var(--body);font-size:12.5px;font-weight:700;opacity:.9}
 .crewscore{display:flex;align-items:center;gap:14px;background:var(--green);color:var(--panel);border-radius:12px;padding:12px 16px}.crewscore[hidden]{display:none}
 .cs-chip{font-family:var(--display);font-size:26px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;flex:none;box-shadow:0 0 0 3px var(--gold)}
-.cs-txt{display:flex;flex-direction:column;min-width:0}.cs-txt b{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.cs-txt{display:flex;flex-direction:column;min-width:0}.cs-txt b{font-size:16px;font-weight:800;color:#14231b}
 .cs-num{font-family:var(--mono);font-weight:700;font-size:22px}.cs-txt small{opacity:.85;font-size:14px}.lockline{display:block;margin-top:4px;color:var(--muted)}
 .rstat{display:inline-block;font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;margin-top:2px}.rstat.ok{background:#e3f1e8;color:#14532d}.boardtoggle{cursor:pointer}.boardtoggle input{width:18px;height:18px;vertical-align:-3px}
 .member.board-row{grid-template-columns:auto auto 1fr auto}
@@ -421,6 +421,7 @@ body.report-locked .report{display:none}
 .wform input{flex:1 1 160px;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink)}
 .nextbox{display:flex;flex-direction:column}
 .revcount{font-weight:700;white-space:nowrap}
+.myresults{grid-column:1/-1}
 .youbadge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:var(--gold);color:#14231b;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
 .nextbox h3{margin:0 0 4px;font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .nrow{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line)}
@@ -1967,6 +1968,15 @@ function paintCreate(){
   const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Log in";
   paintEndInvite();
 }
+/* My results open right under your own row in the leaderboard. */
+let resultsOpen=false;
+function placeResults(){
+  const list=$("memList"); if(!list) return;
+  const old=list.querySelector(".myresults"); if(old) old.remove();
+  if(!resultsOpen||!me||ADMIN) return;
+  const b=list.querySelector(`[data-results="${me}"]`), row=b&&b.closest(".member"); if(!row) return;
+  const d=document.createElement("div"); d.className="myresults"; d.innerHTML=memberReportHTML(me,false); row.after(d);
+}
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
@@ -2055,7 +2065,7 @@ function refresh(){
   if(!cs.hidden){
     const v=scored.length?mean(scored.map(x=>x.b.v)):null, g=v==null?null:grade(v);
     cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
-    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${crew.type==="partner"?"Love score":"Crew score"}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
+    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${esc(crew.type==="partner"?`${crew.name} Love Score`:/crew$/i.test(crew.name.trim())?`${crew.name} Score`:`${crew.name} Crew Score`)}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
   }
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
@@ -2089,7 +2099,8 @@ function refresh(){
       </span></div>${ADMIN&&admin&&managing===m.id?managePanel(m,joined,isAdm,a):""}`}).join("")
     :`<p class="muted">No one in the crew yet. Add everyone below.</p>`;
   $("memList").querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>startReview(b.dataset.review));
-  $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{const box=$("famResults");box.innerHTML=box.innerHTML?"":memberReportHTML(me,false)});
+  $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{resultsOpen=!resultsOpen;placeResults()});
+  placeResults();
   $("memList").querySelectorAll("[data-manage]").forEach(b=>b.onclick=()=>{managing=managing===b.dataset.manage?"":b.dataset.manage;removeArmed="";refresh()});
   $("memList").querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>manageAction(b.dataset.act,b.dataset.id));
   $("memList").querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{removeArmed="";refresh()});
@@ -2097,7 +2108,7 @@ function refresh(){
   $("inviteBox").hidden=!showAdmin;
   if(showAdmin) $("inviteLink").value=inviteLink();
   $("passBox").hidden=!showAdmin; if(showAdmin) renderPassBox();
-  if($("famResults").innerHTML&&me&&!ADMIN) $("famResults").innerHTML=memberReportHTML(me,false); else if(ADMIN) $("famResults").innerHTML="";
+  $("famResults").innerHTML=""; placeResults();
   $("adminArea").hidden=!showAdmin;
   if(showAdmin) renderAdmin();
   if(admin) syncBoardSoon();
