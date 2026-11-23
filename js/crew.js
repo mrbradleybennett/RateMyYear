@@ -142,7 +142,7 @@ function memberReportHTML(id,detailed){
   if(!a.rs.length||a.overall==null) return `<div class="results"><h3>${name}</h3><p class="muted">${a.rs.length?"Every area was marked don't know so far.":peopleLine(0)+"."}</p></div>`;
   /* Members see combined crew scores only, never who said what, and only once 2+ people have reviewed them.
      Crew admins (detailed view) see who reviewed. */
-  const locked=!detailed&&a.others.length<2;
+  const locked=!detailed&&a.others.length+(a.self?1:0)<2;
   if(locked){a.fa=null;a.main=a.sa||a.main;const k=a.main?CATS.map(c=>a.main[c.id]).filter(v=>v!=null):[];a.overall=k.length?mean(k):a.overall}
   if(!a.main||a.overall==null) return `<div class="results"><h3>${name}</h3><p class="muted">🔒 Crew scores show after 2 reviews, so nobody's rating stands out on its own.</p></div>`;
   const r=ranked(a.main,CATS), bottom=r.slice(Math.max(3,r.length-3)).reverse();
@@ -739,7 +739,7 @@ async function manageAction(act,id){
 const legacyKey=reviewId=>"L"+sha256hex("rmy-board:"+reviewId).slice(0,19);
 function boardScore(id){
   const by=(boardById&&boardById[id]&&boardById[id].by)||{}, es=Object.values(by).filter(e=>e&&typeof e.o==="number");
-  const others=es.filter(e=>!e.self), use=others.length?others:es;
+  const others=es.filter(e=>!e.self), use=others.length>=2?others:es;
   return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length,o:others.length,t:es.length,s:es.length>others.length};
 }
 /* Crew admins can read every review, so their device keeps the leaderboard in step: it adds older reviews
@@ -881,7 +881,7 @@ function refresh(){
   $("boardNote").hidden=ADMIN||!ms.length;
   if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):($("welcomeBox")&&!$("welcomeBox").hidden?"Type your first name above to get started.":"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone."))+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
   const fake=["A","B+","B","C+","C","D"];
-  const lockOne=b=>crew.type!=="partner"&&b.o===1?{v:null,n:b.n,o:1,t:b.t,s:b.s,locked:true}:b;
+  const lockOne=b=>crew.type!=="partner"&&(b.t||0)<2&&b.o===1?{v:null,n:b.n,o:1,t:b.t,s:b.s,locked:true}:b;
   const ranked=ms.map(m=>({m,b:open&&boardById?lockOne(boardScore(m.id)):{v:null,n:0,...(boardById?(({o,t,s})=>({o,t,s}))(boardScore(m.id)):{o:0,t:0,s:false})}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
   /* Crew score: the average of everyone's leaderboard score (people with at least one review). */
   const scored=ranked.filter(x=>x.b.v!=null), cs=$("crewScore");
@@ -908,7 +908,7 @@ function refresh(){
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
-      </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show after 2 reviews from other people, so nobody's rating stands out on its own.</p>`:"")
+      </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show once someone has 2 reviews, so nobody's rating stands out on its own.</p>`:"")
     :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&byMe(r));
@@ -1062,7 +1062,7 @@ function selfVsCrew(rows,avg){
     const g0=pr&&pr.cats?CATS.filter(c=>live0[c.id]!=null&&pr.cats[c.id]!=null).map(c=>({c,s:live0[c.id],k:pr.cats[c.id],d:live0[c.id]-pr.cats[c.id]})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)):null;
     return {self:avg,crew:theirsV,crewN:theirs.length,isSelf:true,nm,gaps:g0,couple:true,selfNote:"How you rate the relationship",crewNote:theirsV==null?"Waiting on your partner's side":"How your partner rates it"};
   }
-  if(isSelf&&crew.type!=="partner"&&crewVals.length===1)
+  if(isSelf&&crew.type!=="partner"&&crewVals.length===1&&avg==null)
     return {self:selfV,crew:null,crewN:1,isSelf,nm,gaps:null,selfNote:"How you rate yourself",crewNote:"🔒 Shows after 2 reviews (1 in so far), so nobody's rating stands out on its own"};
   const crewV=crewVals.length?mean(crewVals):null;
   // per-area: needs the person's own review and the crew's (readable for yourself, or for crew admins)
@@ -1510,7 +1510,7 @@ function paintNext(){
   const partner=crew.type==="partner";
   const selfDone=reviews().some(r=>r.member===me&&byMe(r));
   const waiting=members().filter(m=>m.id!==me&&!claims[m.id]);
-  const mine=boardOpen()&&boardById?boardScore(me):null, need=partner||!mine?0:Math.max(0,2-mine.o);
+  const mine=boardOpen()&&boardById?boardScore(me):null, need=partner||!mine?0:Math.max(0,2-(mine.t||0));
   const guestOwner=isGuest()&&isOwner();
   const key=JSON.stringify([selfDone,waiting.map(m=>m.name),need,guestOwner,partner]); if(box.dataset.k===key) return; box.dataset.k=key;
   const rows=[];
