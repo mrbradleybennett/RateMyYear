@@ -260,7 +260,9 @@ function viewLobby(msg=""){
   const cbox=document.querySelector("#fam .crew-box"); if(cbox) cbox.hidden=false;
   /* Review page with no crew of the type picked: just do the review. Crews are set up from the invite at the end,
      or on My Crew (for a second crew of the same type). */
-  if(REVIEW_PAGE&&entry!=="join"){if(cbox)cbox.hidden=true;body.innerHTML="";if(msg)toast(msg.replace(/<[^>]+>/g,""),5000,false);return}
+  if(REVIEW_PAGE&&entry!=="join"){if(cbox)cbox.hidden=true;body.innerHTML="";
+    /* Show the questions for the type you used last, so the highlighted button matches. */
+    try{const lt=localStorage.getItem("rmy-last-type"), r=lt&&$("who-"+lt);if(r&&setForType(lt)!==activeSet()){r.checked=true;r.dispatchEvent(new Event("change",{bubbles:true}))}}catch(e){}if(msg)toast(msg.replace(/<[^>]+>/g,""),5000,false);return}
   title.textContent="Your crew"; leaveBtn.hidden=true;
   body.innerHTML=`<div class="stack">
     ${whoRow("")}
@@ -818,6 +820,7 @@ function placeResults(){
    (or, with none, a fresh review of that type). The open crew's button stays highlighted. */
 function paintRatebar(){
   window.__crewSet=REVIEW_PAGE&&crew?{family:"life",mates:"mates",partner:"partner"}[crewTypeOf(crew.type)]:null;
+  if(window.__crewSet){try{localStorage.setItem("rmy-last-type",{family:"family",mates:"mate",partner:"partner"}[crewTypeOf(crew.type)])}catch(e){}}
   if(!window.__crewSet) return;
   [["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===window.__crewSet)});
 }
@@ -1671,7 +1674,9 @@ async function loadConfig(){
     const lastCrew=loadLS();
     /* Picked Rate My Family / Mates / Couple Check-in? Only open a group of that type. With none, do a fresh
        review of that type; Invite Others To Rate You then makes a new group for it. */
-    const want=REVIEW_PAGE?{family:"family",mate:"mates",partner:"partner"}[LAND.get("who")]:"";
+    /* Open the crew for the type picked, or with none picked, the type you used last (so the highlight matches your latest review). */
+    let lastType="";try{if(LAND.get("who")&&LAND.get("who")!=="me")localStorage.setItem("rmy-last-type",LAND.get("who"));lastType=localStorage.getItem("rmy-last-type")||""}catch(e){}
+    const want=REVIEW_PAGE?{family:"family",mate:"mates",partner:"partner"}[LAND.get("who")||lastType]:"";
     if(want&&myCrews.length){
       const order=[...myCrews.filter(c=>c.id===lastCrew),...myCrews.filter(c=>c.id!==lastCrew)];
       for(const c of order){try{const d=await withTimeout(getDoc(doc(db,"crews",c.id)),8000,"Loading");if(d.exists()&&crewTypeOf(d.data().type)===want)return openCrew(c.id)}catch(e){}}

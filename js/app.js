@@ -303,6 +303,7 @@ document.querySelectorAll('input[name=who]').forEach(r=>{
   r.checked=r.value===state.who;
   r.addEventListener("change",()=>{
     /* Rating yourself, the Family / Mates / Couple buttons only change the questions. */
+    if(r.value!=="me"){try{localStorage.setItem("rmy-last-type",r.value)}catch(e){}}
     if(state.who==="me"&&r.value!=="me"&&!document.body.classList.contains("in-crew")){state.qset=setForType(r.value);setRadio("me");save();render();return}
     /* Your own review and a review of someone else are kept as separate drafts, so one never pre-fills or overwrites the other. */
     const toMe=r.value==="me", fromMe=state.who==="me";
