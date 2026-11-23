@@ -350,7 +350,7 @@ body.join-page #famTitle,body.join-page #famLeave{display:none!important}
 .ratebar span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:84px;padding:12px 14px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);line-height:1.05;text-wrap:balance}
 .ratebar span b{font-family:var(--display);font-weight:400;font-size:clamp(17px,3.2vw,24px)}
 .ratebar span small{font-size:14px;line-height:1.3;opacity:.85}
-.ratebar input:checked+span{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.ratebar input:checked+span,.ratebar label.on>span{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
 .ratebar input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
 .choicebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 #choiceRate{display:none!important}
@@ -962,6 +962,8 @@ function paintEndInvite(){
   const html=`<b>${txt[0]}</b><small>${txt[1]}</small>`; if(eb.innerHTML!==html) eb.innerHTML=html;
 }
 function render(){
+  /* Highlight the question set whose wheel is showing, including your own review ("me" uses the family wheel). */
+  {const as=activeSet();[["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$m(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===as)})}
   CATS.forEach(syncTop);
   paintEndInvite();
   useSet(activeSet());

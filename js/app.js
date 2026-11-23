@@ -379,6 +379,8 @@ function paintEndInvite(){
   const html=`<b>${txt[0]}</b><small>${txt[1]}</small>`; if(eb.innerHTML!==html) eb.innerHTML=html;
 }
 function render(){
+  /* Highlight the question set whose wheel is showing, including your own review ("me" uses the family wheel). */
+  {const as=activeSet();[["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$m(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===as)})}
   CATS.forEach(syncTop);
   paintEndInvite();
   useSet(activeSet());
