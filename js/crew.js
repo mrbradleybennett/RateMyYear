@@ -733,7 +733,7 @@ const legacyKey=reviewId=>"L"+sha256hex("rmy-board:"+reviewId).slice(0,19);
 function boardScore(id){
   const by=(boardById&&boardById[id]&&boardById[id].by)||{}, es=Object.values(by).filter(e=>e&&typeof e.o==="number");
   const others=es.filter(e=>!e.self), use=others.length?others:es;
-  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length,o:others.length};
+  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length,o:others.length,t:es.length};
 }
 /* Crew admins can read every review, so their device keeps the leaderboard in step: it adds older reviews
    that were saved before the leaderboard existed and removes entries for deleted reviews or people. */
@@ -865,8 +865,8 @@ function refresh(){
   $("boardNote").hidden=ADMIN||!ms.length;
   if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):($("welcomeBox")&&!$("welcomeBox").hidden?"Type your first name above to get started.":"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone."))+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
   const fake=["A","B+","B","C+","C","D"];
-  const lockOne=b=>crew.type!=="partner"&&b.o===1?{v:null,n:b.n,o:1,locked:true}:b;
-  const ranked=ms.map(m=>({m,b:open&&boardById?lockOne(boardScore(m.id)):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  const lockOne=b=>crew.type!=="partner"&&b.o===1?{v:null,n:b.n,o:1,t:b.t,locked:true}:b;
+  const ranked=ms.map(m=>({m,b:open&&boardById?lockOne(boardScore(m.id)):{v:null,n:0,t:boardById?boardScore(m.id).t:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
   /* Crew score: the average of everyone's leaderboard score (people with at least one review). */
   const scored=ranked.filter(x=>x.b.v!=null), cs=$("crewScore");
   cs.hidden=ADMIN||!ms.length;
@@ -878,7 +878,8 @@ function refresh(){
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
-    const score=open?(b.locked?`<span class="lockline2">🔒 Score shows after 2 reviews</span>`:b.v==null?"Not reviewed yet":b.o===0?`${b.v.toFixed(1)} / 10 · ${m.id===me?"your":"their"} own rating`:`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
+    const t=b.t||0, cnt=`<span class="revcount">${t?`${t} review${t===1?"":"s"}`:"No reviews yet"}</span>`;
+    const score=open?(b.locked?`<span class="lockline2">🔒 Score shows after 2 reviews</span> · ${cnt}`:b.v==null?cnt:b.o===0?`${b.v.toFixed(1)} / 10 · ${m.id===me?"your":"their"} own rating · ${cnt}`:`${b.v.toFixed(1)} / 10 · ${cnt}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span> · ${cnt}`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     const award=open&&i===0&&b.v!=null&&nScored>=2;
     /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
