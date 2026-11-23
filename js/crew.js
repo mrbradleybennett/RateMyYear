@@ -805,8 +805,9 @@ let resultsOpen=false;
 function placeResults(){
   const list=$("memList"); if(!list) return;
   const old=list.querySelector(".myresults"); if(old) old.remove();
+  const b=list.querySelector(`[data-results="${me}"]`); if(b) b.textContent=resultsOpen?"Hide My Results":"Show My Results";
   if(!resultsOpen||!me||ADMIN) return;
-  const b=list.querySelector(`[data-results="${me}"]`), row=b&&b.closest(".member"); if(!row) return;
+  const row=b&&b.closest(".myres-wrap"); if(!row) return;
   const d=document.createElement("div"); d.className="myresults"; d.innerHTML=memberReportHTML(me,false); row.after(d);
 }
 function renderBoard(){
@@ -910,17 +911,17 @@ function refresh(){
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     /* Badges by grade: A gets the award (everyone sees it); D "keep an eye on them" and E "support required"
        are private: only that person and the crew admin see them, so nobody is singled out in front of the crew. */
-    const CT=CREW_TYPES[crewTypeOf(crew.type)], scored=open&&b.v!=null&&g, priv=isAdmin()||m.id===me;
+    const CT=CREW_TYPES[crewTypeOf(crew.type)], scored=open&&b.v!=null&&g, priv=true;
     const award=scored&&/^A/.test(g);
     const lowName=scored&&priv?(/^E/.test(g)?CT.low:/^D/.test(g)?CT.eye:""):"";
     const bottom=!!lowName;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${lowName} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"✗ Not reviewed"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}">${lowName}</span>`:""}<small>${score}</small></span>
       <span class="btns">
-        <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
-        ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
+        <button type="button" data-review="${m.id}"${mine?' class="ghost reviewed" title="Reviewed. Tap to change your review"':""}>${mine?"✓ Reviewed":m.id===me?"Review myself":"Review"}</button>
       </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show once someone has 2 reviews, so nobody's rating stands out on its own.</p>`:"")
+      +(me?`<div class="myres-wrap"><button type="button" class="ghost" data-results="${me}"${aggFor(me).rs.length?"":" disabled"}>${resultsOpen?"Hide My Results":"Show My Results"}</button></div>`:"")
     :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&byMe(r));
