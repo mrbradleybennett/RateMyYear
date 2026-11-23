@@ -1298,6 +1298,8 @@ function meErr(m){const el=$("meErr");if(!el)return famErr(m);el.textContent=m;e
 function famErr(m){const el=$("famErr");if(!el)return;el.textContent=m;el.hidden=!m}
 /* Message bar: long-lasting ones (errors) are shown in red. */
 const toast=(m,ms=3500,err=ms>=5000)=>{const t=$("toast");t.classList.toggle("err",!!err);t.textContent=m;setTimeout(()=>{if(t.textContent===m)t.textContent=""},ms)};
+/* A message carried over a page reload (Save & Rate Another). */
+try{const f=sessionStorage.getItem("rmy-flash");if(f){sessionStorage.removeItem("rmy-flash");try{history.scrollRestoration="manual"}catch(e){}scrollTo(0,0);setTimeout(()=>toast(f,5000,false),600)}}catch(e){}
 
 /* ---------- aggregation ---------- */
 const setOf=id=>SETS[setForType(memberType(id))];
@@ -2346,7 +2348,10 @@ nextBtn.addEventListener("click",async()=>{
     if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in your crew list. Your answers are kept.`,true);toTop();return}
     return clearReview();
   }
-  if(last&&last.avg!=null){if(!(await saveReview()))return; crewNote(`Saved your review of <b>${esc(target.name)}</b>. Pick the next person below.`)}
+  /* Save, then reload the whole page so the leaderboard, scores and next steps all start fresh. */
+  if(last&&last.avg!=null){const nm=target.name;if(!(await saveReview()))return;clearReview();
+    try{sessionStorage.setItem("rmy-flash",`Saved your review of ${nm}. Pick who to rate next.`)}catch(e){}
+    location.href=REVIEW_PATH;return}
   clearReview();
 });
 soloBtn.addEventListener("click",async()=>{
