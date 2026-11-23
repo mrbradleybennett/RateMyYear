@@ -423,6 +423,7 @@ body.report-locked .report{display:none}
 .wform input{flex:1 1 160px;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink)}
 .nextbox{display:flex;flex-direction:column}
 .revcount{font-weight:700;white-space:nowrap}
+.givecount{white-space:nowrap}
 .myresults{grid-column:1/-1}
 .locknote{grid-column:1/-1;margin:4px 0 0;font-size:14px}
 .youbadge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:var(--gold);color:#14231b;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
@@ -1210,7 +1211,7 @@ const JOIN_PATH=HOME_PATH+"join.html";
 const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth=null, db=null, user=null;
-let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="";
+let crewId="", crew=null, claims={}, reviewsById={}, unsubs=[], revUnsubs=[], revKey="", doneBy={};
 let resetArmed=false, resetting=false;
 let boardById={}, boardSyncT=0, typeArmed="", boardUnsub=null, boardSubOn=false;
 let me="", target=null, pending="", adminTab="scores", reportMember="", removeArmed="", managing="", myCrews=[];
@@ -1287,7 +1288,7 @@ async function claimMember(cid,memberId,oldMemberId){
   const b=writeBatch(db);
   // let go of the name this device had before (only if this device holds it)
   if(oldMemberId&&oldMemberId!==memberId&&claims[oldMemberId]===user.uid) b.delete(doc(db,"crews",cid,"claims",oldMemberId));
-  b.set(doc(db,"crews",cid,"accounts",user.uid),{member:memberId});
+  b.set(doc(db,"crews",cid,"accounts",user.uid),{member:memberId},{merge:true});
   b.set(doc(db,"crews",cid,"claims",memberId),{uid:user.uid,at:Date.now()});
   await b.commit();
 }
@@ -1648,7 +1649,7 @@ function syncBoardSub(){
 }
 function openCrew(id){
   clearCrewSubs();
-  crewId=id; crew=null; claims={}; reviewsById={}; me=""; target=null;
+  crewId=id; crew=null; claims={}; reviewsById={}; doneBy={}; me=""; target=null;
   saveLS(id);
   viewCrewShell();
   unsubs.push(onSnapshot(doc(db,"crews",id),s=>{
@@ -1667,12 +1668,20 @@ function openCrew(id){
   unsubs.push(onSnapshot(doc(db,"crews",id,"accounts",user.uid),s=>{
     myMember=s.exists()?(s.data().member||""):""; pickMe();
   },()=>{}));
+  /* Reviews each person has given: every device records the names it reviewed as (accounts/{uid}.done). */
+  unsubs.push(onSnapshot(collection(db,"crews",id,"accounts"),s=>{
+    doneBy={}; s.docs.forEach(d=>{const dn=d.data().done||{};Object.keys(dn).forEach(rv=>{doneBy[rv]=doneBy[rv]||new Set();Object.keys(dn[rv]||{}).forEach(t=>doneBy[rv].add(t))})});
+    refresh();
+  },()=>{}));
   unsubs.push(onSnapshot(collection(db,"crews",id,"claims"),s=>{
     claims={}; s.docs.forEach(d=>claims[d.id]=d.data().uid);
     if(!myMember){const old=Object.keys(claims).find(k=>claims[k]===user.uid);if(old)myMember=old}
     pickMe();
   },()=>{}));
 }
+/* How many people someone has reviewed: from the devices' records, plus any reviews this device can read. */
+function givenCount(id){const set=new Set(doneBy[id]||[]);reviews().forEach(r=>{if(r.reviewer===id)set.add(r.member)});const ids=new Set(members().map(m=>m.id));return [...set].filter(t=>ids.has(t)&&t!==id).length}
+async function markDone(cid,reviewer,tid){try{await setDoc(doc(db,"crews",cid,"accounts",user.uid),{done:{[reviewer]:{[tid]:true}}},{merge:true})}catch(e){console.warn("done",e)}}
 /* Reviews written by whoever is picked under "Your name" (not every name used on this device). */
 const byMe=r=>me&&r.reviewer?r.reviewer===me:r.reviewerUid===user.uid;
 /* Review id for the name picked under "Your name": each name on a shared device (say, helping Nana) keeps its own review.
@@ -2082,7 +2091,9 @@ function refresh(){
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     /* Count reviews from other people (what unlocks the score); a self-rating is shown separately. */
     const o=b.o||0, cnt=`<span class="revcount">${o?`${o} review${o===1?"":"s"}${b.s?" + self":""}`:b.s?"Self-rated only":"No reviews yet"}</span>`;
-    const score=open?(b.locked?`<span class="lockline2">🔒</span> ${cnt}`:b.v==null?cnt:b.o===0?`${b.v.toFixed(1)} / 10 · ${cnt}`:`${b.v.toFixed(1)} / 10 · ${cnt}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span> · ${cnt}`;
+    const gv=givenCount(m.id), given=` · <span class="givecount">Has rated ${gv} ${gv===1?"person":"people"}</span>`;
+    const score0=open?(b.locked?`<span class="lockline2">🔒</span> ${cnt}`:b.v==null?cnt:b.o===0?`${b.v.toFixed(1)} / 10 · ${cnt}`:`${b.v.toFixed(1)} / 10 · ${cnt}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span> · ${cnt}`;
+    const score=score0+given;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     const award=open&&i===0&&b.v!=null&&nScored>=2;
     /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
@@ -2350,7 +2361,7 @@ async function saveReview(){
       }
       else await setDoc(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey:(reviews().find(z=>z.id===rid0)||{}).boardKey||rid(16)});
     }
-    savedSig=sig(); ok=true;
+    savedSig=sig(); ok=true; await markDone(crewId,me,target.id);
     toast(`Saved. ${target.name}'s results are updated.`);
   }catch(x){toast(errText(x),6000)}
   saveBtn.disabled=false; nextBtn.disabled=false; render();
@@ -2652,7 +2663,7 @@ async function startQuickGroup(myName,themName){
     const b=writeBatch(db);
     b.set(doc(db,"crews",id,"reviews",`${user.uid}_${targetId}`),{member:targetId,reviewer:myId,reviewerUid:user.uid,...r,boardKey});
     b.set(doc(db,"crews",id,"board",targetId),{by:{[boardKey]:{o:r.overall,self:targetId===myId}}},{merge:true});
-    await b.commit();
+    await b.commit(); await markDone(id,myId,targetId);
   }catch(x){console.warn("first review",x)}
   try{await rememberCrew(id,name)}catch(x){console.warn("remember",x)}
   return {id,name};
