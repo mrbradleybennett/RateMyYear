@@ -187,8 +187,10 @@ const P={me:{you:"you",your:"your",yourself:"yourself",are:"are"},other:{you:"th
 const KEY="eoy-review-2026";
 let state={who:"me",name:"",v:{},dk:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v)state=Object.assign(state,s)}catch(e){}
-/* Answers saved before blank-by-default questions keep their area scores. */
-if(state.schema!==2){if(Object.keys(state.v||{}).length)state.legacyT=true;state.schema=2}
+/* Older saved answers had area scores filled in automatically (everything started at C, or at an old slider
+   value), which showed as grades nobody chose. Drop those: area grades now only come from questions you answer. */
+if(state.schema!==3){Object.keys(state.v||{}).forEach(k=>{if(/t$/.test(k))delete state.v[k]});Object.keys(state.dk||{}).forEach(k=>{if(/t$/.test(k))delete state.dk[k]});delete state.legacyT;
+  Object.values(state.drafts||{}).forEach(d=>{Object.keys(d.v||{}).forEach(k=>{if(/t$/.test(k))delete d.v[k]});delete d.legacyT});if(!Object.keys(state.v).length)state.revealed=false;state.schema=3}
 /* Links from the landing page: ?who=me|family|mate picks what you're rating; ?go=join opens crew search. */
 const LAND=new URLSearchParams(location.search);
 if(["me","family","mate","partner"].includes(LAND.get("who"))){if(state.who!==LAND.get("who"))state.revealed=false;state.who=LAND.get("who");if(state.who!=="me")state.other=state.who;delete state.qset}
@@ -227,7 +229,6 @@ function syncTop(c){
   if(ans.length){state.v[t]=Math.round(mean(ans.map(i=>state.v[c.id+i]))*100)/100;delete state.dk[t];return}
   if(c.qs.every((_,i)=>state.dk[c.id+i])){state.dk[t]=true;delete state.v[t];return}
   delete state.dk[t];
-  if(!c.qs.some((_,i)=>state.v[c.id+i]!=null)&&state.legacyT) return;
   delete state.v[t];
 }
 const isAnswered=k=>!!state.dk[k]||state.v[k]!=null;

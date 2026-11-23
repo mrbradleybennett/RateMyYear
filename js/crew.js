@@ -940,7 +940,8 @@ function setSliders(rv){
   state.v=Object.assign({},rv.values||{});
   state.dk=Object.assign({},rv.dk||{});
   useSet(activeSet());
-  state.legacyT=!!(rv.values&&Object.keys(rv.values).length);
+  /* Only answered questions count; area scores are worked out again from them. */
+  Object.keys(state.v).forEach(k=>{if(/t$/.test(k))delete state.v[k]});
   CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)});
   applyMode();
 }
