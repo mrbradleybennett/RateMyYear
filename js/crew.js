@@ -810,6 +810,20 @@ function placeResults(){
   const row=b&&b.closest(".myres-wrap"); if(!row) return;
   const d=document.createElement("div"); d.className="myresults"; d.innerHTML=memberReportHTML(me,false); row.after(d);
 }
+/* In a crew, Rate My Family / Rate My Mates / Couple Check-in switch to your crew of that type
+   (or, with none, a fresh review of that type). The open crew's button stays highlighted. */
+function paintRatebar(){
+  window.__crewSet=REVIEW_PAGE&&crew?{family:"life",mates:"mates",partner:"partner"}[crewTypeOf(crew.type)]:null;
+  if(!window.__crewSet) return;
+  [["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===window.__crewSet)});
+}
+document.querySelectorAll(".ratebar label").forEach(l=>l.addEventListener("click",e=>{
+  if(!REVIEW_PAGE||!crew) return;
+  e.preventDefault(); e.stopPropagation();
+  const who=l.querySelector("input").value, want={family:"family",mate:"mates",partner:"partner"}[who];
+  if(crewTypeOf(crew.type)===want) return;
+  location.href=`${REVIEW_PATH}?who=${who}`;
+},true));
 function renderBoard(){
   const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
@@ -835,6 +849,7 @@ function renderBoard(){
 }
 
 function refresh(){
+  paintRatebar();
   if(!crew||!$("memList")) return;
   title.textContent=`Your crew: ${crew.name}`;
   const ms=members(), admin=isAdmin();

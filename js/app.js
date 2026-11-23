@@ -406,7 +406,7 @@ function paintEndInvite(){
 }
 function render(){
   /* Highlight the question set whose wheel is showing, including your own review ("me" uses the family wheel). */
-  {const as=activeSet();[["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$m(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===as)})}
+  {const as=window.__crewSet||activeSet();[["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$m(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===as)})}
   CATS.forEach(syncTop);
   paintEndInvite();
   useSet(activeSet());
