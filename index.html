@@ -194,7 +194,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <nav aria-label="Main"><div class="menu">
       <a href="./" aria-current="page">About</a>
       <a href="review.html">Rate</a>
-      <a id="navCreate" href="mycrew.html">Log in</a>
+      <a id="navCreate" href="mycrew.html">My Crews</a>
     </div></nav>
     <nav class="choicebar two" aria-label="Get started">
       <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
@@ -364,7 +364,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 </div>
 
 <script>
-try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("navCreate").textContent="My Crew"}catch(e){}
+try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("navCreate").textContent="My Crews"}catch(e){}
 /* Example wheels, drawn the same way as on the review page. */
 const SETS={
   family:{groups:[["Self","var(--green)",["Self Care","Health","Cleanliness"]],["Others","var(--gold)",["Mates","Family & Others","Love"]],["Life","var(--blue)",["Action","Growth Mindset","Humour"]]],

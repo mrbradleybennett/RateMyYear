@@ -292,7 +292,7 @@ function viewLobby(msg=""){
   $("tabJoin").onclick=()=>tab("join"); $("tabCreate").onclick=()=>tab("create");
   body.querySelector(".tabs").hidden=true;
   if(ADMIN){tab("create");$("joinForm").hidden=true}
-  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">Log in</a> at the top.</p>`;$("joinForm").after(n)}
+  else{$("joinForm").hidden=true;$("createForm").hidden=true;$("createGuest").hidden=true;const n=document.createElement("div");n.className="stack";n.innerHTML=`<div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div><p class="muted">To set up a new crew, tap <a href="${MYCREW_PATH}">My Crews</a> at the top.</p>`;$("joinForm").after(n)}
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const inv=parseInvite($("jLink").value);
@@ -803,7 +803,7 @@ async function resetAll(){
 function paintCreate(){
   const mine=!!(user&&!user.isAnonymous)||(crew&&isAdmin());
   try{localStorage.setItem("rmy-signedin",mine?"1":"0")}catch(e){}
-  const tb=$("choiceCreate"); if(tb) tb.textContent=mine?"My Crew":"Log in";
+  const tb=$("choiceCreate"); if(tb) tb.textContent="My Crews";
   paintEndInvite();
 }
 /* My results open right under your own row in the leaderboard. */
@@ -1386,7 +1386,7 @@ if(REVIEW_PAGE){
       if(crew&&me) shareLink("invite",true);
     }catch(x){
       afterOpen=null; $("askGo").disabled=false;
-      if(x&&x.code==="permission-denied") askNote("Couldn't make your link right now. For now, use Log in at the top of the page to set up a crew with Google.",true);
+      if(x&&x.code==="permission-denied") askNote("Couldn't make your link right now. For now, use My Crews at the top of the page to set up a crew with Google.",true);
       else askNote(x&&x.code==="no-config"?"Crews aren't connected yet.":errText(x),true);
     }
   };
