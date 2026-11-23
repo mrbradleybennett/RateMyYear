@@ -378,6 +378,7 @@ body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHin
 .award{display:inline-block;font-family:var(--display);font-weight:400;font-size:14px;background:var(--gold);color:#14231b;padding:2px 9px;border-radius:999px;transform:rotate(-2deg);margin-left:4px;vertical-align:2px}
 .member.board-row.best{box-shadow:inset 0 0 0 2px var(--gold)}
 .award.low{background:var(--gE);color:#fff;transform:rotate(1.5deg)}
+.award.low.eye{background:var(--gD,#c77d2a)}
 .award .sr-note{font-family:var(--body);font-size:12.5px;font-weight:700;opacity:.9}
 .crewscore{display:flex;align-items:center;gap:14px;background:var(--green);color:var(--panel);border-radius:12px;padding:12px 16px}.crewscore[hidden]{display:none}
 .cs-chip{font-family:var(--display);font-size:26px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;flex:none;box-shadow:0 0 0 3px var(--gold)}
@@ -749,9 +750,9 @@ const PARTNER_GROUPS=[
 const SETS={life:{key:"life",label:"Family & others",cats:LIFE_CATS,groups:LIFE_GROUPS},mates:{key:"mates",label:"Mates",cats:MATE_CATS,groups:MATE_GROUPS},partner:{key:"partner",label:"Partner",cats:PARTNER_CATS,groups:PARTNER_GROUPS}};
 /* Crew types: which member type, words and leaderboard awards go with each. */
 const CREW_TYPES={
-  family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",low:"🤝 Family Support Required"},
-  mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 MVP Mate Award",low:"⚠️ Who's On Notice"},
-  partner:{member:"partner",word:"Relationship",review:"Couple Check-in",crew:"Couple crew",top:"",low:""}};
+  family:{member:"family",word:"Family",review:"Family Review",crew:"Family crew",top:"🏆 Family Award",eye:"👀 Keep an Eye on Them",low:"🤝 Family Support Required"},
+  mates:{member:"mate",word:"Mate",review:"Mate Review",crew:"Mates crew",top:"🏆 MVP Mate Award",eye:"👀 Keep an Eye on Them",low:"⚠️ Who's On Notice"},
+  partner:{member:"partner",word:"Relationship",review:"Couple Check-in",crew:"Couple crew",top:"",eye:"",low:""}};
 const crewTypeOf=t=>CREW_TYPES[t]?t:"family";
 const CREW_SUFFIX={family:"family",mates:"mates",partner:"love"};
 const AUTO_NAME=/^(\d+)-(family|mates|love)$/;
@@ -2095,13 +2096,15 @@ function refresh(){
     const gv=givenCount(m.id), rc=b.t||0;
     const score=`${open&&b.locked?`<span class="lockline2">🔒</span> `:""}<span class="revcount">Received: ${rc}</span> · <span class="givecount">Given: ${gv}</span>`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
-    const award=open&&i===0&&b.v!=null&&nScored>=2;
-    /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
-    /* Kept private: only that person and the crew admin see it, so nobody is singled out in front of the crew. */
-    const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1))&&(isAdmin()||m.id===me);
+    /* Badges by grade: A gets the award (everyone sees it); D "keep an eye on them" and E "support required"
+       are private: only that person and the crew admin see them, so nobody is singled out in front of the crew. */
+    const CT=CREW_TYPES[crewTypeOf(crew.type)], scored=open&&b.v!=null&&g, priv=isAdmin()||m.id===me;
+    const award=scored&&/^A/.test(g);
+    const lowName=scored&&priv?(/^E/.test(g)?CT.low:/^D/.test(g)?CT.eye:""):"";
+    const bottom=!!lowName;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"✗ Not reviewed"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${lowName} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"✗ Not reviewed"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}

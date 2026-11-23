@@ -908,13 +908,15 @@ function refresh(){
     const gv=givenCount(m.id), rc=b.t||0;
     const score=`${open&&b.locked?`<span class="lockline2">🔒</span> `:""}<span class="revcount">Received: ${rc}</span> · <span class="givecount">Given: ${gv}</span>`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
-    const award=open&&i===0&&b.v!=null&&nScored>=2;
-    /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
-    /* Kept private: only that person and the crew admin see it, so nobody is singled out in front of the crew. */
-    const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1))&&(isAdmin()||m.id===me);
+    /* Badges by grade: A gets the award (everyone sees it); D "keep an eye on them" and E "support required"
+       are private: only that person and the crew admin see them, so nobody is singled out in front of the crew. */
+    const CT=CREW_TYPES[crewTypeOf(crew.type)], scored=open&&b.v!=null&&g, priv=isAdmin()||m.id===me;
+    const award=scored&&/^A/.test(g);
+    const lowName=scored&&priv?(/^E/.test(g)?CT.low:/^D/.test(g)?CT.eye:""):"";
+    const bottom=!!lowName;
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"✗ Not reviewed"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom?` <span class="award low${/^D/.test(g)?" eye":""}" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${lowName} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"✗ Not reviewed"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
