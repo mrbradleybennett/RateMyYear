@@ -10,12 +10,13 @@
 (function(){var q=location.search;if(/[?&]crew=/.test(q)&&/[?&]code=/.test(q))location.replace("review.html"+q+location.hash)})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"></noscript>
 <style>
 :root{
   --bg:#eef1ec; --panel:#ffffff; --ink:#14231b; --muted:#5a6b60; --line:#d5ddd6;
   --green:#0f4d32; --gold:#f2b705; --blue:#3f5fb5; --track:#dfe6e0; --soft:#e4ece6;
-  --gA:#1d7a46; --gB:#5a9a2d; --gC:#b88a00; --gD:#d0661b; --gE:#c2362b;
+  --gA:#1d7a46; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#14231b;
   --display:"Bowlby One","Arial Black",Impact,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -23,11 +24,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
   --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --track:#22362a; --soft:#1a2c22;
-  --gA:#3fae6e; --gB:#7fb247; --gC:#c9a020; --gD:#e07a35; --gE:#e0544a; color-scheme:dark}}
+  --gA:#23824c; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#f5c533; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
   --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --track:#22362a; --soft:#1a2c22;
-  --gA:#3fae6e; --gB:#7fb247; --gC:#c9a020; --gD:#e07a35; --gE:#e0544a; color-scheme:dark}
+  --gA:#23824c; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#f5c533; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
 .wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:56px}
@@ -35,10 +36,10 @@ a{color:inherit}
 .brand{font-family:var(--display);color:var(--green);text-decoration:none;font-size:20px}
 .top{display:flex;flex-direction:column;gap:14px}
 .menu{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
-.menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:4px 0;border-bottom:3px solid transparent}
+.menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:12px 0;border-bottom:3px solid transparent}
 .menu a:hover{border-bottom-color:var(--line)}
 .menu a[aria-current="page"],.menu a[aria-pressed="true"]{border-bottom-color:var(--gold)}
-.menu a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.menu a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none}
 .choicebar.two{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -47,8 +48,8 @@ a{color:inherit}
 .choicebar.two a b{font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
 .choicebar.two a small{font-family:var(--body);font-size:15px;font-weight:600;opacity:.9}
 .choicebar a.main{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
-.choicebar a:focus-visible,.toggle button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.choicebar a:focus-visible,.toggle button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 h1,h2{font-family:var(--display);font-weight:400;color:var(--green);margin:0;line-height:.98;text-wrap:balance}
 h1{font-size:clamp(40px,8.5vw,76px)}
 h2{font-size:clamp(30px,5.5vw,46px)}
@@ -57,7 +58,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .startbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:18px;padding:16px 22px;border-radius:14px;background:var(--green);color:var(--panel);text-decoration:none;box-shadow:inset 0 -5px 0 var(--gold);max-width:100%}
 .startbtn b{font-family:var(--display);font-weight:400;font-size:clamp(22px,4vw,28px);line-height:1.05}
 .startbtn small{font-size:15px;opacity:.9}
-.startbtn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.startbtn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 .startnote{margin:10px 0 0;color:var(--muted);font-size:15px}
 @media (max-width:560px){.startbtn{display:flex;width:100%}}
 .hero{display:block}
@@ -76,7 +77,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .rt-row{display:flex;justify-content:center;gap:clamp(28px,8vw,72px);width:100%}
 .hview{display:flex;flex-direction:column;align-items:center;gap:8px}
 .big.tilt{transform:rotate(3deg)}
-.hview .hl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#f2b705}
+.hview .hl{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:#f2b705}
 .hg{font-family:var(--display);font-size:20px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
 .hview .hn{font-family:var(--mono);font-weight:700}
 .big{font-family:var(--display);font-size:48px;width:96px;height:96px;border-radius:14px;background:#f2b705;color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
@@ -85,20 +86,20 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .card-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .gaps{border-left:4px solid var(--gold);background:var(--soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px;grid-column:1/-1}
 .gaps ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
-.gaps b.h{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
+.gaps b.h{display:block;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
 .lists{display:flex;flex-direction:column;gap:12px}
-.lists h3{margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.lists h3{margin:0;font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .li{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:8px;padding:7px 10px;font-weight:600}
-.li .c{font-family:var(--display);font-size:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g);flex:none}
+.li .c{font-family:var(--display);font-size:13px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g);flex:none}
 .li .s{margin-left:auto;font-family:var(--mono)}
 
 /* wheel */
 .wheel svg{width:100%;height:auto;display:block}
 .ring{fill:none;stroke:var(--line);stroke-dasharray:2 3}
 .wtrack{fill:var(--track)}
-.wlabel{font-family:var(--body);font-size:12.5px;font-weight:600;fill:var(--ink)}
+.wlabel{font-family:var(--body);font-size:13px;font-weight:600;fill:var(--ink)}
 .wnum{fill:var(--muted);font-weight:500}
-.wscore{font-family:var(--display);font-size:12px;fill:var(--ink);stroke:var(--panel);stroke-width:3px;paint-order:stroke}
+.wscore{font-family:var(--display);font-size:13px;fill:var(--ink);stroke:var(--panel);stroke-width:3px;paint-order:stroke}
 .wcenter{fill:var(--panel);stroke:var(--line)}
 .wgrade{font-family:var(--display);font-size:20px;fill:var(--green)}
 .garc{fill:none;stroke-width:4;stroke-linecap:round}
@@ -114,7 +115,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .kind{display:grid;grid-template-columns:1fr 1.1fr;gap:24px;align-items:center;background:var(--panel);border-radius:16px;padding:20px;border:1.5px solid var(--line)}
 .kind p#kText{font-size:clamp(19px,2.6vw,23px);font-weight:700;line-height:1.3}
 .perfect{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
-.pf-h{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.pf-h{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 #kFor,#kAwards{display:flex;flex-wrap:wrap;gap:10px}
 .pop.award{background:#f2b705;color:#14231b;box-shadow:3px 3px 0 #0f4d32}
 .pop.award.low{background:var(--gE);color:#fff;transform:rotate(1.5deg);box-shadow:3px 3px 0 #0f4d32}
@@ -123,7 +124,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .kind h3{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 8px;color:var(--green)}
 .kind p{margin:0 0 10px}
 .areas{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.areas div{font-size:15px}.areas b{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-right:6px}
+.areas div{font-size:15px}.areas b{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-right:6px}
 
 /* crew report */
 .crewcard{background:var(--panel);border:2px solid var(--green);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
@@ -131,20 +132,23 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .crewcard .ch b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}
 .crewscore{display:flex;align-items:center;gap:14px;background:#0f4d32;color:#eef1ec;border-radius:12px;padding:12px 16px}
 .crewscore .cc{font-family:var(--display);font-size:24px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;box-shadow:0 0 0 3px #f2b705;flex:none}
-.crewscore b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f2b705}
+.crewscore b{display:block;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#f2b705}
 .crewscore span{font-family:var(--mono);font-weight:700;font-size:20px}
 .row{display:grid;grid-template-columns:24px auto 1fr auto;gap:12px;align-items:center;background:var(--soft);border-radius:8px;padding:9px 12px}
 .row .rk{font-family:var(--display);color:var(--muted);text-align:center}
-.row .c{font-family:var(--display);font-size:13px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
-.row .n{font-weight:700;display:flex;flex-direction:column}.row .n small{font-weight:500;color:var(--muted);font-size:13px}
-.tag{font-family:var(--display);font-size:12px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.row .c{font-family:var(--display);font-size:14px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
+.row .n{font-weight:700;display:flex;flex-direction:column}.row .n small{font-weight:500;color:var(--muted);font-size:14px}
+.tag{font-family:var(--display);font-size:13px;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .tag.best{background:#f2b705;color:#14231b}.tag.notice{background:var(--gE);color:#fff}.tag.hold{background:var(--gA);color:#fff}.tag.help{background:var(--gD);color:#fff}
 .improve{border-top:1.5px solid var(--line);padding-top:10px;margin-top:2px;display:flex;flex-direction:column;gap:8px}
-.improve>b{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.improve>b{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .imp{border-left:4px solid var(--gD);background:var(--soft);border-radius:0 8px 8px 0;padding:8px 12px;font-size:15px;display:flex;flex-direction:column;gap:2px}
 .imp .area{font-family:var(--display);font-size:14px;color:var(--green)}
 .leftcol{display:flex;flex-direction:column;gap:14px}
-.twocol{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.twocol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.twocol>*{min-width:0}
+/* Crew report examples stack on iPad portrait and smaller, so nothing is cut off. */
+@media (max-width:900px){.twocol{grid-template-columns:1fr}}
 .twocol .sec-head{margin-bottom:12px}
 
 /* benefits + note */
@@ -163,7 +167,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
 .plan .who em{font-style:normal;font-family:var(--display);font-size:22px;line-height:1}
 .plan .price{font-family:var(--display);font-size:32px;line-height:1;color:var(--ink);margin-top:auto;padding-top:6px}
 .plan .rev{font-size:14px;color:var(--muted);font-weight:600;margin-top:-2px}
-.plan .per{font-size:12px;color:var(--muted)}
+.plan .per{font-size:13px;color:var(--muted)}
 .plan.hot{border-color:var(--green);box-shadow:inset 0 -5px 0 var(--gold)}
 @media (max-width:860px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:440px){.plans{grid-template-columns:1fr}}
@@ -188,13 +192,13 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   <header class="top">
     <nav aria-label="Main"><div class="menu">
       <a href="./" aria-current="page">Home</a>
-      <a href="review.html?go=join">Join</a>
+      <a href="join.html">Join</a>
       <a id="navCreate" href="mycrew.html">Create</a>
     </div></nav>
     <nav class="choicebar two" aria-label="Get started">
-      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
-      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
-      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Your Love Report</small></a>
+      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
+      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
     </nav>
   </header>
 
@@ -203,7 +207,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <div class="eyebrow">Rate My Year · Season 2026</div>
       <h1>Your End of Year <span>Performance Review</span></h1>
       <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Rate your own year, then send a link and see how your family and friends rate you.</p>
-      <a class="startbtn" href="review.html?who=me"><b>Start My Free Review</b><small>About 3 minutes · no sign-up</small></a>
+      <a class="startbtn" href="review.html?who=me"><b>Start My Free Review</b><small>About 5 minutes · 27 quick questions · no sign-up</small></a>
       <p class="startnote">At the end, tap <b>See How Others Rate You</b> to send it on.</p>
     </div>
   </section>
@@ -256,7 +260,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     </div>
     <div class="toggle" role="group" aria-label="Choose a crew type">
       <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding you all together</small></button>
-      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Find the best bloke in your group</small></button>
+      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Rate yourself or a mate, and find your MVP</small></button>
       <button type="button" id="tPartner" aria-pressed="false"><b>Couples</b><small>Couple Check-in</small></button>
     </div>
     <div class="kind">
@@ -288,7 +292,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
           <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A-</span><span class="n">Mum<small>8.6 / 10 · 4 reviews</small></span><span class="tag best">🏆 Family Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Nikki<small>7.5 / 10 · 4 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C+</span><span class="n">Dad<small>6.6 / 10 · 3 reviews</small></span></div>
-          <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag notice">🤝 Family Support Required</span></div>
+          <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag notice">🤝 Family Support Required · private</span></div>
           <div class="improve"><b>What the crew could work on together</b>
             <div class="imp"><span class="area">Cleanliness · D+</span>Clean up as you go: dishes away, clothes off the floor.</div>
             <div class="imp"><span class="area">Action · C-</span>Do the worst job first thing each morning.</div>
@@ -296,14 +300,14 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
         </div>
       </div>
       <div>
-        <div class="sec-head"><p><b>Mates:</b> see who's the <b>BEST BLOKE</b> in your group and who needs to be <b>PUT ON NOTICE</b>.</p></div>
+        <div class="sec-head"><p><b>Mates:</b> see who's the <b>MVP MATE</b> in your group. Anyone on notice finds out privately.</p></div>
         <div class="crewcard" aria-label="Example mates leaderboard">
           <div class="ch"><b>Friday Footy</b><span class="eyebrow">Mates crew</span></div>
           <div class="crewscore" style="--g:var(--gC)"><span class="cc">C+</span><div><b>Crew score</b><span>6.6 / 10</span></div></div>
           <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 MVP Mate Award</span></div>
           <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
           <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
-          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Who's On Notice</span></div>
+          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Who's On Notice · private</span></div>
           <div class="improve"><b>What the crew could work on together</b>
             <div class="imp"><span class="area">Reliable · D</span>Stop saying maybe. Give a straight yes or no.</div>
             <div class="imp"><span class="area">Cleanliness · D+</span>Shower, deodorant, clean clothes: every time you head out.</div>
@@ -317,7 +321,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     <div class="sec-head"><div class="eyebrow">Why do it</div><h2>The <span>benefits</span></h2></div>
     <div class="benefits">
       <div class="benefit"><b>Self assessment</b><span>Take an honest look at your year, area by area.</span></div>
-      <div class="benefit"><b>Anonymous feedback</b><span>Your crew rates you, and nobody sees who gave which score.</span></div>
+      <div class="benefit"><b>Private feedback</b><span>Your crew rates you, and you see combined scores only, once at least 2 people have reviewed you. Only the crew admin can see individual reviews.</span></div>
       <div class="benefit"><b>Be a more awesome human</b><span>Get specific ideas for the areas you score lowest on.</span></div>
       <div class="benefit"><b>Self vs crew</b><span>See how your view of yourself stacks up against how others see you.</span></div>
     </div>
@@ -336,15 +340,15 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   <section class="bottom">
     <h2>Ready to <span>find out?</span></h2>
     <nav class="choicebar two" aria-label="Get started" style="width:100%">
-      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>See who's holding you all together</small></a>
-      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Find the best bloke in your group</small></a>
-      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Your Love Report</small></a>
+      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
+      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
     </nav>
   </section>
 
   <section class="sec pricing" aria-labelledby="pricingH">
-    <div class="sec-head"><div class="eyebrow">Pricing</div><h2 id="pricingH">Simple <span>pricing</span></h2>
-      <p>Only the person who sets up the crew pays. Everyone they invite joins free.</p></div>
+    <div class="sec-head"><div class="eyebrow">Pricing · coming soon</div><h2 id="pricingH">Simple <span>pricing</span></h2>
+      <p><b>Everything is free for now.</b> Paid passes for bigger crews are coming. When they arrive, only the person who sets up the crew pays, and everyone they invite joins free.</p></div>
     <div class="plans">
       <div class="plan"><b>Self Review</b><span class="who">Just you</span><span class="price">Free</span><span class="per">No sign-up needed</span></div>
       <div class="plan"><b>360 Review</b><span class="who">Up to <em>4</em> people</span><span class="rev">reviewing you</span><span class="price">Free</span><span class="per">Always free</span></div>
@@ -354,7 +358,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
     </div>
   </section>
 
-  <p class="foot">Rate My Year · ratemyyear.com</p>
+  <p class="foot">Rate My Year · ratemyyear.com · <a href="privacy.html">Privacy: who sees what</a></p>
 </div>
 
 <script>
@@ -368,11 +372,11 @@ const SETS={
           awards:["🏆 Family Award","🤝 Family Support Required"]},
   mates:{groups:[["Them","var(--green)",["Vibe","Banter","Generous","Cleanliness"]],["Us","var(--gold)",["Reliable","Loyalty"]],["Life","var(--blue)",["Adventure","Social"]]],
          title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
-         text:"See who the BEST BLOKE is, and who needs to be PUT ON NOTICE.",
+         text:"See who the MVP MATE is. Anyone on notice finds out privately.",
          perfect:["Groups of mates","Sporting clubs"],
          awards:["🏆 MVP Mate Award","⚠️ Who's On Notice"]},
   partner:{groups:[["Heart","var(--green)",["Kindness","Trust","Fun"]],["Connection","var(--gold)",["Communication","Romance","Support","Quality Time"]],["Life","var(--blue)",["Fair Share","Money & Plans"]]],
-         title:"Couple Review",go:"review.html?who=partner",cta:"Try a Couple Check-in →",
+         title:"Couple Check-in",go:"review.html?who=partner",cta:"Try a Couple Check-in →",
          text:"Rate the relationship itself, not each other, and see where you both see things differently.",
          perfect:["Couples","Date night conversation starter"],
          awards:["💪 Our Top Qualities","💐 Date Night Required"]}};

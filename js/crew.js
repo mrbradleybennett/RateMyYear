@@ -1,7 +1,8 @@
 /* ---------- Review Crew on Firebase (Google sign-in + Firestore) ---------- */
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {signInWithCredential,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* Firebase loads in the background, only once the page is working. If it can't load (blocked or offline),
+   the solo review still works; only crew features are unavailable. */
+const FB_URLS=["https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"];
+let initializeApp,signInWithCredential,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup,getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch,getDocs,limit;
 
 const $=id=>document.getElementById(id);
 const body=$("famBody"), title=$("famTitle"), leaveBtn=$("famLeave");
@@ -72,7 +73,8 @@ const errText=x=>{
   if(c==="unavailable") return "Can't reach the database. Check your connection and try again.";
   if(c==="timeout") return "The database took too long to answer (over 12 seconds).";
   if(c==="auth/popup-closed-by-user"||c==="auth/cancelled-popup-request") return "Sign-in was cancelled.";
-  return `Something went wrong. Try again in a moment.${c?` (${c})`:(x&&x.message?` (${String(x.message).slice(0,120)})`:"")}`;
+  console.warn("Rate My Year error:",x);
+  return "Something went wrong. Check your connection and try again in a moment.";
 };
 /* Boot status and safety nets: the crew box never sits on a loading message forever. */
 const BUSY=/^(Loading|Connecting|Signing you in|Loading your crews|Getting ready|Joining the crew)/;
@@ -80,7 +82,7 @@ const status=m=>{body.innerHTML=`<p class="muted">${m}</p>`};
 const stillBusy=()=>BUSY.test(body.textContent.trim());
 function showFatal(x){
   if(!stillBusy()) return;
-  body.innerHTML=`<p class="err">The crew tools hit a problem while loading${x?`: ${esc(x.code||x.message||String(x)).slice(0,200)}`:""}.</p><p class="muted">Reload the page to try again. If it keeps happening, send a screenshot of this message.</p><div class="row-btns"><button type="button" id="bootReload">Reload</button></div>`;
+  body.innerHTML=`<p class="err">The crew tools couldn't load. ${x&&String(x.code||x.message||x).includes("sign-in check timed out")?"Check your connection, or turn off content blockers for this site.":""}</p><p class="muted">Reload the page to try again. If it keeps happening, send a screenshot of this message.</p><div class="row-btns"><button type="button" id="bootReload">Reload</button></div>`;
   $("bootReload").onclick=()=>location.reload();
 }
 window.addEventListener("error",e=>showFatal(e.error||e.message));
@@ -108,7 +110,8 @@ let crewNoteT=0;
 function crewNote(html,warn){const el=$("crewNote");if(!el)return;el.innerHTML=html;el.className="crewnote"+(warn?" warn":"");el.hidden=false;clearTimeout(crewNoteT);crewNoteT=setTimeout(()=>{el.hidden=true},9000)}
 function meErr(m){const el=$("meErr");if(!el)return famErr(m);el.textContent=m;el.hidden=!m;if(m)setTimeout(()=>{if(el.textContent===m)el.hidden=true},12000)}
 function famErr(m){const el=$("famErr");if(!el)return;el.textContent=m;el.hidden=!m}
-const toast=(m,ms=3500)=>{$("toast").textContent=m;setTimeout(()=>{if($("toast").textContent===m)$("toast").textContent=""},ms)};
+/* Message bar: long-lasting ones (errors) are shown in red. */
+const toast=(m,ms=3500,err=ms>=5000)=>{const t=$("toast");t.classList.toggle("err",!!err);t.textContent=m;setTimeout(()=>{if(t.textContent===m)t.textContent=""},ms)};
 
 /* ---------- aggregation ---------- */
 const setOf=id=>SETS[setForType(memberType(id))];
@@ -134,6 +137,11 @@ const recsHTML=rows=>rows.map(r=>`<div class="rec" style="--g:${gcol(grade(r.v))
 function memberReportHTML(id,detailed){
   const a=aggFor(id), name=esc(memberName(id)), S=setOf(id), CATS=S.cats;
   if(!a.rs.length||a.overall==null) return `<div class="results"><h3>${name}</h3><p class="muted">${a.rs.length?"Every area was marked don't know so far.":peopleLine(0)+"."}</p></div>`;
+  /* Members see combined crew scores only, never who said what, and only once 2+ people have reviewed them.
+     Crew admins (detailed view) see who reviewed. */
+  const locked=!detailed&&a.others.length<2;
+  if(locked){a.fa=null;a.main=a.sa||a.main;const k=a.main?CATS.map(c=>a.main[c.id]).filter(v=>v!=null):[];a.overall=k.length?mean(k):a.overall}
+  if(!a.main||a.overall==null) return `<div class="results"><h3>${name}</h3><p class="muted">🔒 Crew scores show after 2 reviews, so nobody's rating stands out on its own.</p></div>`;
   const r=ranked(a.main,CATS), bottom=r.slice(Math.max(3,r.length-3)).reverse();
   const who=a.rs.map(x=>x.reviewer===id?"themselves":esc(memberName(x.reviewer)));
   const gap=c=>a.sa&&a.fa&&a.sa[c.id]!=null&&a.fa[c.id]!=null?(a.sa[c.id]-a.fa[c.id]):null;
@@ -142,7 +150,7 @@ function memberReportHTML(id,detailed){
     <p class="count">${peopleLine(a.rs.length)}${a.self?" (including a self review)":""}</p>
     <p class="muted">${S.label} questions</p>
     <div class="glines">${groupLine(a.main,S.groups)}</div>
-    <p class="muted">Reviewed by ${who.join(", ")}.</p>
+    <p class="muted">${detailed?`Reviewed by ${who.join(", ")}.`:locked?"🔒 Crew scores show after 2 reviews, so nobody's rating stands out on its own. For now this shows your own ratings.":"Crew scores are combined, so you can't see who gave which score."}</p>
     <div class="rtable-wrap"><table class="rtable">
       <thead><tr><th>Area</th><th>Self</th><th>Crew</th>${detailed?"<th>Gap</th>":""}</tr></thead>
       <tbody>${CATS.map(c=>{const g=gap(c);return `<tr><td><b>${c.name}</b></td><td class="n">${dot(a.sa?a.sa[c.id]:null)}</td><td class="n">${dot(a.fa?a.fa[c.id]:null)}</td>${detailed?`<td class="n">${g==null?"–":(g>0?"+":"")+g.toFixed(1)}</td>`:""}</tr>`}).join("")}</tbody>
@@ -151,7 +159,7 @@ function memberReportHTML(id,detailed){
     html+=`<p class="muted">Gap is self score minus crew score. A big plus means ${name} rates themselves higher than the crew does. Question scores only appear where reviewers answered that question. Don't know answers are left out.</p>
     <div class="rtable-wrap"><table class="rtable">
       <thead><tr><th>Question</th><th>Self</th><th>Crew</th></tr></thead>
-      <tbody>${CATS.map(c=>`<tr class="qcat"><td colspan="3">${c.name}</td></tr><tr><td><i>Quick: ${esc(fillThey(c.line))}</i></td><td class="n">${a.qSelf&&a.qSelf[c.id+"t"]!=null?a.qSelf[c.id+"t"]:"–"}</td><td class="n">${a.qFam&&a.qFam[c.id+"t"]!=null?a.qFam[c.id+"t"].toFixed(1):"–"}</td></tr>`+c.qs.map((q,i)=>`<tr><td>${esc(fillThey(q[0]))}</td><td class="n">${a.qSelf&&a.qSelf[c.id+i]!=null?a.qSelf[c.id+i]:"–"}</td><td class="n">${a.qFam&&a.qFam[c.id+i]!=null?a.qFam[c.id+i].toFixed(1):"–"}</td></tr>`).join("")).join("")}</tbody>
+      <tbody>${CATS.map(c=>`<tr class="qcat"><td colspan="3">${c.name}</td></tr>`+c.qs.map((q,i)=>`<tr><td>${esc(fillThey(q[0]))}</td><td class="n">${dot(a.qSelf&&a.qSelf[c.id+i]!=null?a.qSelf[c.id+i]:null)}</td><td class="n">${dot(a.qFam&&a.qFam[c.id+i]!=null?a.qFam[c.id+i]:null)}</td></tr>`).join("")).join("")}</tbody>
     </table></div>`;
   }
   html+=`<div class="split"><div class="list"><h3>Top 3</h3>${listHTML(r.slice(0,3))}</div><div class="list"><h3>Bottom 3</h3>${listHTML(bottom)}</div></div>
@@ -221,7 +229,7 @@ async function googleSignIn(){
     const c=x&&x.code||"";
     if(c==="auth/popup-closed-by-user"||c==="auth/cancelled-popup-request") return famErr("Google sign-in was closed before it finished. Tap Sign in with Google to try again.");
     if(c==="auth/popup-blocked") return famErr("Your browser blocked the Google sign-in window. Tap Sign in with Google again. If it keeps happening, turn off Block Pop-ups for this site (on iPad: Settings → Apps → Safari).");
-    if(c==="auth/unauthorized-domain") return famErr(`Google sign-in isn't allowed on ${location.hostname} yet. In Firebase → Authentication → Settings → Authorized domains, add ${location.hostname}.`);
+    if(c==="auth/unauthorized-domain") return famErr(`Google sign-in isn't working on this site right now. Please try again later.`);
     if(c==="auth/operation-not-supported-in-this-environment"){try{try{sessionStorage.setItem("rmy-redirect","1")}catch(e){}await signInWithRedirect(auth,prov,browserPopupRedirectResolver);return}catch(y){x=y}}
     famErr(`Google sign-in didn't work. ${errText(x)}`);
   }
@@ -233,11 +241,12 @@ const whoRow=extra=>`<div class="who-row"><span>${isGuest()?"You're in as a gues
 function viewSignedOut(msg=""){
   title.textContent="Your crew"; leaveBtn.hidden=true;
   body.innerHTML=ADMIN?`<div class="stack">
-    <p class="muted">Sign in with Google to set up your crew and manage it. You'll be the crew admin: you add the people, send the invite link, and see everyone's reports. Your crew just open the invite link and pick their name. No sign-in needed.</p>
+    <p>Sign in with Google to set up a crew you can manage from any device. You add the people, send the invite link and see everyone's reports.</p>
     <div><button type="button" class="gbtn" id="gSignIn">${GOOGLE_SVG}Sign in with Google</button></div>
+    <p class="muted">No account? Do your own review, then tap <b>See How Others Rate You</b> at the end to make a quick link without signing in. <a href="review.html?who=me">Start a review</a></p>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`:`<div class="stack">
-    <p class="muted">A crew is your family, your mates, or your partner. To join yours, open the invite link your crew admin sent you and pick your name. No sign-in needed. Want to start your own? Tap <a href="${MYCREW_PATH}">Create My Crew</a>. You can also do a review on your own below.</p>
+    <p class="muted">Do your own review below. At the end, tap <b>See How Others Rate You</b> to send a link to your family, mates or partner. Got an invite link? Just tap it in your message.</p>
     <div><a class="topbtn" href="${JOIN_PATH}">Join A Crew</a></div>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
   </div>`;
@@ -259,10 +268,10 @@ function viewLobby(msg=""){
     </form>
     <div id="createGuest" hidden class="stack"><p class="muted">Setting up a crew needs a Google sign-in, so you can manage it as the crew admin. Any crews you've joined stay with you.</p><div><button type="button" class="gbtn" id="gUpgrade">${GOOGLE_SVG}Continue with Google</button></div></div>
     <form class="form" id="createForm" novalidate hidden>
-      <div class="field"><label for="cType">Crew type</label><select id="cType"><option value="family">Family</option><option value="mates">Mates</option><option value="partner">Couple</option></select></div>
+      <div class="field"><label for="cType">Crew type</label><select id="cType"><option value="family">Family</option><option value="mates">Mates</option><option value="partner">Couple Check-in</option></select></div>
       <div class="field"><label for="cMe">Your name</label><input id="cMe" autocomplete="off" value="${esc((user.displayName||"").split(" ")[0])}"></div>
-      <div class="field"><label for="cPw">Backup password <span class="muted">(optional)</span></label><input id="cPw" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
-      <p class="muted" style="grid-column:1/-1">Once it's set up, send your crew the invite link. They open it and pick their name. No sign-in needed. The backup password is only for anyone who loses the link. Your crew gets its own unique name, a number followed by the crew type, like <b>482-family</b>, <b>482-mates</b> or <b>482-love</b>.</p>
+      <div class="field"><label for="cPw">Backup password <span class="muted">(optional)</span></label><input id="cPw" type="password" autocomplete="new-password" placeholder="At least 6 characters"><button type="button" class="ghost sm pwshow" data-for="cPw" aria-pressed="false">Show</button></div>
+      <p class="muted" style="grid-column:1/-1">Once it's set up, send your crew the invite link. They open it and pick their name. No sign-in needed. The backup password is only for anyone who loses the link. Your crew gets its own unique name, a number followed by the crew type, like <b>482931-family</b>, <b>482931-mates</b> or <b>482931-love</b>.</p>
       <button type="submit" id="createGo">Create crew</button>
     </form>
     <p class="err" id="famErr"${msg?"":" hidden"}>${esc(msg)}</p>
@@ -291,7 +300,7 @@ function viewLobby(msg=""){
       /* Unique crew name: a number followed by the crew type, e.g. 482-love. */
       let name="", slug="";
       for(let i=0;i<12&&!slug;i++){
-        const n=Math.floor(i<6?100+Math.random()*900:1000+Math.random()*99000);
+        const n=Math.floor(100000+Math.random()*900000);   // 6 digits: hard to guess
         const cand=`${n}-${CREW_SUFFIX[ctype]}`;
         if(!(await getDoc(doc(db,"crewNames",cand))).exists()){name=cand;slug=cand}
       }
@@ -302,7 +311,7 @@ function viewLobby(msg=""){
       try{await b.commit()}
       catch(x){
         $("createGo").disabled=false;
-        if(x&&x.code==="permission-denied") return famErr(ctype==="partner"?"Couldn't create a Couple crew yet. Publish the latest security rules in Firebase (they add the Couple type), then try again.":"Couldn't create the crew: the security rules said no. Publish the latest security rules in Firebase, then try again.");
+        if(x&&x.code==="permission-denied") return famErr(ctype==="partner"?"Couldn't create the crew right now. Please try again in a moment.":"Couldn't create the crew right now. Please try again in a moment.");
         return famErr(errText(x));
       }
       /* The crew exists now, so open it even if one of these finishing steps fails. */
@@ -325,7 +334,7 @@ async function forgetCrew(id){
 /* ---------- Join A Crew: open or paste the invite link; crew name + backup password if the link is lost ---------- */
 function guestFail(x,retry){
   const c=x&&x.code||"";
-  const msg=c==="auth/operation-not-allowed"||c==="auth/admin-restricted-operation"?"Joining isn't switched on yet. The site owner needs to turn on Anonymous sign-in in Firebase (Authentication → Sign-in method)."
+  const msg=c==="auth/operation-not-allowed"||c==="auth/admin-restricted-operation"?"Joining isn't switched on yet. Something isn't set up right on our side. Please try again later."
     :c==="timeout"?"Couldn't reach the sign-in service (it took too long). Check your connection, or turn off content blockers and iCloud Private Relay for this site, then try again."
     :c==="auth/network-request-failed"?"Couldn't reach the sign-in service. Check your connection and try again."
     :errText(x);
@@ -352,12 +361,12 @@ function viewJoin(msg=""){
   body.innerHTML=`<div class="stack">
     <p class="muted">${JOIN?"Tap the invite link in your message, or paste it here.":"Open the invite link your crew admin sent you and pick your name. No sign-in needed. Tap it in your message, or paste it here."}</p>
     <form class="form" id="jlinkForm" novalidate>
-      <div class="field" style="grid-column:1/-1"><label for="jLink2">Invite link</label><input id="jLink2" autocomplete="off" placeholder="Paste the invite link"></div>
+      <div class="field" style="grid-column:1/-1"><label for="jLink2">Invite link</label><input id="jLink2" autocomplete="off" placeholder="Paste the invite link" value="${esc(window.__jl||"")}" oninput="window.__jl=this.value"></div>
       <button type="submit" id="jlinkGo">Join crew</button>
     </form>
     <details class="jbackup"><summary>Lost the link? Use the crew name and backup password</summary>
     <div class="stack" style="margin-top:10px">
-    <div class="field"><label for="jq">Crew name</label><input id="jq" type="search" autocomplete="off" placeholder="e.g. 482-family" enterkeyhint="search"></div>
+    <div class="field"><label for="jq">Crew name</label><input id="jq" type="search" autocomplete="off" placeholder="e.g. 482931-family" enterkeyhint="search"></div>
     <div class="jres" id="jres" aria-live="polite"></div>
     <form class="form" id="jpass" novalidate hidden>
       <p class="jpick" id="jpick" style="grid-column:1/-1"></p>
@@ -376,7 +385,9 @@ function viewJoin(msg=""){
     if(q.length<2){res.innerHTML=q?`<p class="muted">Keep typing…</p>`:"";return}
     res.innerHTML=`<p class="muted">Searching…</p>`;
     try{
-      const snap=await getDocs(query(collection(db,"crewNames"),where("slug",">=",q),where("slug","<=",q+"\uf8ff"),limit(10)));
+      /* Exact match only, so crews can't be browsed: the full name (e.g. 482931-family), or just its number. */
+      const opts=/^\d+$/.test(q)?[q,q+"-family",q+"-mates",q+"-love"]:[q];
+      const snap=await getDocs(query(collection(db,"crewNames"),where("slug","in",opts),limit(10)));
       if(my!==seq) return;
       const hits=snap.docs.map(d=>d.data());
       res.innerHTML=hits.length?hits.map(h=>`<button type="button" class="jhit" data-id="${esc(h.crewId)}" data-slug="${esc(h.slug)}" data-name="${esc(h.name)}">${esc(h.name)}</button>`).join(""):`<p class="muted">No crew found with that name. Check the spelling with your crew admin, or ask them to send the invite link again.</p>`;
@@ -387,7 +398,7 @@ function viewJoin(msg=""){
       });
     }catch(x){
       if(my!==seq) return;
-      const msg=x&&x.code==="permission-denied"?"Crew search isn't switched on yet. The site owner needs to publish the latest security rules in Firebase.":x&&x.code==="failed-precondition"?"Crew search needs a moment to finish setting up. Try again shortly.":errText(x);
+      const msg=x&&x.code==="permission-denied"?"Crew search isn't switched on yet. Something isn't set up right on our side. Please try again later.":x&&x.code==="failed-precondition"?"Crew search needs a moment to finish setting up. Try again shortly.":errText(x);
       res.innerHTML=`<p class="err">${esc(msg)}</p>`;
     }
   };
@@ -413,8 +424,11 @@ function viewJoin(msg=""){
   });
 }
 
+/* The Join page shows straight away; joining waits here for the quiet background sign-in if it isn't done yet. */
+const waitUser=(ms=20000)=>user?Promise.resolve(user):new Promise(r=>{const t0=Date.now(),t=setInterval(()=>{if(user||Date.now()-t0>ms){clearInterval(t);r(user)}},100)});
 async function joinCrew(inv){
   body.innerHTML=`<p class="muted">Opening your crew…</p>`;
+  if(!user){await waitUser();if(!user){viewJoin("Couldn't get ready to join. Check your connection and try again.");return}}
   const linkText=`${location.origin}${REVIEW_PATH}?crew=${inv.crew}&code=${inv.code}`;
   try{
     await setDoc(doc(db,"crews",inv.crew,"joins",user.uid),{code:inv.code,name:user.displayName||"",at:Date.now()});
@@ -425,6 +439,7 @@ async function joinCrew(inv){
     return;
   }
   invite=null; history.replaceState(null,"",location.pathname);
+  if(inviteFrom){setFrom(inv.crew,inviteFrom);inviteFrom=""}
   let name="Your crew";
   try{const snap=await getDoc(doc(db,"crews",inv.crew));if(snap.exists())name=snap.data().name||name}catch(e){}
   try{await rememberCrew(inv.crew,name)}catch(e){}
@@ -453,7 +468,13 @@ function openCrew(id){
   },x=>{leaveLocal(x&&x.code==="permission-denied"?"You're no longer in that crew.":errText(x))}));
   boardById={}; boardSubOn=false;
   let myMember="";
-  const pickMe=()=>{me=myMember&&isMember(myMember)?myMember:"";syncReviewSubs();refresh()};
+  const pickMe=()=>{
+    me=myMember&&isMember(myMember)?myMember:"";syncReviewSubs();refresh();
+    if(afterOpen&&me&&crew&&isMember(afterOpen.id)){
+      const a=afterOpen; afterOpen=null;
+      setTimeout(()=>{if(a.fresh){state.v={};state.dk={}}startReview(a.id,a.quiet);if(!a.fresh){savedSig=sig();revealed=true}render()},60);
+    }
+  };
   unsubs.push(onSnapshot(doc(db,"crews",id,"accounts",user.uid),s=>{
     myMember=s.exists()?(s.data().member||""):""; pickMe();
   },()=>{}));
@@ -486,8 +507,12 @@ function leaveLocal(msg){
   render(); if(user) viewLobby(msg||""); else viewSignedOut();
 }
 leaveBtn.onclick=async()=>{
-  if(leaveBtn.dataset.armed!=="1"){leaveBtn.dataset.armed="1";leaveBtn.textContent="Tap again to leave";setTimeout(()=>{leaveBtn.dataset.armed="";leaveBtn.textContent="Leave crew"},3000);return}
-  leaveBtn.dataset.armed="";leaveBtn.textContent="Leave crew";
+  /* Ask first, with a separate Yes button. */
+  if(!$("leaveAsk")){const d=document.createElement("div");d.id="leaveAsk";d.className="mrow confirm";d.setAttribute("role","alert");
+    d.innerHTML=`<span class="err">Leave ${esc(crew&&crew.name||"this crew")}? ${isOwner()?"You can open it again from Your crews.":"You'll need the invite link to come back."}</span><div class="row-btns"><button type="button" class="danger sm" id="leaveYes">Yes, leave</button><button type="button" class="ghost sm" id="leaveNo">Cancel</button></div>`;
+    leaveBtn.insertAdjacentElement("afterend",d);$("leaveNo").onclick=()=>d.remove();$("leaveYes").onclick=()=>{d.remove();doLeave()};return}
+};
+async function doLeave(){
   const id=crewId;
   try{
     if(me) await deleteDoc(doc(db,"crews",id,"claims",me));
@@ -496,9 +521,9 @@ leaveBtn.onclick=async()=>{
       await deleteDoc(doc(db,"crews",id,"joins",user.uid));
     }
     await forgetCrew(id);
-  }catch(x){}
+  }catch(x){toast(errText(x),6000);return}
   leaveLocal(isOwner()?"You've left the crew view. As the owner you can open it again from Your crews.":"");
-};
+}
 
 function viewCrewShell(){
   leaveBtn.hidden=ADMIN;
@@ -508,14 +533,16 @@ function viewCrewShell(){
     <p class="adminlink" id="toMyCrew" hidden>You're the crew admin. <a href="${MYCREW_PATH}">Open My Crew</a> to add people, send the invite link and see all the reports.</p>
     <p class="menote" id="meNote" hidden></p>
     <p class="crewnote" id="crewNote" hidden></p>
+    <div class="welcome" id="welcomeBox" hidden></div>
     <div class="form" id="meWrap">
-      <div class="field" id="meField"><label for="meSel">I am</label><select id="meSel"></select><p class="err" id="meErr" hidden></p><small class="muted">Picked the wrong name? Just choose the right one here.</small></div>
+      <div class="field" id="meField"><label for="meSel">Your name</label><select id="meSel"></select><p class="err" id="meErr" hidden></p><small class="muted">Picked the wrong name? Just choose the right one here.</small></div>
     </div>
     <form class="form" id="addMeForm" novalidate hidden>
       <div class="field"><label for="addMeName">Your name</label><input id="addMeName" autocomplete="off" placeholder="e.g. Dave"></div>
       <div class="field" id="addMeTypeF"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
       <button type="submit">Add me</button>
     </form>
+    <div class="nextbox" id="nextBox" hidden></div>
     <div class="typebox" id="typeBox" hidden></div>
     <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">On by default: everyone in the crew sees the leaderboard. Untick it to blur the scores out for the crew. You can always see them here under All scores.</span></label>
     <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
@@ -550,7 +577,7 @@ function viewCrewShell(){
   $("addMeForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const n=$("addMeName").value.trim().slice(0,40); if(!n) return famErr("Type your name first.");
-    if(members().some(m=>m.name.toLowerCase()===n.toLowerCase())) return famErr(`${n} is already on the list. Pick it under "I am".`);
+    if(members().some(m=>m.name.toLowerCase()===n.toLowerCase())) return famErr(`${n} is already on the list. Pick it under "Your name".`);
     try{const id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name:n,type:crew.type?crewMemberType():$("addMeType").value}]});await claimMember(crewId,id,me);$("addMeForm").hidden=true;$("addMeName").value="";famErr("");$("meNote").hidden=true;$("meField").classList.remove("attention");if(pending){const pid=pending;pending="";setTimeout(()=>startReview(pid),300)}}
     catch(x){famErr(errText(x))}
   });
@@ -570,7 +597,7 @@ function viewCrewShell(){
       $("meNote").hidden=true;$("meField").classList.remove("attention");meErr("");
       if(target&&v!==me){target=null;delete state.qset;setSliders({});render()}
       if(pending){const id=pending;pending="";setTimeout(()=>startReview(id),300)}
-    }catch(x){meErr(x&&x.code==="permission-denied"?"Couldn't switch to that name. The crew admin needs to publish the latest security rules in Firebase, which let the same name be used on more than one device.":errText(x));refresh()}
+    }catch(x){meErr(x&&x.code==="permission-denied"?"Couldn't switch to that name. Try again in a moment, or ask your crew admin for a fresh invite link.":errText(x));refresh()}
   });
   $("addForm").addEventListener("submit",async e=>{
     e.preventDefault();
@@ -600,7 +627,11 @@ function viewCrewShell(){
       catch(x){if(!x||x.name!=="AbortError")toast("Couldn't open sharing. Use Copy instead.")}
     };
   }
-  $("newInvite").onclick=async()=>{try{await updateDoc(doc(db,"crews",crewId),{joinCode:rid(8)});toast("New invite link made. The old one no longer works.")}catch(x){famErr(errText(x))}};
+  /* New link breaks the old one, so ask first. */
+  $("newInvite").onclick=()=>{if($("newAsk"))return;const d=document.createElement("div");d.id="newAsk";d.className="mrow confirm";d.setAttribute("role","alert");
+    d.innerHTML=`<span class="err">Make a new invite link? The old link stops working, so anyone who hasn't joined yet will need the new one.</span><div class="row-btns"><button type="button" class="danger sm" id="newYes">Yes, make a new link</button><button type="button" class="ghost sm" id="newNo">Cancel</button></div>`;
+    $("inviteBox").appendChild(d);$("newNo").onclick=()=>d.remove();
+    $("newYes").onclick=async()=>{d.remove();try{await updateDoc(doc(db,"crews",crewId),{joinCode:rid(8)});toast("New invite link made. The old one no longer works.")}catch(x){famErr(errText(x))}}};
   document.querySelectorAll("#adminArea [data-tab]").forEach(b=>b.onclick=()=>{adminTab=b.dataset.tab;renderAdmin()});
 }
 
@@ -612,12 +643,12 @@ function renderPassBox(){
   const has=!!(crew.slug&&crew.passHash), named=!!crew.slug;
   box.innerHTML=named?`<label>Backup: crew name and password</label>
       <p class="muted">For anyone who loses the invite link: they tap <b>Join</b>, search for <b>${esc(crew.name)}</b> and enter this password.${has?"":" No backup password is set yet."}</p>
-      <form class="invite-row" id="pwForm" novalidate><input id="pwNew" type="text" autocomplete="off" placeholder="${has?"New backup password":"Backup password"} (at least 6 characters)"><button type="submit">${has?"Change password":"Set password"}</button></form>`
+      <form class="invite-row" id="pwForm" novalidate><input id="pwNew" type="password" autocomplete="new-password" placeholder="${has?"New backup password":"Backup password"} (at least 6 characters)"><button type="button" class="ghost sm pwshow" data-for="pwNew" aria-pressed="false">Show</button><button type="submit">${has?"Change password":"Set password"}</button></form>`
     :`<label>Backup: crew name and password</label>
       <p class="muted">For anyone who loses the invite link. Choose a unique crew name and a password. They tap <b>Join</b>, search for the name and enter the password.</p>
       <form class="form" id="pwForm" novalidate>
         <div class="field"><label for="pwName">Crew name</label><input id="pwName" autocomplete="off" value="${esc(crew.name)}"></div>
-        <div class="field"><label for="pwNew">Backup password</label><input id="pwNew" type="text" autocomplete="off" placeholder="At least 6 characters"></div>
+        <div class="field"><label for="pwNew">Backup password</label><input id="pwNew" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
         <button type="submit">Save</button>
       </form>`;
   $("pwForm").addEventListener("submit",async e=>{
@@ -645,7 +676,10 @@ function managePanel(m,joined,isAdm,a){
   const byThem=reviews().filter(r=>r.reviewer===m.id).length, aboutThem=a.rs.length;
   const arm=k=>removeArmed===k;
   const nm=esc(m.name);
-  const row=(act,label,desc,danger)=>`<div class="mrow"><button type="button" class="${danger?"danger":"ghost"} sm" data-act="${act}" data-id="${m.id}">${arm(act+":"+m.id)?"Tap again to confirm":label}</button><span>${desc}</span></div>`;
+  /* Destructive actions ask with a separate "Yes" button and Cancel, so a double-tap can't delete anything. */
+  const row=(act,label,desc,danger)=>arm(act+":"+m.id)
+    ?`<div class="mrow confirm" role="alert"><span class="err">${act==="delete"?`Delete ${nm} and every review by and about them? This can't be undone.`:`Reset ${nm}? This deletes the reviews by and about them.`}</span><div class="row-btns"><button type="button" class="danger sm" data-act="${act}" data-id="${m.id}" data-yes="1">Yes, ${act==="delete"?"delete":"reset"} ${nm}</button><button type="button" class="ghost sm" data-cancel="1">Cancel</button></div></div>`
+    :`<div class="mrow"><button type="button" class="${danger?"danger":"ghost"} sm" data-act="${act}" data-id="${m.id}">${label}</button><span>${desc}</span></div>`;
   return `<div class="manage" role="group" aria-label="Manage ${nm}">
     ${false?row("free","Free up name",`For when ${nm} changes phone or clears their browser. They pick their name again from the invite link. Their reviews are kept.`):""}
     ${joined&&!isMe&&!isOwnerSeat?row("admin",isAdm?"Remove admin":"Make admin",isAdm?`${nm} goes back to seeing only their own results.`:`${nm} will see everyone's reports and can manage the crew.`):""}
@@ -665,10 +699,7 @@ async function deleteReviewsFor(id){
 async function manageAction(act,id){
   const m=members().find(x=>x.id===id); if(!m) return;
   const uid=claims[id];
-  if((act==="reset"||act==="delete")&&removeArmed!==act+":"+id){
-    removeArmed=act+":"+id;refresh();
-    setTimeout(()=>{if(removeArmed===act+":"+id){removeArmed="";refresh()}},4000);return;
-  }
+  if((act==="reset"||act==="delete")&&removeArmed!==act+":"+id){removeArmed=act+":"+id;refresh();return}
   removeArmed="";
   try{
     if(act==="free"){await deleteDoc(doc(db,"crews",crewId,"claims",id));toast(`${m.name}'s name is free. They can pick it again from the invite link.`)}
@@ -700,7 +731,7 @@ const legacyKey=reviewId=>"L"+sha256hex("rmy-board:"+reviewId).slice(0,19);
 function boardScore(id){
   const by=(boardById&&boardById[id]&&boardById[id].by)||{}, es=Object.values(by).filter(e=>e&&typeof e.o==="number");
   const others=es.filter(e=>!e.self), use=others.length?others:es;
-  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length};
+  return {v:use.length?mean(use.map(e=>e.o)):null,n:use.length,o:others.length};
 }
 /* Crew admins can read every review, so their device keeps the leaderboard in step: it adds older reviews
    that were saved before the leaderboard existed and removes entries for deleted reviews or people. */
@@ -757,7 +788,7 @@ function renderBoard(){
   if(ADMIN||!crew){sec.hidden=true;return}
   sec.hidden=false;
   const ms=members(), open=boardOpen(), mates=crew.type==="mates";
-  $("boardSub").textContent=mates?"Who's the best bloke in your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Each of you rates the relationship. Your relationship score is the average.":"Ranked by what the rest of the crew thinks.";
+  $("boardSub").textContent=mates?"Who's the MVP of your crew? Ranked by what the rest of the crew thinks.":crew.type==="partner"?"Each of you rates the relationship. Your relationship score is the average.":"Ranked by what the rest of the crew thinks.";
   const wrap=$("boardWrap"), lock=$("boardLock"), list=$("boardList");
   if(!open){
     const fake=["A","B+","B","C+","C","D"];
@@ -767,7 +798,7 @@ function renderBoard(){
     return;
   }
   wrap.classList.remove("locked"); lock.hidden=true;
-  if(boardById===null){list.innerHTML=`<p class="muted">The leaderboard can't load yet. The crew admin needs to publish the latest security rules.</p>`;return}
+  if(boardById===null){list.innerHTML=`<p class="muted">The leaderboard can't load yet. Please try again later.</p>`;return}
   const rows=ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
   list.innerHTML=rows.map(({m,b},i)=>{const g=b.v==null?null:grade(b.v);
     return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}><span class="rank">${b.v==null?"–":i+1}</span><span class="chip${g?"":" none"}">${g||"–"}</span>
@@ -800,13 +831,16 @@ function refresh(){
       if(upd.name){try{await rememberCrew(crewId,upd.name)}catch(e){}}
       typeArmed="";toast(`Switched to ${CREW_TYPES[t].review}${upd.name?`. Your crew is now ${upd.name}`:""}.`)}catch(x){famErr(errText(x))}};
     if(!crew.type){
-      tbx.innerHTML=`<p><b>What kind of crew is this?</b> Family crews answer the family questions, Mates crews the mates questions and Partner crews the partner questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns">${Object.keys(CREW_TYPES).map(t=>`<button type="button" data-ctype="${t}">${CREW_TYPES[t].crew}</button>`).join("")}</div>`;
+      tbx.innerHTML=`<p><b>What kind of crew is this?</b> Family crews answer the family questions, Mates crews the mates questions and Couple crews the partner questions. If you change review type later, everyone is asked a different set of questions and existing reviews won't carry across.</p><div class="row-btns">${Object.keys(CREW_TYPES).map(t=>`<button type="button" data-ctype="${t}">${CREW_TYPES[t].crew}</button>`).join("")}</div>`;
       tbx.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>setType(b.dataset.ctype));
     }else{
-      const cur=crewTypeOf(crew.type), T=CREW_TYPES[cur], others=Object.keys(CREW_TYPES).filter(t=>t!==cur);
-      tbx.innerHTML=`<p><b>Review type: ${T.review}</b>. Everyone is rated on the ${T.word.toLowerCase()} questions.</p><p class="muted">If you move to a different review type, your crew will be asked a different sort of questions and existing reviews won't come across. They're kept, and count again if you switch back.</p>`+
-        (typeArmed?`<p class="err">Switch to ${CREW_TYPES[typeArmed].review}? Your crew will be asked the ${CREW_TYPES[typeArmed].word.toLowerCase()} questions and existing reviews won't come across. Everyone needs to review again.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${CREW_TYPES[typeArmed].review}</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
-          :`<div class="row-btns">${others.map(t=>`<button type="button" class="ghost sm" data-switch="${t}">Switch to ${CREW_TYPES[t].review}</button>`).join("")}</div>`);
+      /* Changing type is rare and resets everyone's scores, so it lives in a closed "Advanced" section.
+         Couple Check-in is only offered to crews of two or fewer. */
+      const cur=crewTypeOf(crew.type), T=CREW_TYPES[cur], others=Object.keys(CREW_TYPES).filter(t=>t!==cur&&!(t==="partner"&&members().length>2));
+      const nRev=liveReviews().length;
+      tbx.innerHTML=`<details class="adv"${typeArmed?" open":""}><summary>Advanced: change crew type (now ${T.review})</summary><p class="muted">If you change type, your crew is asked a different set of questions and the ${nRev} existing review${nRev===1?"":"s"} stop counting. They're kept, and count again if you switch back.</p>`+
+        (typeArmed?`<p class="err">Switch to ${CREW_TYPES[typeArmed].review}? ${nRev} review${nRev===1?"":"s"} will stop counting and everyone needs to review again.</p><div class="row-btns"><button type="button" id="typeYes">Yes, switch to ${CREW_TYPES[typeArmed].review}</button><button type="button" class="ghost" id="typeNo">Cancel</button></div>`
+          :`<div class="row-btns">${others.map(t=>`<button type="button" class="ghost sm" data-switch="${t}">Switch to ${CREW_TYPES[t].review}</button>`).join("")}</div>`)+`</details>`;
       tbx.querySelectorAll("[data-switch]").forEach(b=>b.onclick=()=>{typeArmed=b.dataset.switch;refresh()});
       if($("typeNo")) $("typeNo").onclick=()=>{typeArmed="";refresh()};
       if($("typeYes")) $("typeYes").onclick=()=>setType(typeArmed);
@@ -821,34 +855,36 @@ function refresh(){
   paintCreate();
   $("meSel").innerHTML=`<option value="">Choose your name…</option>`+ms.map(m=>`<option value="${m.id}"${m.id===me?" selected":""}${taken(m.id)?" disabled":""}>${esc(m.name)}${taken(m.id)?" (taken)":""}</option>`).join("")+`<option value="__new">I'm not on the list. Add me</option>`;
   if(me||ADMIN){$("meNote").hidden=true;$("meField").classList.remove("attention")}
-  else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"I am\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
+  else if(ms.length&&$("meNote").hidden){$("meNote").textContent="Welcome! Pick your name under \"Your name\" to get started.";$("meNote").hidden=false;$("meField").classList.add("attention")}
   const doneIds=new Set(reviews().filter(r=>r.reviewerUid===user.uid||(me&&r.reviewer===me)).map(r=>r.member));
   const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
   const open=boardOpen();
   $("boardTitle").textContent=ADMIN?"":"Crew leaderboard";
   $("boardNote").hidden=ADMIN||!ms.length;
-  if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone.")+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
+  if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):($("welcomeBox")&&!$("welcomeBox").hidden?"Type your first name above to get started.":"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone."))+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
   const fake=["A","B+","B","C+","C","D"];
-  const ranked=ms.map(m=>({m,b:open&&boardById?boardScore(m.id):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
+  const lockOne=b=>crew.type!=="partner"&&b.o===1?{v:null,n:b.n,o:1,locked:true}:b;
+  const ranked=ms.map(m=>({m,b:open&&boardById?lockOne(boardScore(m.id)):{v:null,n:0}})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
   /* Crew score: the average of everyone's leaderboard score (people with at least one review). */
   const scored=ranked.filter(x=>x.b.v!=null), cs=$("crewScore");
   cs.hidden=ADMIN||!ms.length;
   if(!cs.hidden){
     const v=scored.length?mean(scored.map(x=>x.b.v)):null, g=v==null?null:grade(v);
     cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
-    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${crew.type==="partner"?"Relationship score":"Crew score"}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
+    cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${crew.type==="partner"?"Love score":"Crew score"}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
   }
   $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
-    const score=open?(b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
+    const score=open?(b.locked?`<span class="lockline2">🔒 Score shows after 2 reviews</span>`:b.v==null?"Not reviewed yet":b.o===0?`${b.v.toFixed(1)} / 10 · ${m.id===me?"your":"their"} own rating`:`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span>`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     const award=open&&i===0&&b.v!=null&&nScored>=2;
     /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
-    const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1));
+    /* Kept private: only that person and the crew admin see it, so nobody is singled out in front of the crew. */
+    const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1))&&(isAdmin()||m.id===me);
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low">${CREW_TYPES[crewTypeOf(crew.type)].low}</span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -871,6 +907,7 @@ function refresh(){
   $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{const box=$("famResults");box.innerHTML=box.innerHTML?"":memberReportHTML(me,false)});
   $("memList").querySelectorAll("[data-manage]").forEach(b=>b.onclick=()=>{managing=managing===b.dataset.manage?"":b.dataset.manage;removeArmed="";refresh()});
   $("memList").querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>manageAction(b.dataset.act,b.dataset.id));
+  $("memList").querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{removeArmed="";refresh()});
   const showAdmin=ADMIN&&admin;
   $("inviteBox").hidden=!showAdmin;
   if(showAdmin) $("inviteLink").value=inviteLink();
@@ -880,6 +917,7 @@ function refresh(){
   if(showAdmin) renderAdmin();
   if(admin) syncBoardSoon();
   if(target&&!isMember(target.id)) target=null;
+  paintWelcome(); paintNext();
   render();
 }
 
@@ -902,40 +940,49 @@ function setSliders(rv){
   state.v=Object.assign({},rv.values||{});
   state.dk=Object.assign({},rv.dk||{});
   useSet(activeSet());
+  state.legacyT=!!(rv.values&&Object.keys(rv.values).length);
   CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)});
   applyMode();
 }
 function needMe(id){
   pending=id;
+  const wb=$("welcomeBox");
+  if(wb&&!wb.hidden){wb.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});const w=$("wName");if(w)w.focus({preventScroll:true});return}
   const n=$("meNote"), f=$("meField"), s=$("meSel");
   if(!n) return;
-  n.textContent=id?`First, pick your own name in "I am". Then ${memberName(id)}'s review opens.`:`First, pick your own name in "I am", then tap Review next to who you're reviewing.`;
+  n.textContent=id?`First, pick your own name under "Your name". Then ${memberName(id)}'s review opens.`:`First, pick your own name under "Your name", then tap Review next to who you're reviewing.`;
   n.hidden=false; f.classList.add("attention");
   $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
   s.focus();
 }
-function startReview(id){
+/* Warn before leaving with an unsaved crew review. */
+window.addEventListener("beforeunload",e=>{try{if(crew&&target&&me&&savedSig!==undefined&&sig()!==savedSig&&progress().n){e.preventDefault();e.returnValue=""}}catch(x){}});
+function startReview(id,quiet){
   if(!crew) return;
   if(!me) return needMe(id);
   const wasTarget=!!target;
   target={id,name:memberName(id)};
   // this device's review, or else the latest one this person saved on another device
   const existing=reviews().find(r=>r.member===id&&r.reviewerUid===user.uid)||reviews().filter(r=>r.member===id&&r.reviewer===me).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0))[0];
-  const carry=!wasTarget&&!existing&&(Object.keys(state.v).length||Object.keys(state.dk).length)&&setForType(memberType(id))===activeSet();
+  /* Answers on screen only carry over to the same person: your own review to "yourself", or a review of Mum to Mum. */
+  const samePerson=id===me?state.who==="me":(state.who!=="me"&&(state.name||"").trim().toLowerCase()===memberName(id).trim().toLowerCase());
+  const carry=!wasTarget&&!existing&&samePerson&&(Object.keys(state.v).length||Object.keys(state.dk).length)&&setForType(memberType(id))===activeSet();
   state.who=id===me?"me":memberType(id); state.qset=setForType(memberType(id)); state.name=target.name;
   if(carry){useSet(activeSet());CATS.forEach(c=>{if(state.v[c.id+"t"]==null&&!state.dk[c.id+"t"])syncTop(c)})}
   else setSliders(existing);
+  revealed=!!existing&&!carry;
   const el=$("crewNote"); if(el) el.hidden=true;
   savedSig=carry?"":sig();
   document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===state.who);
   nameInput.value=target.name;
   save(); render();
-  $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
+  if(!quiet) $("cats").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 }
 function stopReview(){target=null;delete state.qset;render()}
 const toTop=()=>$("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
 $("reviewCancel").onclick=toTop;
 function clearReview(){
+  revealed=false; state.revealed=false;
   target=null; delete state.qset; setSliders({}); state.name=""; nameInput.value=""; pick.value="";
   save(); render(); toTop();
 }
@@ -961,7 +1008,7 @@ function syncPick(){
     $("nameLabel").textContent=state.who==="mate"?"Mate":state.who==="partner"?"Partner":"Family member";
     pick.innerHTML=`<option value="">${others.length?"Choose who to review…":`No ${word} in your crew yet`}</option>`+others.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
     pick.value=target&&target.id!==me&&others.some(m=>m.id===target.id)?target.id:"";
-    if(!me){pickHint.textContent="Pick your own name under \"I am\" in your crew below first.";pickHint.hidden=false}
+    if(!me){pickHint.textContent="Pick your own name under \"Your name\" in your crew below first.";pickHint.hidden=false}
     else if(!others.length){pickHint.textContent=`Add ${word==="family"?"family members":word==="partners"?"your partner":"mates"} to your crew below.`;pickHint.hidden=false}
   }
 }
@@ -985,6 +1032,16 @@ function selfVsCrew(rows,avg){
   let selfV;
   if(isSelf) selfV=avg;
   else{ const se=Object.values(by).find(e=>e.self); selfV=se?se.o:(selfRev?selfRev.overall:null); if(avg!=null) crewVals=[...crewVals,avg]; }
+  if(crew.type==="partner"&&isSelf){
+    const theirs=members().filter(m=>m.id!==me).map(m=>{const b2=(boardById&&boardById[m.id]&&boardById[m.id].by)||{};const e=Object.values(b2).find(x=>x&&x.self);return e?e.o:null}).filter(v=>typeof v==="number");
+    const pr=liveReviews().find(r=>r.member!==me&&r.reviewer===r.member);
+    const theirsV=theirs.length?mean(theirs):(pr?pr.overall:null);
+    const live0=Object.fromEntries(rows.filter(r=>r.avg!=null).map(r=>[r.c.id,r.avg]));
+    const g0=pr&&pr.cats?CATS.filter(c=>live0[c.id]!=null&&pr.cats[c.id]!=null).map(c=>({c,s:live0[c.id],k:pr.cats[c.id],d:live0[c.id]-pr.cats[c.id]})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)):null;
+    return {self:avg,crew:theirsV,crewN:theirs.length,isSelf:true,nm,gaps:g0,couple:true,selfNote:"How you rate the relationship",crewNote:theirsV==null?"Waiting on your partner's side":"How your partner rates it"};
+  }
+  if(isSelf&&crew.type!=="partner"&&crewVals.length===1)
+    return {self:selfV,crew:null,crewN:1,isSelf,nm,gaps:null,selfNote:"How you rate yourself",crewNote:"🔒 Shows after 2 reviews (1 in so far), so nobody's rating stands out on its own"};
   const crewV=crewVals.length?mean(crewVals):null;
   // per-area: needs the person's own review and the crew's (readable for yourself, or for crew admins)
   const live=Object.fromEntries(rows.filter(r=>r.avg!=null).map(r=>[r.c.id,r.avg]));
@@ -1008,20 +1065,21 @@ function paintViews(rows,avg){
   vb.hidden=true;
   if(!v){hs.hidden=true;hc.hidden=true;gb.hidden=true;$("bigGrade").hidden=false;return}
   $("bigGrade").hidden=true;
-  HV(hs,"Self",v.self,v.selfNote); HV(hc,"Crew",v.crew,v.crewNote);
+  HV(hs,v.couple?"You":"Self",v.self,v.selfNote); HV(hc,v.couple?"Partner":"Crew",v.crew,v.crewNote);
   if(v.self==null||v.crew==null){gb.hidden=true;return}
   const you=v.isSelf, them=esc(v.nm), d=v.self-v.crew;
-  const subj=you?"You rate yourself":`${them} rates themselves`;
-  const overall=Math.abs(d)<0.5?`Overall, ${you?"your view":`${them}'s view`} and the crew's are pretty much in line (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`
-    :`Overall, ${subj.charAt(0).toLowerCase()+subj.slice(1)} <b>${Math.abs(d).toFixed(1)} ${d>0?"higher":"lower"}</b> than the crew does (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`;
+  const subj=v.couple?"You rate the relationship":you?"You rate yourself":`${them} rates themselves`;
+  const crewW=v.couple?"your partner":"the crew";
+  const overall=Math.abs(d)<0.5?`Overall, ${you?"your view":`${them}'s view`} and ${v.couple?"your partner's":"the crew's"} are pretty much in line (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`
+    :`Overall, ${subj.charAt(0).toLowerCase()+subj.slice(1)} <b>${Math.abs(d).toFixed(1)} ${d>0?"higher":"lower"}</b> than ${v.couple?"your partner":"the crew"} does (${v.self.toFixed(1)} vs ${v.crew.toFixed(1)}).`;
   const big=(v.gaps||[]).filter(x=>Math.abs(x.d)>=1).slice(0,3);
-  const line=x=>x.d>0?`<b>${x.c.name}</b>: ${subj.charAt(0).toLowerCase()+subj.slice(1)} ${Math.abs(x.d).toFixed(1)} higher than the crew does (${x.s.toFixed(1)} vs ${x.k.toFixed(1)}).`
-    :`<b>${x.c.name}</b>: the crew rates ${you?"you":them} ${Math.abs(x.d).toFixed(1)} higher than ${you?"you do":"they do"} (${x.k.toFixed(1)} vs ${x.s.toFixed(1)}).`;
-  gb.innerHTML=`<h3>Biggest gaps: self vs crew</h3><p>${overall}</p>`+(big.length?`<ul>${big.map(x=>`<li>${line(x)}</li>`).join("")}</ul>`:v.gaps?`<p class="muted">No area differs by a full point or more.</p>`:`<p class="muted">${you?"Area-by-area gaps show once someone in the crew has reviewed you.":`Only ${them} and the crew admin see the area-by-area gaps.`}</p>`);
+  const line=x=>x.d>0?`<b>${x.c.name}</b>: ${subj.charAt(0).toLowerCase()+subj.slice(1)} ${Math.abs(x.d).toFixed(1)} higher than ${crewW} does (${x.s.toFixed(1)} vs ${x.k.toFixed(1)}).`
+    :`<b>${x.c.name}</b>: ${crewW} rates ${v.couple?"it":you?"you":them} ${Math.abs(x.d).toFixed(1)} higher than ${you?"you do":"they do"} (${x.k.toFixed(1)} vs ${x.s.toFixed(1)}).`;
+  gb.innerHTML=`<h3>${v.couple?"Biggest gaps: you vs your partner":"Biggest gaps: self vs crew"}</h3><p>${overall}</p>`+(big.length?`<ul>${big.map(x=>`<li>${line(x)}</li>`).join("")}</ul>`:v.gaps?`<p class="muted">No area differs by a full point or more.</p>`:`<p class="muted">${you?"Area-by-area gaps show once someone in the crew has reviewed you.":`Only ${them} and the crew admin see the area-by-area gaps.`}</p>`);
   gb.hidden=false;
 }
 
-let last=null, savedSig="";
+let last=null, savedSig="", revealed=false;   // revealed: this crew review was saved, so its report card shows
 const sig=()=>JSON.stringify([state.v,state.dk]);
 const nextBtn=$("reviewNext"), bannerGrade=$("reviewBannerGrade");
 window.afterRender=function(rows,avg){
@@ -1032,10 +1090,12 @@ window.afterRender=function(rows,avg){
   document.body.classList.toggle("in-crew",!!crew);
   document.body.classList.toggle("crew-ready",!!crew||myCrews.length>0);
   paintEntry();
+  paintDone();
+  if(window.__paintAsk) window.__paintAsk();
   syncPick();
   const on=!!(crew&&target&&me), pickFirst=!!(crew&&!target&&REVIEW_PAGE);
   banner.hidden=!on&&!pickFirst;
-  if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":"<b>Pick your name</b> under I am first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
+  if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":($("welcomeBox")&&!$("welcomeBox").hidden)?"<b>Type your first name</b> to get started":"<b>Pick your name</b> under Your name first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
   else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
   document.body.classList.toggle("has-bar",on||pickFirst);
   if(on){
@@ -1097,6 +1157,41 @@ soloBtn.addEventListener("click",async()=>{
   soloBtn.disabled=false;
 });
 
+/* ---------- Save & See Results: the report card stays hidden until the review is saved ---------- */
+function paintDone(){
+  const bar=$("doneBar"); if(!bar) return;
+  if(!REVIEW_PAGE){bar.hidden=true;return}
+  const inRev=!!(crew&&target&&me), solo=!crew, show=solo||inRev;
+  bar.hidden=!show;
+  const open=solo?!!state.revealed:revealed, dirty=inRev&&sig()!==savedSig;
+  document.body.classList.toggle("report-locked",show&&!open);
+  const t=!show?null:solo?(open?null:["Save &amp; See My Results","Your answers are saved on this device"])
+    :!open?["Save &amp; See Results",target.id===me?"Saves your review to the crew, then shows your report card":`Saves your review of ${esc(target.name)} to the crew`]
+    :dirty?["Save Changes","Update your saved review"]:null;
+  const btn=$("doneBtn"); btn.hidden=!t;
+  if(t){const h=`<b>${t[0]}</b><small>${t[1]}</small>`;if(btn.innerHTML!==h)btn.innerHTML=h}
+  $("doneSaved").hidden=!(inRev&&open&&!dirty);
+  const nb=$("reviewNext"), nh=inRev&&open&&!dirty?`<b>Rate Someone Else</b><small>Pick the next person in your crew, or add someone new</small>`:`<b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small>`;
+  if(nb&&nb.innerHTML!==nh) nb.innerHTML=nh;
+}
+/* Before showing results: you need at least one answer, and you're told how many are still unanswered. */
+const firstUnanswered=()=>{for(const c of CATS)for(let i=0;i<c.qs.length;i++)if(!isAnswered(c.id+i))return $("q-"+c.id+i);return null};
+const goUnanswered=()=>{const q=firstUnanswered();if(q){q.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"center"});const b=q.querySelector(".gseg button");if(b)setTimeout(()=>b.focus({preventScroll:true}),300)}};
+let doneOk=false;
+$("doneKeep").onclick=()=>{$("doneAsk").hidden=true;goUnanswered()};
+$("doneAnyway").onclick=()=>{$("doneAsk").hidden=true;doneOk=true;$("doneBtn").click()};
+$("doneBtn").addEventListener("click",async()=>{
+  const pr=progress();
+  if(!last||last.avg==null||pr.n===0){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent="Answer at least one question first. Tap a grade from E to A, or Don't know.";a.hidden=false;$("doneAnyway").hidden=true;return}
+  if(pr.n<pr.t&&!doneOk){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent=`You've answered ${pr.n} of ${pr.t} questions. Unanswered ones are left out of the grades.`;$("doneAnyway").hidden=false;a.hidden=false;a.scrollIntoView({block:"nearest"});return}
+  doneOk=false;$("doneAsk").hidden=true;
+  const b=$("doneBtn"); b.disabled=true;
+  if(!crew){state.revealed=true;save()}
+  else if(target&&me){if(!(await saveReview())){b.disabled=false;return}revealed=true}
+  b.disabled=false; render();
+  setTimeout(()=>document.querySelector(".report").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"}),50);
+});
+
 /* ---------- main page entry: Rate Me / Join A Crew / Create A Crew ---------- */
 let entry="rate", landJoin=false;
 const REVIEW_PAGE=!ADMIN&&!JOIN;
@@ -1107,7 +1202,7 @@ function paintEntry(){
   if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate");
   if($("choiceJoin")) $("choiceJoin").setAttribute("aria-pressed",entry==="join");
   if($("choiceRate")) $("choiceRate").setAttribute("aria-pressed",entry==="rate"&&state.who==="me");
-  if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Rate Me");
+  if(REVIEW_PAGE) $("famH2").textContent=crew?"Review My Crew":entry==="join"?"Join A Crew":(myCrews.length?"Review My Crew":"Who are you rating?");
 }
 if(REVIEW_PAGE){
   $("choiceRate").onclick=()=>{
@@ -1117,7 +1212,7 @@ if(REVIEW_PAGE){
     $("fam").scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"});
     if(!crew) setTimeout(()=>nameInput.focus({preventScroll:true}),300);
   };
-  $("choiceJoin").onclick=e=>{e.preventDefault();entry="join";paintEntry();startJoin()};
+  /* Join always goes to the Join page (no inline join on top of the questions). */
   $("endJoin").onclick=()=>$("choiceJoin").click();
   /* Rate My Family / Rate My Mates always mean rating, so leave the crew search if it was open. */
   ["who-family","who-mate","who-partner","who-me"].forEach(id=>$(id).addEventListener("change",()=>{
@@ -1128,6 +1223,61 @@ if(REVIEW_PAGE){
   /* Share Results: a picture of the report card, sent by the share sheet, WhatsApp, text or email.
      Each send is recorded in the shares collection (channel plus email or mobile if given). */
   const shareBox=$("shareBox"), shareBtn=$("shareBtn"), note=$("shareNote");
+  /* See How Others Rate You: solo, it opens a small box for names, then makes your group and link.
+     Inside a group it sends your invite link straight away. */
+  const askBox=$("askBox"), askBtn=$("endAsk");
+  const askNote=(m,err)=>{$("askNote").textContent=m||"";$("askNote").className=err?"err":"muted"};
+  const askFor=()=>state.who==="me"?"me":state.who==="partner"?"partner":"other";
+  window.__paintAsk=()=>{
+    const k=reviewKind(), them=esc((state.name||"").trim()), inGroup=!!crew, partner=inGroup?crew.type==="partner":askFor()==="partner";
+    const t=inGroup?(partner?["Send Your Partner The Link","They add their side, then you see how your views compare"]:["Invite More People","Each person rates you, then the rest of the crew"])
+      :askFor()==="me"?["See How Others Rate You","Send a link. They rate you in about 5 minutes, then rate themselves."]
+      :askFor()==="partner"?["Ask Your Partner","Send them the link so they can add their side"]
+      :[`Send ${them||"Them"} The Link`,`${them||"They"} can rate themselves and see how it compares with your rating`];
+    const html=`<b>${t[0]}</b><small>${t[1]}</small>`; if(askBtn.innerHTML!==html) askBtn.innerHTML=html;
+    if(!askBox.hidden){$("askForm").hidden=inGroup;$("askSend").hidden=!inGroup;if(inGroup)$("askLead").textContent=partner?"✓ Your link is ready. Send it to your partner.":"✓ Your link is ready. Send it to your family and friends."}
+  };
+  function openAsk(){
+    const who=askFor();
+    $("askName").value=(who==="me"?(state.name||""):"")||$("shareFrom").value.trim()||"";
+    $("askThemF").hidden=who==="me"; $("askThem").value=who==="me"?"":(state.name||"");
+    $("askThemL").textContent=who==="partner"?"Your partner's first name (optional)":"Their first name";
+    $("askLead").textContent=who==="me"?`We'll make a private link just for your ${KIND_WORD[reviewKind()]==="Personal"?"family and friends":KIND_WORD[reviewKind()].toLowerCase()}. Anyone who opens it rates you, then rates themselves. No sign-up needed.`
+      :who==="partner"?"We'll make a private link for the two of you. Your partner adds their side, then you both see how your views compare."
+      :`We'll make a private link for you and ${(state.name||"them").trim()}. They can rate themselves and see how it compares with your rating.`;
+    $("askLead").textContent+=" Your answers are saved online so the people with the link can compare. See Privacy at the bottom of the page for who sees what.";
+    /* One panel at a time: opening this one closes Share. */
+    if($("shareBox")){$("shareBox").hidden=true;$("shareBtn").setAttribute("aria-expanded","false")}
+    askNote(""); $("askGo").disabled=false; askBox.hidden=false; askBtn.setAttribute("aria-expanded","true"); window.__paintAsk();
+    askBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"});
+    if(!$("askName").value) setTimeout(()=>$("askName").focus({preventScroll:true}),250);
+  }
+  askBtn.onclick=()=>{
+    if(!last||last.avg==null){toast("Answer at least one area first, so there's a review to send.");return}
+    if(crew){if(!me){needMe("");return}shareLink("invite");return}
+    if(!askBox.hidden){askBox.hidden=true;askBtn.setAttribute("aria-expanded","false");return}
+    openAsk();
+  };
+  $("askGo").onclick=async()=>{
+    const who=askFor(), myName=$("askName").value.trim().slice(0,40), them=who==="me"?"":$("askThem").value.trim().slice(0,40);
+    if(!myName){askNote("Type your first name, so people know whose link it is.",true);$("askName").focus();return}
+    if(who==="other"&&!them){askNote("Type their first name too.",true);$("askThem").focus();return}
+    try{localStorage.setItem("rmy-from",myName)}catch(e){} $("shareFrom").value=myName;
+    if(who==="me"){state.name=myName;nameInput.value=myName;save()}
+    $("askGo").disabled=true; askNote("Setting up your link…");
+    try{
+      const g=await startQuickGroup(myName,them);
+      openCrew(g.id);
+      askNote("Pick WhatsApp, Messages or email. Each person who opens it rates you, then themselves.");
+      window.__paintAsk();
+    }catch(x){
+      afterOpen=null; $("askGo").disabled=false;
+      if(x&&x.code==="permission-denied") askNote("Couldn't make your link right now. For now, use Create at the top of the page to set up a crew with Google.",true);
+      else askNote(x&&x.code==="no-config"?"Crews aren't connected yet.":errText(x),true);
+    }
+  };
+  $("askShare").onclick=()=>shareLink("invite");
+  $("askCopy").onclick=copyLink;
   let cardBlob=null, cardUrl="";
   const canShareFiles=()=>{try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]}))}catch(e){return false}};
   /* Who the report card is from: your crew name if you've joined a crew, otherwise the From box. */
@@ -1149,35 +1299,167 @@ if(REVIEW_PAGE){
     try{
       if(!auth) return;
       if(!auth.currentUser) await withTimeout(signInAnonymously(auth),10000,"Signing in");
-      await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,channel,...extra,subject:state.name||"",who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
+      await withTimeout(addDoc(collection(db,"shares"),{uid:auth.currentUser.uid,channel,...extra,who:state.who,set:activeSet(),grade:grade(last.avg),overall:Math.round(last.avg*100)/100,crewId:crewId||"",at:Date.now()}),10000,"Saving");
     }catch(x){console.warn("share not recorded",x)}
   }
   const ready=()=>{if(!last||last.avg==null){say2("Answer at least one area first, so there's a report card to share.",true);return false}return true};
-  const phone=()=>$("sharePhone").value.replace(/[^\d+]/g,"");
-  const intl=p=>p.startsWith("+")?p.slice(1):p.startsWith("0")?"61"+p.slice(1):p;   // Australian numbers by default
   async function buildCard(){
     $("fromField").hidden=isMe()||inCrew();
     $("cardMaking").hidden=false; $("cardImg").hidden=true;
     try{
       cardBlob=await window.makeCard(); if(cardUrl) URL.revokeObjectURL(cardUrl); cardUrl=URL.createObjectURL(cardBlob);
       $("cardImg").src=cardUrl; $("cardImg").hidden=false; $("cardMaking").hidden=true; $("saveImg").href=cardUrl;
-    }catch(x){$("cardMaking").textContent="Couldn't make the picture on this device. You can still send the summary by WhatsApp, text or email."}
+    }catch(x){$("cardMaking").textContent="Couldn't make the picture on this device. You can still share the words with the Share Report Card button."}
   }
   window.__rebuildCard=buildCard;
-  shareBtn.onclick=()=>{shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})}};
+  shareBtn.onclick=()=>{if(shareBox.hidden&&$("askBox")){$("askBox").hidden=true;$("endAsk").setAttribute("aria-expanded","false")}shareBox.hidden=!shareBox.hidden;shareBtn.setAttribute("aria-expanded",!shareBox.hidden);say2("");if(!shareBox.hidden){if(!ready()){shareBox.hidden=false;return}buildCard();shareBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"start"})}};
   /* Share Report Card: the share list with the picture and the message (pick WhatsApp, Messages, Mail…).
      Where a device can't share pictures, it shares the words, or opens WhatsApp with them. */
   $("shareImg").onclick=async()=>{
-    if(!ready()) return; const p=phone(), extra=p?{phone:p.slice(0,30)}:{};
+    if(!ready()) return; const extra={};
     try{
       if(canShareFiles()&&cardBlob){await navigator.share({files:[new File([cardBlob],"rate-my-year-report-card.png",{type:"image/png"})],title:cardTitle(),text:shareText()});record("picture",extra);return}
       if(navigator.share){await navigator.share({title:cardTitle(),text:shareText()});record("picture",{...extra,textOnly:true});say2("Only the words were sent: this device can't attach the picture. Tap Save Report to keep the picture.");return}
     }catch(x){if(x&&x.name==="AbortError")return;say2("Couldn't open sharing. Try Save Report instead.",true);return}
     record("whatsapp",extra);
-    const u=`https://wa.me/${p?intl(p):""}?text=${encodeURIComponent(shareText())}`;
+    const u=`https://wa.me/?text=${encodeURIComponent(shareText())}`;
     if(!window.open(u,"_blank")) location.href=u;
   };
   $("saveImg").addEventListener("click",e=>{if(!cardBlob){e.preventDefault();return}record("saved",{})});
+}
+
+/* ---------- Review first, then ask others ----------
+   Finish your own review, tap "See How Others Rate You", and a small group is made for you behind the
+   scenes (no Google sign-in). The invite link carries &from=<member> so whoever opens it is asked to rate
+   that person first, then themselves, and gets their own link to pass on. */
+let afterOpen=null;           // {id, fresh, quiet}: the review to open once "I am" is known
+let inviteFrom="";            // member id from ?from= on the invite link
+const FROM_KEY=id=>"rmy-from-"+id;
+function getFrom(id){try{return localStorage.getItem(FROM_KEY(id))||""}catch(e){return ""}}
+function setFrom(id,v){try{v?localStorage.setItem(FROM_KEY(id),v):localStorage.removeItem(FROM_KEY(id))}catch(e){}}
+const linkFrom=id=>inviteLink()+(id?`&from=${encodeURIComponent(id)}`:"");
+const GROUP_WORD={family:"Family",mates:"Mates",partner:"Check-in"};
+function selfScoreOf(id){const by=(boardById&&boardById[id]&&boardById[id].by)||{};const e=Object.values(by).find(x=>x&&x.self&&typeof x.o==="number");return e?e.o:null}
+function inviteText(kind){
+  const nm=me?memberName(me):"Someone", T=crewTypeOf(crew&&crew.type), so=me?selfScoreOf(me):null;
+  if(kind==="nudge") return T==="partner"?`Just a reminder: I'm waiting on your side of our Couple Check-in 💕 It takes about 5 minutes:`:`Just a reminder: ${nm} is waiting on your rating 🙂 It takes about 5 minutes:`;
+  if(T==="partner") return `${nm} just did our Couple Check-in for 2026 💕 Add your side (about 5 minutes) and we'll see how we compare:`;
+  /* The invite never reveals the sender's own grade. */
+  const hook=`${nm} wants to know how they've gone this year.`;
+  return `${hook} Rate ${nm} in about 5 minutes, then rate yourself and see how you compare:`;
+}
+async function recordShare(channel){
+  try{ if(db&&user) await addDoc(collection(db,"shares"),{uid:user.uid,channel,crewId:crewId||"",type:(crew&&crew.type)||"",at:Date.now()}) }catch(x){console.warn("share not recorded",x)}
+}
+/* Send the invite link from the phone's share sheet (WhatsApp, Messages, email…), or WhatsApp where that isn't available. */
+async function shareLink(kind){
+  if(!crew){toast("Your crew is still loading. Try again in a moment.");return}
+  if(!me){needMe("");return}
+  const text=inviteText(kind), link=linkFrom(me);
+  recordShare(kind==="nudge"?"nudge":"invite");
+  if(navigator.share){
+    try{await navigator.share({text:`${text}\n${link}`});return}
+    catch(x){if(x&&x.name==="AbortError")return}
+  }
+  const u=`https://wa.me/?text=${encodeURIComponent(`${text}\n${link}`)}`;
+  if(!window.open(u,"_blank")) location.href=u;
+}
+async function copyLink(){
+  if(!crew||!me) return;
+  const v=linkFrom(me); let ok=false;
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(v);ok=true}}catch(e){}
+  if(!ok){const t=document.createElement("textarea");t.value=v;t.setAttribute("readonly","");t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();try{ok=document.execCommand("copy")}catch(e){}t.remove()}
+  toast(ok?"Link copied. Paste it into a text, WhatsApp or email.":v,ok?3500:9000);
+  if(ok) recordShare("invite");
+}
+/* Make a small group from the review just done: you, plus the person you rated (if it wasn't you). */
+async function startQuickGroup(myName,themName){
+  if(!auth||!db) throw Object.assign(new Error("Crews aren't connected yet"),{code:"no-config"});
+  if(!auth.currentUser) await withTimeout(signInAnonymously(auth),15000,"Getting ready");
+  user=auth.currentUser;
+  const k=reviewKind(), type=k==="partner"?"partner":k==="mates"?"mates":"family", mt=CREW_TYPES[type].member;
+  const rateSelf=state.who==="me"||state.who==="partner";
+  const myId=rid(10), themId=rid(10), ms=[{id:myId,name:myName,type:mt}];
+  if(themName) ms.push({id:themId,name:themName,type:mt});
+  const targetId=rateSelf?myId:themId;
+  const id=rid(10), r=snapshotResult(), boardKey=rid(16);
+  const name=type==="partner"?(themName?`${myName} & ${themName}'s Check-in`:`${myName}'s Check-in`):`${myName}'s ${GROUP_WORD[type]}`;
+  await setDoc(doc(db,"crews",id),{name,type,quick:true,showBoard:true,ownerUid:user.uid,ownerEmail:user.email||"",adminUids:[user.uid],joinCode:rid(8),members:ms,createdAt:Date.now()});
+  afterOpen={id:targetId,fresh:false,quiet:true};
+  try{await claimMember(id,myId,"")}catch(x){console.warn("claim",x)}
+  try{
+    const b=writeBatch(db);
+    b.set(doc(db,"crews",id,"reviews",`${user.uid}_${targetId}`),{member:targetId,reviewer:myId,reviewerUid:user.uid,...r,boardKey});
+    b.set(doc(db,"crews",id,"board",targetId),{by:{[boardKey]:{o:r.overall,self:targetId===myId}}},{merge:true});
+    await b.commit();
+  }catch(x){console.warn("first review",x)}
+  try{await rememberCrew(id,name)}catch(x){console.warn("remember",x)}
+  return {id,name};
+}
+/* Someone opened an invite link and hasn't said who they are yet: one friendly box instead of the crew tools. */
+function paintWelcome(){
+  const box=$("welcomeBox"); if(!box) return;
+  const show=REVIEW_PAGE&&!!crew&&!me&&members().length>0;
+  box.hidden=!show; if(show){$("meWrap").hidden=true;$("meNote").hidden=true;$("meField").classList.remove("attention")}
+  if(!show){box.dataset.k="";return}
+  const from=getFrom(crewId), fromM=members().find(m=>m.id===from)||members()[0], partner=crew.type==="partner";
+  const free=members().filter(m=>m.id!==fromM.id&&!claims[m.id]);
+  if(!box.dataset.shown){box.dataset.shown="1";setTimeout(()=>{if(!box.hidden)box.scrollIntoView({behavior:"auto",block:"start"})},350)}
+  const key=JSON.stringify([fromM.id,fromM.name,partner,free.map(m=>m.id+m.name)]); if(box.dataset.k===key) return; box.dataset.k=key;
+  const fn=esc(fromM.name);
+  box.innerHTML=`<p class="wtitle">${partner?`<b>${fn}</b> wants your side of the Couple Check-in 💕`:`<b>${fn}</b> wants your honest take`}</p>
+    <p class="muted">${partner?"Type your first name, then rate the relationship. It takes about 5 minutes, then you'll see how your views compare.":`Type your first name, then rate ${fn}. It takes about 5 minutes. After that you can rate yourself and see how you compare.`}</p>
+    ${free.length?`<div class="row-btns">${free.map(m=>`<button type="button" class="ghost" data-iam="${m.id}">I'm ${esc(m.name)}</button>`).join("")}</div>`:""}
+    <form class="wform" id="wForm" novalidate><input id="wName" autocomplete="given-name" maxlength="40" placeholder="Your first name" aria-label="Your first name"><button type="submit" id="wGo">Let's go</button></form>`;
+  box.querySelectorAll("[data-iam]").forEach(b=>b.onclick=()=>welcomeGo(b.dataset.iam,"",fromM.id));
+  $("wForm").addEventListener("submit",e=>{e.preventDefault();const n=$("wName").value.trim().slice(0,40);if(!n){famErr("Type your first name first.");$("wName").focus();return}welcomeGo("",n,fromM.id)});
+}
+async function welcomeGo(id,name,fromId){
+  const go=$("wGo"); if(go) go.disabled=true; famErr("");
+  try{
+    if(!id){
+      const hit=members().find(m=>m.name.trim().toLowerCase()===name.toLowerCase());
+      if(hit) id=hit.id;
+      else{id=rid(10);await updateDoc(doc(db,"crews",crewId),{members:[...members(),{id,name,type:crew.type?crewMemberType():"family"}]})}
+    }
+    const first=crew.type==="partner"?id:(fromId&&fromId!==id&&isMember(fromId)?fromId:id);
+    afterOpen={id:first,fresh:true,quiet:false};
+    await claimMember(crewId,id,me);
+  }catch(x){afterOpen=null;famErr(errText(x));if(go)go.disabled=false}
+}
+/* Your next steps, at the top of the crew box: rate yourself, who you're waiting on, invite more people. */
+function paintNext(){
+  const box=$("nextBox"); if(!box) return;
+  const show=REVIEW_PAGE&&!!crew&&!!me; box.hidden=!show;
+  if(!show){box.dataset.k="";return}
+  const partner=crew.type==="partner";
+  const selfDone=reviews().some(r=>r.member===me&&(r.reviewerUid===user.uid||r.reviewer===me));
+  const waiting=members().filter(m=>m.id!==me&&!claims[m.id]);
+  const mine=boardOpen()&&boardById?boardScore(me):null, need=partner||!mine?0:Math.max(0,2-mine.o);
+  const guestOwner=isGuest()&&isOwner();
+  const key=JSON.stringify([selfDone,waiting.map(m=>m.name),need,guestOwner,partner]); if(box.dataset.k===key) return; box.dataset.k=key;
+  const rows=[];
+  if(!selfDone) rows.push(`<div class="nrow"><span><b>Next:</b> ${partner?"add your side of the check-in.":"rate yourself, so you can see how you compare."}</span><button type="button" data-next="self">${partner?"Start":"Rate myself"}</button></div>`);
+  else if(need) rows.push(`<div class="nrow"><span>🔒 Your crew score unlocks after <b>${need} more review${need===1?"":"s"}</b> of you.</span></div>`);
+  if(partner&&!waiting.length&&members().length>=2) rows.push(`<div class="nrow"><span>${selfDone?"You've both had your say. Your report card shows how your views compare.":"Your partner is in. Add your side to compare."}</span>${selfDone?`<button type="button" class="ghost sm" data-next="self">See our report</button>`:""}</div>`);
+  else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
+  rows.push(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
+  box.innerHTML=`<h3>Your next steps</h3>${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
+  $("addRate").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const n=$("addRateName").value.trim().slice(0,40); if(!n){$("addRateName").focus();return}
+    const hit=members().find(m=>m.name.trim().toLowerCase()===n.toLowerCase());
+    if(hit){if(hit.id===me){famErr("That's you. Tap Rate myself instead.");return}startReview(hit.id);return}
+    try{const id=rid(10), next=[...members(),{id,name:n,type:crew.type?crewMemberType():"family"}];await updateDoc(doc(db,"crews",crewId),{members:next});crew={...crew,members:next};$("addRateName").value="";famErr("");startReview(id);toast(`${n} is added. Rate them, then send them the link so they can join in.`,5000)}
+    catch(x){famErr(errText(x))}
+  });
+  box.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{
+    const a=b.dataset.next;
+    if(a==="self") startReview(me);
+    else if(a==="invite") shareLink("invite");
+    else if(a==="nudge") shareLink("nudge");
+    else if(a==="keep") googleSignIn();
+  });
 }
 
 /* ---------- boot ---------- */
@@ -1190,8 +1472,13 @@ async function loadConfig(){
   status("Connecting…");
   const p=new URLSearchParams(location.search);
   if(p.get("crew")&&p.get("code")) invite={crew:p.get("crew"),code:p.get("code")};
+  if(invite&&/^[a-z0-9]{4,40}$/i.test(p.get("from")||"")) inviteFrom=p.get("from");
+  try{
+    const [A,U,F]=await withTimeout(Promise.all(FB_URLS.map(u=>import(u))),15000,"Loading crews");
+    ({initializeApp}=A); ({signInWithCredential,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,connectAuthEmulator,signInAnonymously,linkWithPopup}=U); ({getFirestore,connectFirestoreEmulator,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,addDoc,arrayUnion,arrayRemove,writeBatch,getDocs,limit}=F);
+  }catch(x){console.warn("Firebase didn't load",x);body.innerHTML=`<p class="muted">Crews can't load right now (check your connection, or turn off content blockers for this site). You can still do a review on your own below.</p>`;render();return}
   const cfg=await loadConfig();
-  if(!cfg){body.innerHTML=`<p class="muted">Crews aren't connected yet. Follow the setup guide to link this site to Firebase. You can still do a review on your own below.</p>`;render();return}
+  if(!cfg){body.innerHTML=`<p class="muted">Crews aren't available right now. You can still do a review on your own below.</p>`;render();return}
   /* Sign-in start-up. Firebase normally keeps the signed-in person in IndexedDB, which can freeze in Safari
      on iPad so the sign-in check never answers. If nothing comes back within 6 seconds we switch to a backup
      that keeps sign-in in localStorage instead, and remember that for next time on this device. */
@@ -1219,19 +1506,20 @@ async function loadConfig(){
   let wasRedirect=false;try{wasRedirect=sessionStorage.getItem("rmy-redirect")==="1";sessionStorage.removeItem("rmy-redirect")}catch(e){}
   if(wasRedirect) getRedirectResult(auth,browserPopupRedirectResolver).catch(()=>{});
   try{render()}catch(x){console.error(x)}
+  if(JOIN) try{viewJoin()}catch(x){console.error(x)}
   authWatch=setTimeout(()=>{if(stillBusy()&&!gotAuth)showFatal({code:"sign-in check timed out. Check your connection, or turn off content blockers for this site"})},20000);
   async function onAuth(u){ try{ user=u; paintCreate();
     clearCrewSubs(); user=u; crew=null; crewId=""; target=null; myCrews=[];
     if(JOIN){
       if(!u){
         if(guestTried){viewSignedOut();return}
-        guestTried=true; body.innerHTML=`<p class="muted">Getting ready…</p>`;
+        guestTried=true; if(!$("jLink2")) viewJoin();
         try{await withTimeout(signInAnonymously(auth),15000,"Getting ready")}catch(x){guestFail(x,()=>location.reload())}
         return;
       }
-      status("Loading your crews…");
+      if(!$("jLink2")) status("Loading your crews…");
       try{const s=await withTimeout(getDoc(doc(db,"users",u.uid)),12000,"Loading your crews");myCrews=(s.exists()&&s.data().crews)||[]}catch(e){myCrews=[]}
-      render(); viewJoin(); return;
+      render(); if(!$("jLink2")||document.activeElement!==$("jLink2")) viewJoin(); return;
     }
     if(!u){
       render();
@@ -1254,6 +1542,14 @@ async function loadConfig(){
     if(invite&&!ADMIN) return joinCrew(invite);
     if(REVIEW_PAGE&&entry==="join"&&!landJoin){landJoin=true;return startJoin()}
     const lastCrew=loadLS();
+    /* Picked Rate My Family / Mates / Couple Check-in? Only open a group of that type. With none, do a fresh
+       review of that type; See How Others Rate You then makes a new group for it. */
+    const want=REVIEW_PAGE?{family:"family",mate:"mates",partner:"partner"}[LAND.get("who")]:"";
+    if(want&&myCrews.length){
+      const order=[...myCrews.filter(c=>c.id===lastCrew),...myCrews.filter(c=>c.id!==lastCrew)];
+      for(const c of order){try{const d=await withTimeout(getDoc(doc(db,"crews",c.id)),8000,"Loading");if(d.exists()&&crewTypeOf(d.data().type)===want)return openCrew(c.id)}catch(e){}}
+      return viewLobby();
+    }
     if(lastCrew&&myCrews.some(c=>c.id===lastCrew)) openCrew(lastCrew);
     else if(myCrews.length===1) openCrew(myCrews[0].id);
     else viewLobby();

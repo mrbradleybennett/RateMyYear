@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Privacy · Rate My Year</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;600;700&display=swap"></noscript>
+<style>
+:root{--bg:#eef1ec;--panel:#fff;--ink:#14231b;--muted:#5a6b60;--line:#d5ddd6;--green:#0f4d32;--gold:#f2b705;
+  --display:"Bowlby One","Arial Black",Impact,sans-serif;--body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0c1611;--panel:#13221a;--ink:#e8efe9;--muted:#9db0a3;--line:#24382c;--green:#7fd1a2;--gold:#f5c533;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0c1611;--panel:#13221a;--ink:#e8efe9;--muted:#9db0a3;--line:#24382c;--green:#7fd1a2;--gold:#f5c533;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+.menu{display:flex;gap:22px;flex-wrap:wrap}
+.menu a{font-family:var(--display);font-size:18px;text-decoration:none;color:var(--green);padding:10px 0;border-bottom:3px solid transparent}
+h1{font-family:var(--display);font-weight:400;color:var(--green);font-size:clamp(34px,7vw,52px);line-height:1.05;margin:28px 0 8px}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:30px 0 6px}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:4px 20px 18px;margin-top:18px}
+li{margin:6px 0}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="menu" aria-label="Main"><a href="./">Home</a><a href="join.html">Join</a><a href="mycrew.html">Create</a></nav>
+  <h1>Privacy</h1>
+  <p class="muted">The short version: what you enter, where it goes and who can see it.</p>
+
+  <div class="card">
+    <h2>Reviewing on your own</h2>
+    <ul>
+      <li>Your answers are kept on your device (in your browser) so you can come back to them.</li>
+      <li>Nothing is sent anywhere unless you share your report card or invite people to rate you.</li>
+    </ul>
+
+    <h2>Crews and invite links</h2>
+    <ul>
+      <li>When you join a crew or invite people, reviews are stored in Google Firebase so the crew can see results.</li>
+      <li><b>Crew members</b> see combined crew scores only, and only once at least 2 people have reviewed someone. Members never see who gave which score.</li>
+      <li><b>The crew admin</b> (the person who set up the crew) can see each review, including who wrote it, so they can manage the crew.</li>
+      <li>The crew admin can delete reviews, reset people or reset the whole crew.</li>
+    </ul>
+
+    <h2>Sharing your report card</h2>
+    <ul>
+      <li>The report card picture is made on your device and sent through your phone's own share menu.</li>
+      <li>We keep a simple count of shares (how it was shared and the grade), not who you sent it to.</li>
+    </ul>
+
+    <h2>Signing in</h2>
+    <ul>
+      <li>Only crew admins sign in, with Google. We store your name and email so you can manage your crew.</li>
+      <li>Everyone else joins with an invite link and doesn't need an account.</li>
+    </ul>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We don't sell your data or show ads.</li>
+      <li>We don't ask for phone numbers or contact lists.</li>
+    </ul>
+
+    <h2>Removing your data</h2>
+    <ul>
+      <li>Your own answers: use <b>Start again</b> on the review page, or clear this site's data in your browser.</li>
+      <li>Crew reviews: ask your crew admin to delete them, or contact the site owner through ratemyyear.com.</li>
+    </ul>
+  </div>
+  <p class="muted" style="margin-top:28px">Rate My Year · ratemyyear.com</p>
+</div>
+</body>
+</html>

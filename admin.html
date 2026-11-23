@@ -6,7 +6,8 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Site Admin · Rate My Year</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"></noscript>
 <style>
 :root{
   --bg:#eef1ec; --panel:#ffffff; --ink:#14231b; --muted:#5a6b60; --line:#d5ddd6;
@@ -26,7 +27,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font
 .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:22px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .menu{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
-.menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:4px 0;border-bottom:3px solid transparent}
+.menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:12px 0;border-bottom:3px solid transparent}
 .menu a:hover{border-bottom-color:var(--line)}
 .menu a[aria-current="page"],.menu a[aria-pressed="true"]{border-bottom-color:var(--gold)}
 .menu a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -46,17 +47,18 @@ button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5p
 .tbl-wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+th{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
 td.n{text-align:right;font-family:var(--mono)}
 .pill{display:inline-block;font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--soft)}
-.pill.mates{background:#fff4d6;color:#6b4e00}.pill.family{background:#e3f1e8;color:#14532d}
+.pill.mates{background:#fff4d6;color:#6b4e00}.pill.family{background:#e3f1e8;color:#14532d}.pill.partner{background:#fde4ec;color:#8a1c46}
+@media (prefers-color-scheme: dark){.pill.mates{background:#3a2f0a;color:#f5d77a}.pill.family{background:#163a26;color:#a9e3bf}.pill.partner{background:#3d1626;color:#f3b3c9}}
 .gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1f1f1f;box-shadow:inset 0 0 0 1px #dadce0}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><nav aria-label="Main"><div class="menu"><a href="./">About</a><a href="review.html?go=join">Join</a><a id="navCreate" href="mycrew.html">Create</a></div></nav><span class="row" id="who"></span></div>
+  <div class="top"><nav aria-label="Main"><div class="menu"><a href="./">Home</a><a href="join.html">Join</a><a id="navCreate" href="mycrew.html">Create</a></div></nav><span class="row" id="who"></span></div>
   <h1>Site <span>Admin</span></h1>
   <div id="main" class="panel"><p class="muted">Loading…</p></div>
 </div>
@@ -118,7 +120,7 @@ async function load(user){
     const emailOf={};if(usersSnap)usersSnap.docs.forEach(d=>{const e=d.data().email;if(e)emailOf[d.id]=e});
     const ownerMail=c=>c.ownerEmail||emailOf[c.ownerUid]||"";
     const sum=k=>per.reduce((a,c)=>a+(c[k]||0),0);
-    const fam=per.filter(c=>c.type!=="mates").length, mates=per.filter(c=>c.type==="mates").length;
+    const fam=per.filter(c=>c.type!=="mates"&&c.type!=="partner").length, mates=per.filter(c=>c.type==="mates").length, couples=per.filter(c=>c.type==="partner").length;
     const people=per.reduce((a,c)=>a+(Array.isArray(c.members)?c.members.length:0),0);
     const weekAgo=Date.now()-7*864e5, newCrews=per.filter(c=>(c.createdAt||0)>weekAgo).length;
     const tile=(label,val,note)=>`<div class="tile"><b>${label}</b><span>${val==null?"–":val}</span>${note?`<small>${note}</small>`:""}</div>`;
@@ -128,7 +130,7 @@ async function load(user){
     main.innerHTML=`
       <div class="row" style="justify-content:space-between"><h2>Overview</h2><button class="ghost" id="again">Refresh</button></div>
       <div class="tiles">
-        ${tile("Crews",per.length,`${fam} family · ${mates} mates · ${newCrews} new this week`)}
+        ${tile("Crews",per.length,`${fam} family · ${mates} mates · ${couples} couple · ${newCrews} new this week`)}
         ${tile("Reviews submitted",sum("reviews"),"Saved crew reviews")}
         ${tile("People in crews",people,`${sum("joined")} joined by link or password`)}
         ${tile("Solo results saved",resultsN,"Rate Me results saved outside a crew")}
@@ -138,12 +140,12 @@ async function load(user){
       <h2>Crews</h2>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Crew</th><th>Owner email</th><th>Type</th><th>Created</th><th style="text-align:right">People</th><th style="text-align:right">Joined</th><th style="text-align:right">Reviews</th><th>Leaderboard</th></tr></thead>
-        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td>${ownerMail(c)?`<a href="mailto:${esc(ownerMail(c))}">${esc(ownerMail(c))}</a>`:`<span class="muted">Not seen yet</span>`}</td><td><span class="pill ${c.type==="mates"?"mates":"family"}">${c.type==="mates"?"Mates":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td></tr>`).join("")||`<tr><td colspan="8" class="muted">No crews yet.</td></tr>`}</tbody>
+        <tbody>${per.map(c=>`<tr><td><b>${esc(c.name||c.id)}</b></td><td>${ownerMail(c)?`<a href="mailto:${esc(ownerMail(c))}">${esc(ownerMail(c))}</a>`:`<span class="muted">Not seen yet</span>`}</td><td><span class="pill ${c.type==="mates"?"mates":c.type==="partner"?"partner":"family"}">${c.type==="mates"?"Mates":c.type==="partner"?"Couple":"Family"}</span></td><td>${day(c.createdAt)}</td><td class="n">${Array.isArray(c.members)?c.members.length:0}</td><td class="n">${c.joined??"–"}</td><td class="n">${c.reviews??"–"}</td><td>${c.showBoard===false?"Hidden":"On"}</td></tr>`).join("")||`<tr><td colspan="8" class="muted">No crews yet.</td></tr>`}</tbody>
       </table></div>
       <h2>Latest shares</h2>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>When</th><th>How</th><th>Sent to</th><th>Review</th><th>Grade</th></tr></thead>
-        <tbody>${shares.map(s=>`<tr><td>${when(s.at)}</td><td>${esc(s.channel||"email")}</td><td>${esc(s.email||s.phone||"–")}</td><td>${esc(s.subject||"")} ${s.set==="mates"?"(Mate)":s.who==="me"?"(Personal)":"(Family)"}</td><td>${esc(s.grade||"")}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">No shares yet${sharesSnap?"":" (or not readable: publish the latest security rules)"}.</td></tr>`}</tbody>
+        <thead><tr><th>When</th><th>How</th><th>Contact</th><th>Review</th><th>Grade</th></tr></thead>
+        <tbody>${shares.map(s=>`<tr><td>${when(s.at)}</td><td>${esc(s.channel||"email")}</td><td>${s.email||s.phone?"(old record)":"–"}</td><td>${s.who==="me"?"Self":s.set==="mates"?"Mate":s.set==="partner"?"Couple":"Family"}</td><td>${esc(s.grade||"")}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">No shares yet${sharesSnap?"":" (or not readable: publish the latest security rules)"}.</td></tr>`}</tbody>
       </table></div>
       <p class="muted">Updated ${when(Date.now())}.</p>`;
     $("again").onclick=()=>load(user);

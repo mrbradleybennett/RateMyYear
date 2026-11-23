@@ -39,7 +39,8 @@ It runs on Firebase (Google), which is free at family and friends scale. Firebas
 | `firestore.rules` | Database security: who can read and write what |
 | `firebase.json`, `.firebaserc` | Firebase project settings |
 | `tests/rules.test.mjs` | Automated checks for the security rules |
-| `src/crew.js` | Readable copy of the crew code that sits inside `index.html` |
+| `src/review.src.html` | **The file to edit** for the review, My Crew and Join pages. Run `python3 tools/build-pages.py` afterwards: it writes `review.html`, `mycrew.html`, `join.html`, `js/app.js` and `js/crew.js` |
+| `privacy.html` | Who sees what (linked from the page footers) |
 
 ## Set it up (about 15 minutes, one time)
 
