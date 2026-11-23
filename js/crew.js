@@ -804,7 +804,7 @@ function renderBoard(){
   const rows=ms.map(m=>({m,b:boardScore(m.id)})).sort((x,y)=>(y.b.v??-1)-(x.b.v??-1)||x.m.name.localeCompare(y.m.name));
   list.innerHTML=rows.map(({m,b},i)=>{const g=b.v==null?null:grade(b.v);
     return `<div class="member board-row"${g?` style="--g:${gcol(g)}"`:""}><span class="rank">${b.v==null?"–":i+1}</span><span class="chip${g?"":" none"}">${g||"–"}</span>
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}</small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}<small>${b.v==null?"Not reviewed yet":`${b.v.toFixed(1)} / 10 · ${b.n} review${b.n===1?"":"s"}`}</small></span>
       <span class="btns"><button type="button" class="ghost" data-review2="${m.id}">${m.id===me?"Review myself":"Review"}</button></span></div>`}).join("");
   list.querySelectorAll("[data-review2]").forEach(b=>b.onclick=()=>startReview(b.dataset.review2));
 }
@@ -887,7 +887,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1))&&(isAdmin()||m.id===me);
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
@@ -899,7 +899,7 @@ function refresh(){
     const joined=!!claims[m.id], isAdm=joined&&crew.adminUids.includes(claims[m.id]);
     return `<div class="member"${g&&canSee?` style="--g:${gcol(g)}"`:""}>
       <span class="chip${g&&canSee?"":" none"}">${g&&canSee?g:"–"}</span>
-      <span class="nm">${esc(m.name)}${m.id===me?" (you)":""}<small>${MEMBER_WORD[memberType(m.id)]||"Family"}${joined?" · joined":""}${isAdm?" · admin":""}${canSee?` · ${a.rs.length} review${a.rs.length===1?"":"s"}`:""}${mine?" · you've reviewed":""}</small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}<small>${MEMBER_WORD[memberType(m.id)]||"Family"}${joined?" · joined":""}${isAdm?" · admin":""}${canSee?` · ${a.rs.length} review${a.rs.length===1?"":"s"}`:""}${mine?" · you've reviewed":""}</small></span>
       <span class="btns">
         ${ADMIN?"":`<button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>`}
         ${!ADMIN&&m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${a.rs.length?"":" disabled"}>My results</button>`:""}
