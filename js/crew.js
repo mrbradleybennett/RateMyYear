@@ -574,8 +574,6 @@ function viewCrewShell(){
       <div id="adminBody"></div>
     </div>
   </div>`;
-  /* On the review page the leaderboard (with the add-someone form) sits at the bottom of the page. */
-  if(REVIEW_PAGE&&!ADMIN){const bs=$("boardSec");bs.innerHTML="";["boardTitle","crewScore","boardNote","memList","addForm"].forEach(id=>{const el=$(id);if(el)bs.appendChild(el)})}
   if($("signOut")) $("signOut").onclick=()=>signOut(auth);
   $("addMeForm").addEventListener("submit",async e=>{
     e.preventDefault();
@@ -787,7 +785,7 @@ function paintCreate(){
   paintEndInvite();
 }
 function renderBoard(){
-  const sec=$("boardSec"); if(sec) sec.hidden=!(REVIEW_PAGE&&!ADMIN&&crew); return;
+  const sec=$("boardSec"); if(sec) sec.hidden=true; return;
   if(ADMIN||!crew){sec.hidden=true;return}
   sec.hidden=false;
   const ms=members(), open=boardOpen(), mates=crew.type==="mates";
