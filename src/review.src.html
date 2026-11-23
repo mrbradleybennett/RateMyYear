@@ -1731,9 +1731,9 @@ function viewCrewShell(){
     <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
     <div class="crewscore" id="crewScore" hidden></div>
     <p class="muted" id="boardNote" hidden></p>
-    <div class="nextbox" id="nextBox" hidden></div>
     <div class="members" id="memList"></div>
     <div class="nextbox nextadd" id="nextAdd" hidden></div>
+    <div class="nextbox" id="nextBox" hidden></div>
     <form class="form" id="addForm" novalidate>
       <div class="field"><label for="newMem">Add someone to the crew</label><input id="newMem" autocomplete="off" placeholder="e.g. Nikki or Dave"></div>
       <div class="field" id="newTypeF"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
@@ -2079,7 +2079,7 @@ function refresh(){
     const bottom=open&&b.v!=null&&!award&&(/^[DE]/.test(g)||(nScored>=3&&i===nScored-1))&&(isAdmin()||m.id===me);
     return `<div class="member board-row${mine?" done":""}${award?" best":""}"${open&&g?` style="--g:${gcol(g)}"`:!open?` style="--g:${gcol(fg)}"`:""}>
       <span class="rank">${rank}</span>${chip}
-      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?"✓ Reviewed":"To do"}</span></small></span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}${award&&CREW_TYPES[crewTypeOf(crew.type)].top?` <span class="award">${CREW_TYPES[crewTypeOf(crew.type)].top}</span>`:""}${bottom&&CREW_TYPES[crewTypeOf(crew.type)].low?` <span class="award low" title="Only ${m.id===me?"you":"they"} and the crew admin can see this">${CREW_TYPES[crewTypeOf(crew.type)].low} <span class="sr-note">(private)</span></span>`:""}<small>${score} <span class="rstat${mine?" ok":""}">${mine?(m.id===me?"✓ You rated yourself":"✓ You rated them"):(m.id===me?"Rate yourself":"You haven't rated them")}</span></small></span>
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
