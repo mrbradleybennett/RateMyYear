@@ -543,13 +543,14 @@ function viewCrewShell(){
       <div class="field" id="addMeTypeF"><label for="addMeType">You are</label><select id="addMeType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
       <button type="submit">Add me</button>
     </form>
-    <div class="nextbox" id="nextBox" hidden></div>
     <div class="typebox" id="typeBox" hidden></div>
     <label class="typebox boardtoggle" id="boardToggle" hidden><span><input type="checkbox" id="boardOn"> <b>Make leaderboard visible</b></span><span class="muted">On by default: everyone in the crew sees the leaderboard. Untick it to blur the scores out for the crew. You can always see them here under All scores.</span></label>
     <h3 class="board-h" id="boardTitle" hidden>Who are you reviewing?</h3>
     <div class="crewscore" id="crewScore" hidden></div>
     <p class="muted" id="boardNote" hidden></p>
+    <div class="nextbox" id="nextBox" hidden></div>
     <div class="members" id="memList"></div>
+    <div class="nextbox nextadd" id="nextAdd" hidden></div>
     <form class="form" id="addForm" novalidate>
       <div class="field"><label for="newMem">Add someone to the crew</label><input id="newMem" autocomplete="off" placeholder="e.g. Nikki or Dave"></div>
       <div class="field" id="newTypeF"><label for="newType">They are</label><select id="newType"><option value="family">Family</option><option value="mate">A mate</option><option value="partner">A partner</option></select></div>
@@ -1470,7 +1471,7 @@ async function welcomeGo(id,name,fromId){
 /* Your next steps, at the top of the crew box: rate yourself, who you're waiting on, invite more people. */
 function paintNext(){
   const box=$("nextBox"); if(!box) return;
-  const show=REVIEW_PAGE&&!!crew&&!!me; box.hidden=!show;
+  const show=REVIEW_PAGE&&!!crew&&!!me; box.hidden=!show; if($("nextAdd")) $("nextAdd").hidden=!show;
   if(!show){box.dataset.k="";return}
   const partner=crew.type==="partner";
   const selfDone=reviews().some(r=>r.member===me&&(r.reviewerUid===user.uid||r.reviewer===me));
@@ -1483,8 +1484,9 @@ function paintNext(){
   else if(need) rows.push(`<div class="nrow"><span>🔒 Your crew score unlocks after <b>${need} more review${need===1?"":"s"}</b> of you.</span></div>`);
   if(partner&&!waiting.length&&members().length>=2) rows.push(`<div class="nrow"><span>${selfDone?"You've both had your say. Your report card shows how your views compare.":"Your partner is in. Add your side to compare."}</span>${selfDone?`<button type="button" class="ghost sm" data-next="self">See our report</button>`:""}</div>`);
   else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
-  rows.push(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
-  box.innerHTML=`<h3>Your next steps</h3>${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
+  const addRow=(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
+  $("nextAdd").innerHTML=addRow;
+  box.innerHTML=`${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
   $("addRateName").addEventListener("input",paintDone);
   $("addRate").addEventListener("submit",async e=>{
     e.preventDefault();
