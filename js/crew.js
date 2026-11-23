@@ -895,7 +895,7 @@ function refresh(){
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     const t=b.t||0, cnt=`<span class="revcount">${t?`${t} review${t===1?"":"s"}`:"No reviews yet"}</span>`;
-    const score=open?(b.locked?`<span class="lockline2">🔒 Score shows after 2 reviews</span> · ${cnt}`:b.v==null?cnt:b.o===0?`${b.v.toFixed(1)} / 10 · ${m.id===me?"your":"their"} own rating · ${cnt}`:`${b.v.toFixed(1)} / 10 · ${cnt}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span> · ${cnt}`;
+    const score=open?(b.locked?`<span class="lockline2">🔒</span> ${cnt}`:b.v==null?cnt:b.o===0?`${b.v.toFixed(1)} / 10 · ${m.id===me?"your":"their"} own rating · ${cnt}`:`${b.v.toFixed(1)} / 10 · ${cnt}`):`<span class="blurred">${(9.1-i*0.7).toFixed(1)} / 10</span> · ${cnt}`;
     const nScored=ranked.filter(x=>x.b.v!=null).length, mates=crew.type==="mates";
     const award=open&&i===0&&b.v!=null&&nScored>=2;
     /* Low award: anyone graded D or E, plus whoever is last once 3+ people are scored. */
@@ -907,7 +907,7 @@ function refresh(){
       <span class="btns">
         <button type="button" data-review="${m.id}">${m.id===me?"Review myself":"Review"}</button>
         ${m.id===me?`<button type="button" class="ghost" data-results="${m.id}"${aggFor(m.id).rs.length?"":" disabled"}>My results</button>`:""}
-      </span></div>`}).join("")
+      </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show after 2 reviews, so nobody's rating stands out on its own.</p>`:"")
     :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&byMe(r));
