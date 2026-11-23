@@ -55,6 +55,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .namerow label{font-weight:700}
 .namerow input{font:inherit;padding:8px 12px;min-height:44px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1;max-width:280px}
 .namerow input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.namepair{display:flex;gap:8px;align-items:center;flex:1 1 220px;max-width:340px}
+.namepair[hidden],.whoseg[hidden]{display:none}
+.whopick{font:inherit;padding:8px 12px;min-height:44px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1}
+.whopick:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 
 .cat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 18px 20px;display:flex;flex-direction:column;gap:16px}
 .cat-head{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
@@ -478,9 +482,11 @@ body.report-locked .report{display:none}
       <button id="famLeave" class="ghost sm" type="button" hidden>Leave crew</button>
     </div>
     <div class="namerow review-only">
-      <div class="whoseg" role="group" aria-label="Who are you rating?"><button type="button" id="whoMe" aria-pressed="true">Me</button><button type="button" id="whoOther" aria-pressed="false">Someone else</button></div>
-      <label for="name" id="nameLabel">Name:</label>
-      <input id="name" type="text" placeholder="e.g. Brad" autocomplete="off">
+      <div class="whoseg" role="group" aria-label="Who are you rating?" hidden><button type="button" id="whoMe" aria-pressed="true">Me</button><button type="button" id="whoOther" aria-pressed="false">Someone else</button></div>
+      <span class="namepair"><label for="myName">Your name:</label><input id="myName" type="text" placeholder="e.g. Brad" autocomplete="given-name" maxlength="40"></span>
+      <span class="namepair"><label for="whoPick">Rating:</label><select id="whoPick" class="whopick"></select></span>
+      <span class="namepair" id="namePair"><label for="name" id="nameLabel">Their name:</label>
+      <input id="name" type="text" placeholder="e.g. Mum" autocomplete="off" maxlength="40"></span>
       <button type="button" class="ghost sm" id="startOver">Start again</button>
       <select id="famPick" hidden style="font:inherit;padding:8px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1;max-width:280px"></select>
     </div>
@@ -540,7 +546,7 @@ body.report-locked .report{display:none}
         <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>Invite Others To Rate You</b><small>Send a link. They rate you in about 5 minutes, then rate themselves.</small></button>
         <button type="button" class="endbtn" id="shareBtn" aria-expanded="false" hidden><b>Share Results</b><small>Send a picture of your report card</small></button>
         <button type="button" class="endbtn" id="endJoin" hidden><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
-        <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
+        <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Rate Another</b><small>Saves this review and starts the next person</small></button>
       </div>
       <label class="inccard"><input type="checkbox" id="incCard" checked> Include this report card in the message</label>
       <div class="sharebox askbox" id="askBox" hidden>
@@ -581,11 +587,11 @@ body.report-locked .report{display:none}
   </section>
 </div>
 
-<script src="js/app.js?v=026101510a"></script>
+<script src="js/app.js?v=2c83812cf8"></script>
 
 <script src="firebase-config.js"></script>
 <script>window.RMY_PAGE="admin";</script>
-<script type="module" src="js/crew.js?v=34ba03d67b"></script>
+<script type="module" src="js/crew.js?v=d833becb23"></script>
 
 </body>
 </html>

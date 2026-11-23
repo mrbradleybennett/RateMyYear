@@ -273,16 +273,42 @@ const pickWho=w=>{const r=$m("who-"+w);if(r&&!r.checked){r.checked=true;r.dispat
 $m("whoMe").onclick=()=>pickWho("me");
 $m("whoOther").onclick=()=>pickWho(["mate","partner"].includes(state.other)?state.other:"family");
 const nameEl=$m("name");nameEl.value=state.name||"";
+/* Who are you rating: Me, people you've rated on this device, or someone new. Each person keeps their own draft. */
+const PEOPLE_KEY="rmy-people", lc=t=>(t||"").trim().toLowerCase();
+const people=()=>{try{const l=JSON.parse(localStorage.getItem(PEOPLE_KEY)||"[]");return Array.isArray(l)?l.filter(x=>typeof x==="string"&&x.trim()):[]}catch(e){return []}};
+const remember=n=>{n=(n||"").trim().slice(0,40);if(!n)return;const l=[n,...people().filter(x=>lc(x)!==lc(n))].slice(0,12);try{localStorage.setItem(PEOPLE_KEY,JSON.stringify(l))}catch(e){}};
+const myNameEl=$m("myName");
+const myNameVal=()=>myNameEl.value.trim().slice(0,40);
+const dkey=()=>state.who==="me"?"me":"o:"+lc(state.name);
+function stash(){state.drafts=state.drafts||{};state.drafts[dkey()]={v:state.v,dk:state.dk,name:state.name,who:state.who,qset:state.qset,revealed:!!state.revealed,legacyT:!!state.legacyT}}
+function unstash(k){const d=(state.drafts||{})[k]||{};state.v=d.v||{};state.dk=d.dk||{};state.revealed=!!d.revealed;state.legacyT=!!d.legacyT;if(d.qset)state.qset=d.qset;else delete state.qset;return d}
+/* older saves kept one "other" draft */
+if(state.drafts&&state.drafts.other){const d=state.drafts.other;delete state.drafts.other;if(Object.keys(d.v||{}).length||d.name){state.drafts["o:"+lc(d.name)]=d;remember(d.name)}}
+if(state.who!=="me") remember(state.name);
+try{myNameEl.value=localStorage.getItem("rmy-from")||(state.who==="me"?state.name:"")||((state.drafts||{}).me||{}).name||""}catch(e){}
+myNameEl.addEventListener("input",()=>{const n=myNameVal();try{localStorage.setItem("rmy-from",n)}catch(e){}const sf=$m("shareFrom");if(sf)sf.value=n;if(state.who==="me"){state.name=n;nameEl.value=n}save();render()});
 nameEl.addEventListener("input",()=>{state.name=nameEl.value.trim();save();render()});
+nameEl.addEventListener("change",()=>{if(state.who!=="me"&&state.name){remember(state.name);render()}});
+const setRadio=w=>document.querySelectorAll('input[name=who]').forEach(r=>r.checked=r.value===w);
+$m("whoPick").addEventListener("change",e=>{
+  const v=e.target.value; stash();
+  if(v==="me"){unstash("me");state.who="me";state.name=myNameVal()}
+  else{const nm=v==="new"?"":v.slice(2), d=unstash("o:"+lc(nm));
+    state.who=["family","mate","partner"].includes(d.who)?d.who:state.who!=="me"?state.who:(["mate","partner"].includes(state.other)?state.other:"family");
+    state.other=state.who; state.name=nm}
+  nameEl.value=state.who==="me"?"":state.name; setRadio(state.who); save(); render();
+  if(v==="new") setTimeout(()=>nameEl.focus(),0);
+});
 document.querySelectorAll('input[name=who]').forEach(r=>{
   r.checked=r.value===state.who;
   r.addEventListener("change",()=>{
+    /* Rating yourself, the Family / Mates / Couple buttons only change the questions. */
+    if(state.who==="me"&&r.value!=="me"&&!document.body.classList.contains("in-crew")){state.qset=setForType(r.value);setRadio("me");save();render();return}
     /* Your own review and a review of someone else are kept as separate drafts, so one never pre-fills or overwrites the other. */
-    const dk=w=>w==="me"?"me":"other", from=dk(state.who), to=dk(r.value);
-    if(from!==to){state.drafts=state.drafts||{};state.drafts[from]={v:state.v,dk:state.dk,name:state.name,revealed:!!state.revealed,legacyT:!!state.legacyT};
-      const d=state.drafts[to]||{};state.v=d.v||{};state.dk=d.dk||{};state.name=d.name||"";state.revealed=!!d.revealed;state.legacyT=!!d.legacyT;nameEl.value=state.name}
+    const toMe=r.value==="me", fromMe=state.who==="me";
+    if(toMe!==fromMe){stash();if(toMe){unstash("me");state.name=myNameVal()||state.name}else{const n=people()[0]||"";unstash("o:"+lc(n));state.name=n}nameEl.value=toMe?"":state.name}
     else if(state.who!==r.value)state.revealed=false;
-    state.who=r.value;if(r.value!=="me")state.other=r.value;delete state.qset;save();render()});
+    state.who=r.value;if(r.value!=="me")state.other=r.value;if(!(toMe&&fromMe))delete state.qset;save();render()});
 });
 
 /* ---------- wheel (drawn twice: header and report card) ---------- */
@@ -390,7 +416,11 @@ function render(){
     const aw=HEROES[hk].awards||[];$m("heroAwards").innerHTML=aw.map((t,i)=>`<span class="pop${i?" low":""}">${t}</span>`).join("");$m("heroAwards").hidden=!aw.length}
   const me=isMe(),w=words();
   $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, three quick questions each.`,"Tap a grade for each question: E (lowest) to A (highest).","Not sure? Tap Don't know and it's left out."].map(t=>`<li>${t}</li>`).join("");
-  $m("nameLabel").textContent="Name:";
+  $m("nameLabel").textContent=state.who==="mate"?"Mate's name:":state.who==="partner"?"Partner's name:":"Their name:";
+  {const my=myNameVal(), ps=people().filter(p=>!my||lc(p)!==lc(my)), hit=state.who!=="me"&&state.name&&document.activeElement!==nameEl?ps.find(p=>lc(p)===lc(state.name)):null;
+   const cur=state.who==="me"?"me":hit?"p:"+hit:"new";
+   $m("whoPick").innerHTML=`<option value="me">Me${my?` (${esc(my)})`:""}</option>`+ps.map(p=>`<option value="p:${esc(p)}">${esc(p)}</option>`).join("")+`<option value="new">+ Someone new…</option>`;
+   $m("whoPick").value=cur; $m("namePair").hidden=cur!=="new"}
   $m("whoMe").setAttribute("aria-pressed",me); $m("whoOther").setAttribute("aria-pressed",!me);
   nameEl.placeholder=me?"e.g. Brad":(state.who==="mate"?"e.g. Dave":state.who==="partner"?"e.g. Sam":"e.g. Mum");
 

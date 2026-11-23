@@ -1098,7 +1098,7 @@ window.afterRender=function(rows,avg){
   const on=!!(crew&&target&&me), pickFirst=!!(crew&&!target&&REVIEW_PAGE);
   banner.hidden=!on&&!pickFirst;
   if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":($("welcomeBox")&&!$("welcomeBox").hidden)?"<b>Type your first name</b> to get started":"<b>Pick your name</b> under Your name first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
-  else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!(crew&&REVIEW_PAGE);
+  else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!REVIEW_PAGE;
   document.body.classList.toggle("has-bar",on||pickFirst);
   if(on){
     const self=target.id===me, dirty=sig()!==savedSig, g=avg==null?null:grade(avg);
@@ -1140,6 +1140,8 @@ async function saveReview(){
 }
 saveBtn.addEventListener("click",saveReview);
 nextBtn.addEventListener("click",async()=>{
+  /* No crew: the review is already kept on this device, so start a new one for someone else. */
+  if(!crew){const nm=$("name"),wp=$("whoPick");if(nm&&state.who!=="me")nm.dispatchEvent(new Event("change"));if(wp){wp.value="new";wp.dispatchEvent(new Event("change"))}toTop();return}
   if(!target){
     if(!me){needMe("");return}
     if(Object.keys(state.v).length||Object.keys(state.dk).length){crewNote(`Who is this review for? Tap <b>Review</b> next to their name in your crew list. Your answers are kept.`,true);toTop();return}
@@ -1174,8 +1176,9 @@ function paintDone(){
   const btn=$("doneBtn"); btn.hidden=!t;
   if(t){const h=`<b>${t[0]}</b><small>${t[1]}</small>`;if(btn.innerHTML!==h)btn.innerHTML=h}
   $("doneSaved").hidden=!(inRev&&open&&!dirty);
-  const nb=$("reviewNext"), nh=inRev&&open&&!dirty?`<b>Rate Someone Else</b><small>Pick the next person in your crew, or add someone new</small>`:`<b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small>`;
-  if(nb&&nb.innerHTML!==nh) nb.innerHTML=nh;
+  const nb=$("reviewNext"), nh=inRev&&open&&!dirty?`<b>Rate Someone Else</b><small>Pick the next person in your crew, or add someone new</small>`:`<b>Save &amp; Rate Another</b><small>Saves this review and starts the next person</small>`;
+  const nh2=crew?nh:`<b>Save &amp; Rate Another</b><small>Keeps this review on this device and starts a new one</small>`;
+  if(nb&&nb.innerHTML!==nh2) nb.innerHTML=nh2;
 }
 /* A name typed in "Rate someone who isn't here yet" but not added yet: Save & See Results adds them and saves the answers on screen as the review of them. */
 const pendingName=()=>REVIEW_PAGE&&crew&&me&&$("addRateName")?$("addRateName").value.trim().slice(0,40):"";
