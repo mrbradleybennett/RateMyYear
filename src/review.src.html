@@ -2086,8 +2086,8 @@ function refresh(){
   const doneIds=new Set(reviews().filter(byMe).map(r=>r.member));
   const todo=ms.filter(m=>!doneIds.has(m.id)), done=ms.filter(m=>doneIds.has(m.id));
   const open=boardOpen();
-  $("boardTitle").textContent=ADMIN?"":"Crew leaderboard";
-  $("boardNote").hidden=ADMIN||!ms.length;
+  $("boardTitle").textContent=ADMIN?"":crew.type==="partner"?"Our check-in":"Crew leaderboard";
+  $("boardNote").hidden=ADMIN||!ms.length||crew.type==="partner";
   if(!$("boardNote").hidden) $("boardNote").innerHTML=(me?(todo.length?`You've reviewed ${done.length} of ${ms.length}. Still to review: <b>${todo.map(m=>esc(m.id===me?"yourself":m.name)).join(", ")}</b>`:"✓ You've reviewed everyone in the crew. Nice work."):($("welcomeBox")&&!$("welcomeBox").hidden?"Type your first name above to get started.":"Pick your name under <b>I am</b>, then tap <b>Review</b> next to someone."))+(open?"":` <span class="lockline">Scores are hidden: the crew admin has turned the leaderboard off.</span>`);
   const fake=["A","B+","B","C+","C","D"];
   const lockOne=b=>crew.type!=="partner"&&(b.t||0)<2&&b.o===1?{v:null,n:b.n,o:1,t:b.t,s:b.s,locked:true}:b;
@@ -2100,7 +2100,14 @@ function refresh(){
     cs.style.setProperty("--g",open&&g?gcol(g):open?"var(--track)":gcol("B"));
     cs.innerHTML=`<span class="cs-chip${open?"":" blurred"}">${open?(g||"–"):"B"}</span><span class="cs-txt"><b>${esc(crew.type==="partner"?`${crew.name} Love Score`:/crew$/i.test(crew.name.trim())?`${crew.name} Score`:`${crew.name} Crew Score`)}</b><span class="cs-num${open?"":" blurred"}">${open?(v==null?"–":v.toFixed(1)+" / 10"):"7.4 / 10"}</span><small>${open?(v==null?"Shows once people have been reviewed":`Average of ${scored.length} of ${ms.length} people`):"Hidden: the crew admin has turned the leaderboard off"}</small></span>`;
   }
-  $("memList").innerHTML=!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
+  $("memList").innerHTML=!ADMIN&&ms.length&&crew.type==="partner"?ms.map(m=>{
+    /* Couple Check-in: each person rates the relationship, not each other, so just show who has had their say. */
+    const did=boardScore(m.id).s||reviews().some(r=>r.member===m.id&&r.reviewer===m.id);
+    return `<div class="member board-row couple-row">
+      <span class="rank"></span><span class="chip${did?"":" none"}" style="--g:var(--gA)">${did?"✓":"–"}</span>
+      <span class="nm">${esc(m.name)}${m.id===me?' <span class="youbadge">You</span>':""}</span><small class="meta">${did?"✓ Reviewed":"Not reviewed yet"}</small>
+      <span class="btns">${m.id===me?`<button type="button" data-review="${m.id}"${did?' class="ghost reviewed"':""}>${did?"✓ Reviewed":"Rate our relationship"}</button>`:""}</span></div>`}).join("")
+    :!ADMIN&&ms.length?ranked.map(({m,b},i)=>{
     const mine=doneIds.has(m.id), g=b.v==null?null:grade(b.v), fg=fake[i%fake.length];
     const rank=open?(b.v==null?"–":i+1):"#", chip=open?`<span class="chip${g?"":" none"}">${g||"–"}</span>`:`<span class="chip blurred">${fg}</span>`;
     /* Count reviews from other people (what unlocks the score); a self-rating is shown separately. */
@@ -2731,7 +2738,7 @@ function paintNext(){
   else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
   rows.push(`<div class="nrow myres-wrap"><button type="button" class="ghost" data-results="${me}">${resultsOpen?"Hide My Results":"Show My Results"}</button></div>`);
   const addRow=(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
-  $("nextAdd").innerHTML=addRow;
+  $("nextAdd").innerHTML=partner?"":addRow; $("nextAdd").hidden=!show||partner;
   box.innerHTML=`${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
   $("addRateName").addEventListener("input",paintDone);
   $("addRate").addEventListener("submit",async e=>{
