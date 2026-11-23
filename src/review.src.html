@@ -170,6 +170,8 @@ button.sm,a.sm,[role="tab"],.whoseg button{min-height:44px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rstat,:root:not([data-theme="light"]) .crewnote.warn{background:#3a2f0a;color:#f5d77a}:root:not([data-theme="light"]) .rstat.ok,:root:not([data-theme="light"]) .crewnote{background:#163a26;color:#a9e3bf}}
 :root[data-theme="dark"] .rstat,:root[data-theme="dark"] .crewnote.warn{background:#3a2f0a;color:#f5d77a}:root[data-theme="dark"] .rstat.ok,:root[data-theme="dark"] .crewnote{background:#163a26;color:#a9e3bf}
 .endbtn[hidden],#fromField[hidden]{display:none}
+.inccard{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);cursor:pointer}
+.inccard input{width:20px;height:20px;margin:0;accent-color:var(--green)}
 .endbtn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
 .sharebox[hidden]{display:none}.sharebox label{font-weight:700}.sharebox p{margin:0}
@@ -532,11 +534,12 @@ body.report-locked .report{display:none}
         <div id="recs" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
       <div class="endbar">
-        <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>See How Others Rate You</b><small>Send a link. They rate you in about 5 minutes, then rate themselves.</small></button>
-        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send a picture of your report card</small></button>
-        <button type="button" class="endbtn" id="endJoin"><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
+        <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>Invite Others To Rate You</b><small>Send a link. They rate you in about 5 minutes, then rate themselves.</small></button>
+        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false" hidden><b>Share Results</b><small>Send a picture of your report card</small></button>
+        <button type="button" class="endbtn" id="endJoin" hidden><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
         <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
       </div>
+      <label class="inccard"><input type="checkbox" id="incCard" checked> Include this report card in the message</label>
       <div class="sharebox askbox" id="askBox" hidden>
         <p class="asklead" id="askLead"></p>
         <div id="askForm" class="stack">
@@ -2385,10 +2388,10 @@ if(REVIEW_PAGE){
   const askFor=()=>state.who==="me"?"me":state.who==="partner"?"partner":"other";
   window.__paintAsk=()=>{
     const k=reviewKind(), them=esc((state.name||"").trim()), inGroup=!!crew, partner=inGroup?crew.type==="partner":askFor()==="partner";
-    const t=inGroup?(partner?["Send Your Partner The Link","They add their side, then you see how your views compare"]:["Invite More People","Each person rates you, then the rest of the crew"])
-      :askFor()==="me"?["See How Others Rate You","Send a link. They rate you in about 5 minutes, then rate themselves."]
-      :askFor()==="partner"?["Ask Your Partner","Send them the link so they can add their side"]
-      :[`Send ${them||"Them"} The Link`,`${them||"They"} can rate themselves and see how it compares with your rating`];
+    const crewWord=inGroup?CREW_TYPES[crewTypeOf(crew.type)].crew:k==="mates"?"Mates crew":"Family crew";
+    const t=partner?["Ask Your Partner To Rate You","Send the link. They add their side, then you see how your views compare."]
+      :inGroup||askFor()==="me"?["Invite Others To Rate You",`Send your ${crewWord} link. Each person rates you in about 5 minutes, then rates themselves.`]
+      :["Invite Others To Rate",`Send the link to ${them||"them"} and anyone else in your ${crewWord}. They rate you, then themselves.`];
     const html=`<b>${t[0]}</b><small>${t[1]}</small>`; if(askBtn.innerHTML!==html) askBtn.innerHTML=html;
     if(!askBox.hidden){$("askForm").hidden=inGroup;$("askSend").hidden=!inGroup;if(inGroup)$("askLead").textContent=partner?"✓ Your link is ready. Send it to your partner.":"✓ Your link is ready. Send it to your family and friends."}
   };
@@ -2521,7 +2524,7 @@ async function shareLink(kind,auto){
   if(!me){needMe("");return}
   const text=inviteText(kind), link=linkFrom(me);
   if(navigator.share){
-    const blob=kind==="invite"?await inviteCard():null;
+    const blob=kind==="invite"&&(!$("incCard")||$("incCard").checked)?await inviteCard():null;
     const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
     const withPic=file&&navigator.canShare&&navigator.canShare({files:[file]});
     try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");return}

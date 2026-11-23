@@ -171,6 +171,8 @@ button.sm,a.sm,[role="tab"],.whoseg button{min-height:44px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rstat,:root:not([data-theme="light"]) .crewnote.warn{background:#3a2f0a;color:#f5d77a}:root:not([data-theme="light"]) .rstat.ok,:root:not([data-theme="light"]) .crewnote{background:#163a26;color:#a9e3bf}}
 :root[data-theme="dark"] .rstat,:root[data-theme="dark"] .crewnote.warn{background:#3a2f0a;color:#f5d77a}:root[data-theme="dark"] .rstat.ok,:root[data-theme="dark"] .crewnote{background:#163a26;color:#a9e3bf}
 .endbtn[hidden],#fromField[hidden]{display:none}
+.inccard{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);cursor:pointer}
+.inccard input{width:20px;height:20px;margin:0;accent-color:var(--green)}
 .endbtn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
 .sharebox[hidden]{display:none}.sharebox label{font-weight:700}.sharebox p{margin:0}
@@ -533,11 +535,12 @@ body.report-locked .report{display:none}
         <div id="recs" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
       <div class="endbar">
-        <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>See How Others Rate You</b><small>Send a link. They rate you in about 5 minutes, then rate themselves.</small></button>
-        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false"><b>Share Results</b><small>Send a picture of your report card</small></button>
-        <button type="button" class="endbtn" id="endJoin"><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
+        <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>Invite Others To Rate You</b><small>Send a link. They rate you in about 5 minutes, then rate themselves.</small></button>
+        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false" hidden><b>Share Results</b><small>Send a picture of your report card</small></button>
+        <button type="button" class="endbtn" id="endJoin" hidden><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
         <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Review Another</b><small>Saves this review and starts the next person in your crew</small></button>
       </div>
+      <label class="inccard"><input type="checkbox" id="incCard" checked> Include this report card in the message</label>
       <div class="sharebox askbox" id="askBox" hidden>
         <p class="asklead" id="askLead"></p>
         <div id="askForm" class="stack">
@@ -580,7 +583,7 @@ body.report-locked .report{display:none}
 
 <script src="firebase-config.js"></script>
 <script>window.RMY_PAGE="admin";</script>
-<script type="module" src="js/crew.js?v=6f43c5216d"></script>
+<script type="module" src="js/crew.js?v=4ccb1a45ca"></script>
 
 </body>
 </html>

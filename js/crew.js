@@ -1248,10 +1248,10 @@ if(REVIEW_PAGE){
   const askFor=()=>state.who==="me"?"me":state.who==="partner"?"partner":"other";
   window.__paintAsk=()=>{
     const k=reviewKind(), them=esc((state.name||"").trim()), inGroup=!!crew, partner=inGroup?crew.type==="partner":askFor()==="partner";
-    const t=inGroup?(partner?["Send Your Partner The Link","They add their side, then you see how your views compare"]:["Invite More People","Each person rates you, then the rest of the crew"])
-      :askFor()==="me"?["See How Others Rate You","Send a link. They rate you in about 5 minutes, then rate themselves."]
-      :askFor()==="partner"?["Ask Your Partner","Send them the link so they can add their side"]
-      :[`Send ${them||"Them"} The Link`,`${them||"They"} can rate themselves and see how it compares with your rating`];
+    const crewWord=inGroup?CREW_TYPES[crewTypeOf(crew.type)].crew:k==="mates"?"Mates crew":"Family crew";
+    const t=partner?["Ask Your Partner To Rate You","Send the link. They add their side, then you see how your views compare."]
+      :inGroup||askFor()==="me"?["Invite Others To Rate You",`Send your ${crewWord} link. Each person rates you in about 5 minutes, then rates themselves.`]
+      :["Invite Others To Rate",`Send the link to ${them||"them"} and anyone else in your ${crewWord}. They rate you, then themselves.`];
     const html=`<b>${t[0]}</b><small>${t[1]}</small>`; if(askBtn.innerHTML!==html) askBtn.innerHTML=html;
     if(!askBox.hidden){$("askForm").hidden=inGroup;$("askSend").hidden=!inGroup;if(inGroup)$("askLead").textContent=partner?"✓ Your link is ready. Send it to your partner.":"✓ Your link is ready. Send it to your family and friends."}
   };
@@ -1384,7 +1384,7 @@ async function shareLink(kind,auto){
   if(!me){needMe("");return}
   const text=inviteText(kind), link=linkFrom(me);
   if(navigator.share){
-    const blob=kind==="invite"?await inviteCard():null;
+    const blob=kind==="invite"&&(!$("incCard")||$("incCard").checked)?await inviteCard():null;
     const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
     const withPic=file&&navigator.canShare&&navigator.canShare({files:[file]});
     try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");return}
