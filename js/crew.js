@@ -1479,15 +1479,19 @@ function paintNext(){
   const waiting=members().filter(m=>m.id!==me&&!claims[m.id]);
   const mine=boardOpen()&&boardById?boardScore(me):null, need=partner||!mine?0:Math.max(0,2-mine.o);
   const guestOwner=isGuest()&&isOwner();
-  const key=JSON.stringify([selfDone,waiting.map(m=>m.name),need,guestOwner,partner]); if(box.dataset.k===key) return; box.dataset.k=key;
+  const rated=new Set(reviews().filter(r=>r.reviewerUid===user.uid||r.reviewer===me).map(r=>r.member));
+  const others=members().filter(m=>m.id!==me).sort((a,b)=>(rated.has(a.id)-rated.has(b.id))||a.name.localeCompare(b.name));
+  const key=JSON.stringify([selfDone,waiting.map(m=>m.name),need,guestOwner,partner,others.map(m=>m.id+m.name+rated.has(m.id))]); if(box.dataset.k===key) return; box.dataset.k=key;
   const rows=[];
   if(!selfDone) rows.push(`<div class="nrow"><span><b>Next:</b> ${partner?"add your side of the check-in.":"rate yourself, so you can see how you compare."}</span><button type="button" data-next="self">${partner?"Start":"Rate myself"}</button></div>`);
   else if(need) rows.push(`<div class="nrow"><span>🔒 Your crew score unlocks after <b>${need} more review${need===1?"":"s"}</b> of you.</span></div>`);
   if(partner&&!waiting.length&&members().length>=2) rows.push(`<div class="nrow"><span>${selfDone?"You've both had your say. Your report card shows how your views compare.":"Your partner is in. Add your side to compare."}</span>${selfDone?`<button type="button" class="ghost sm" data-next="self">See our report</button>`:""}</div>`);
   else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
+  if(others.length) rows.push(`<form class="nrow addrate" id="pickRate" novalidate><span><b>Rate someone in your crew</b></span><span class="wform"><select id="pickRateWho" aria-label="Who do you want to rate?">${others.map(m=>`<option value="${m.id}">${esc(m.name)}${rated.has(m.id)?" ✓ rated":""}</option>`).join("")}<option value="${me}">Myself${selfDone?" ✓ rated":""}</option></select><button type="submit">Rate</button></span></form>`);
   rows.push(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
   box.innerHTML=`<h3>Your next steps</h3>${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
   $("addRateName").addEventListener("input",paintDone);
+  if($("pickRate")) $("pickRate").addEventListener("submit",e=>{e.preventDefault();const id=$("pickRateWho").value;if(id)startReview(id)});
   $("addRate").addEventListener("submit",async e=>{
     e.preventDefault();
     const n=$("addRateName").value.trim().slice(0,40); if(!n){$("addRateName").focus();return}
