@@ -803,7 +803,7 @@ function paintCreate(){
 /* My results open right under your own row in the leaderboard. */
 let resultsOpen=false;
 function placeResults(){
-  const list=$("memList"); if(!list) return;
+  const list=$("nextBox"); if(!list) return;
   const old=list.querySelector(".myresults"); if(old) old.remove();
   const b=list.querySelector(`[data-results="${me}"]`); if(b) b.textContent=resultsOpen?"Hide My Results":"Show My Results";
   if(!resultsOpen||!me||ADMIN) return;
@@ -921,7 +921,6 @@ function refresh(){
       <span class="btns">
         <button type="button" data-review="${m.id}"${mine?' class="ghost reviewed" title="Reviewed. Tap to change your review"':""}>${mine?"✓ Reviewed":m.id===me?"Review myself":"Review"}</button>
       </span></div>`}).join("")+(open&&ranked.some(x=>x.b.locked)?`<p class="muted locknote">🔒 Scores show once someone has 2 reviews, so nobody's rating stands out on its own.</p>`:"")
-      +(me?`<div class="myres-wrap"><button type="button" class="ghost" data-results="${me}"${aggFor(me).rs.length?"":" disabled"}>${resultsOpen?"Hide My Results":"Show My Results"}</button></div>`:"")
     :ms.length?ms.map(m=>{
     const a=aggFor(m.id), g=a.overall!=null?grade(a.overall):null;
     const mine=reviews().some(r=>r.member===m.id&&byMe(r));
@@ -937,8 +936,7 @@ function refresh(){
       </span></div>${ADMIN&&admin&&managing===m.id?managePanel(m,joined,isAdm,a):""}`}).join("")
     :`<p class="muted">No one in the crew yet. Add everyone below.</p>`;
   $("memList").querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>startReview(b.dataset.review));
-  $("memList").querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{resultsOpen=!resultsOpen;placeResults()});
-  placeResults();
+
   $("memList").querySelectorAll("[data-manage]").forEach(b=>b.onclick=()=>{managing=managing===b.dataset.manage?"":b.dataset.manage;removeArmed="";refresh()});
   $("memList").querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>manageAction(b.dataset.act,b.dataset.id));
   $("memList").querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{removeArmed="";refresh()});
@@ -1531,6 +1529,7 @@ function paintNext(){
   else if(need) rows.push(`<div class="nrow"><span>🔒 Your crew score unlocks after <b>${need} more review${need===1?"":"s"}</b> of you.</span></div>`);
   if(partner&&!waiting.length&&members().length>=2) rows.push(`<div class="nrow"><span>${selfDone?"You've both had your say. Your report card shows how your views compare.":"Your partner is in. Add your side to compare."}</span>${selfDone?`<button type="button" class="ghost sm" data-next="self">See our report</button>`:""}</div>`);
   else rows.push(`<div class="nrow"><span>${waiting.length?`Waiting on <b>${waiting.map(m=>esc(m.name)).join(", ")}</b>`:partner?"Send your partner the link so they can add their side.":"The more people who rate you, the clearer the picture."}</span><span class="row-btns">${waiting.length?`<button type="button" class="ghost sm" data-next="nudge">Nudge</button>`:""}<button type="button" data-next="invite">${partner?"Send the link":waiting.length?"Invite more":"Invite people"}</button></span></div>`);
+  rows.push(`<div class="nrow myres-wrap"><button type="button" class="ghost" data-results="${me}">${resultsOpen?"Hide My Results":"Show My Results"}</button></div>`);
   const addRow=(`<form class="nrow addrate" id="addRate" novalidate><span><b>Rate someone who isn't here yet</b></span><span class="wform"><input id="addRateName" maxlength="40" autocomplete="off" placeholder="Their first name" aria-label="Their first name"><button type="submit" class="ghost">Add &amp; rate</button></span></form>`);
   $("nextAdd").innerHTML=addRow;
   box.innerHTML=`${rows.join("")}${guestOwner?`<p class="keep" role="note"><span><b>Don't lose your crew.</b> It's only saved on this device, and clearing your browser or private browsing will lose it.</span><button type="button" class="linkbtn" data-next="keep">Keep it with Google</button></p>`:""}`;
@@ -1543,6 +1542,8 @@ function paintNext(){
     try{const id=rid(10), next=[...members(),{id,name:n,type:crew.type?crewMemberType():"family"}];await updateDoc(doc(db,"crews",crewId),{members:next});crew={...crew,members:next};$("addRateName").value="";famErr("");startReview(id);toast(`${n} is added. Rate them, then send them the link so they can join in.`,5000)}
     catch(x){famErr(errText(x))}
   });
+  box.querySelectorAll("[data-results]").forEach(b=>b.onclick=()=>{resultsOpen=!resultsOpen;placeResults()});
+  placeResults();
   box.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{
     const a=b.dataset.next;
     if(a==="self") startReview(me);
