@@ -822,10 +822,12 @@ function paintRatebar(){
   [["who-family","life"],["who-mate","mates"],["who-partner","partner"]].forEach(([id,set])=>{const r=$(id);if(r&&r.parentElement)r.parentElement.classList.toggle("on",set===window.__crewSet)});
 }
 document.querySelectorAll(".ratebar label").forEach(l=>l.addEventListener("click",e=>{
-  if(!REVIEW_PAGE||!crew) return;
-  e.preventDefault(); e.stopPropagation();
+  /* Not in a crew and you have none: the buttons just change the questions. */
+  if(!REVIEW_PAGE||(!crew&&!myCrews.length)) return;
   const who=l.querySelector("input").value, want={family:"family",mate:"mates",partner:"partner"}[who];
-  if(crewTypeOf(crew.type)===want) return;
+  if(!crew&&state.who===who) return;
+  e.preventDefault(); e.stopPropagation();
+  if(crew&&crewTypeOf(crew.type)===want) return;
   location.href=`${REVIEW_PATH}?who=${who}`;
 },true));
 function renderBoard(){
