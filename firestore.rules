@@ -91,7 +91,9 @@ service cloud.firestore {
           || (isMember(c) && get(docAt(c, 'accounts', request.auth.uid)).data.member == resource.data.reviewer);
         allow create: if isMember(c)
           && request.resource.data.reviewerUid == request.auth.uid
-          && reviewId == request.auth.uid + '_' + request.resource.data.member
+          // One review per device per person rated (uid_member), or one per name on a shared device (uid_reviewer_member).
+          && (reviewId == request.auth.uid + '_' + request.resource.data.member
+              || reviewId == request.auth.uid + '_' + request.resource.data.reviewer + '_' + request.resource.data.member)
           && get(docAt(c, 'accounts', request.auth.uid)).data.member == request.resource.data.reviewer;
         allow update: if isMember(c)
           && resource.data.reviewerUid == request.auth.uid
@@ -107,7 +109,14 @@ service cloud.firestore {
       // Each reviewer adds or updates only the entry under the private key stored in their own review,
       // and its score must match that review. Everyone in the crew can read it; admins can tidy it.
       match /board/{memberId} {
-        function myReview() { return getAfter(docAt(c, 'reviews', request.auth.uid + '_' + memberId)).data; }
+        // The review this device wrote as the name it is using now; older single-review-per-device ids still work.
+        function myMember() { return get(docAt(c, 'accounts', request.auth.uid)).data.member; }
+        function namedRid() { return request.auth.uid + '_' + myMember() + '_' + memberId; }
+        function myReview() {
+          return existsAfter(docAt(c, 'reviews', namedRid()))
+            ? getAfter(docAt(c, 'reviews', namedRid())).data
+            : getAfter(docAt(c, 'reviews', request.auth.uid + '_' + memberId)).data;
+        }
         function entryOk(k) {
           return k is string && k.size() >= 12
             && request.resource.data.by[k].keys().hasOnly(['o', 'self'])

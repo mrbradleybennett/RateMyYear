@@ -79,6 +79,13 @@ await t("invited guest rates the sender + leaderboard",assertSucceeds((()=>{cons
 await t("invited guest cannot read the sender's self review",assertFails(getDoc(doc(jo,"crews/q1/reviews/sam_qS"))));
 await t("guest owner reads every review (admin)",assertSucceeds(getDocs(collection(sam,"crews/q1/reviews"))));
 await t("invited guest cannot make themselves admin",assertFails(updateDoc(doc(jo,"crews/q1"),{adminUids:["sam","jo"]})));
+/* Shared device: Jo helps Nana rate on Jo's phone. Each name keeps its own review of Sam. */
+await t("jo adds Nana",assertSucceeds(updateDoc(doc(jo,"crews/q1"),{members:[...quick.members,{id:"qJ",name:"Jo",type:"family"},{id:"qN",name:"Nana",type:"family"}]})));
+await t("jo's phone switches to Nana",assertSucceeds(claim(jo,"q1","qN","jo","qJ")));
+await t("Nana rates Sam on jo's phone + leaderboard (own review id)",assertSucceeds((()=>{const b=writeBatch(jo);b.set(doc(jo,"crews/q1/reviews/jo_qN_qS"),{member:"qS",reviewer:"qN",reviewerUid:"jo",cats:{self:9},overall:9,boardKey:"nanakey000001"});b.set(doc(jo,"crews/q1/board/qS"),{by:{nanakey000001:{o:9,self:false}}},{merge:true});return b.commit()})()));
+await t("Jo's earlier review of Sam is still there",assertSucceeds(getDoc(doc(sam,"crews/q1/reviews/jo_qS")).then(d=>{if(!d.exists()||d.data().reviewer!=="qJ")throw new Error("overwritten")})));
+await t("Nana cannot save under Jo's name id",assertFails(setDoc(doc(jo,"crews/q1/reviews/jo_qJ_qS"),{member:"qS",reviewer:"qN",reviewerUid:"jo",cats:{self:1},overall:1,boardKey:"badkey0000001"})));
+await t("Nana's leaderboard score must match her review",assertFails(setDoc(doc(jo,"crews/q1/board/qS"),{by:{nanakey000001:{o:2,self:false}}},{merge:true})));
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail?1:0);

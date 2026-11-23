@@ -1674,6 +1674,9 @@ function openCrew(id){
 }
 /* Reviews written by whoever is picked under "Your name" (not every name used on this device). */
 const byMe=r=>me&&r.reviewer?r.reviewer===me:r.reviewerUid===user.uid;
+/* Review id for the name picked under "Your name": each name on a shared device (say, helping Nana) keeps its own review.
+   An older review this device wrote as the same name keeps its id. */
+const myRidFor=tid=>{const legacy=`${user.uid}_${tid}`, o=reviews().find(r=>r.id===legacy);return o&&(!o.reviewer||o.reviewer===me)?legacy:`${user.uid}_${me}_${tid}`};
 function syncReviewSubs(){
   if(!crew) return;
   const key=`${isAdmin()}|${me}`;
@@ -2225,7 +2228,7 @@ function selfVsCrew(rows,avg){
     return {self:avg,crew:null,crewN:0,selfNote:"Your own rating",crewNote:"Join or create a crew to see how others rate you",gaps:null};
   }
   const tid=target.id, isSelf=tid===me, nm=target.name;
-  const myRid=`${user.uid}_${tid}`, mine=reviews().find(r=>r.id===myRid), myKey=mine?(mine.boardKey||legacyKey(myRid)):"";
+  const myRid=myRidFor(tid), mine=reviews().find(r=>r.id===myRid), myKey=mine?(mine.boardKey||legacyKey(myRid)):"";
   const by=(boardById&&boardById[tid]&&boardById[tid].by)||{};
   const readable=liveReviews().filter(r=>r.member===tid&&r.id!==myRid);
   const selfRev=readable.find(r=>r.reviewer===tid)||null, otherRevs=readable.filter(r=>r.reviewer!==tid);
@@ -2326,13 +2329,25 @@ async function saveReview(){
   const r=snapshotResult(); saveBtn.disabled=true; nextBtn.disabled=true;
   let ok=false;
   try{
-    const rid0=`${user.uid}_${target.id}`, old=reviews().find(x=>x.id===rid0);
-    const boardKey=old?(old.boardKey||legacyKey(rid0)):rid(16);
-    const b=writeBatch(db);
-    b.set(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey});
-    b.set(doc(db,"crews",crewId,"board",target.id),{by:{[boardKey]:{o:r.overall,self:target.id===me}}},{merge:true});
-    try{await b.commit()}
-    catch(x){ if(x&&x.code==="permission-denied"){ await setDoc(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey}); } else throw x; }
+    const put=async rid0=>{
+      const old=reviews().find(x=>x.id===rid0), boardKey=old?(old.boardKey||legacyKey(rid0)):rid(16);
+      const b=writeBatch(db);
+      b.set(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey});
+      b.set(doc(db,"crews",crewId,"board",target.id),{by:{[boardKey]:{o:r.overall,self:target.id===me}}},{merge:true});
+      await b.commit();
+    };
+    const rid0=myRidFor(target.id), legacy=`${user.uid}_${target.id}`;
+    try{await put(rid0)}
+    catch(x){
+      if(!(x&&x.code==="permission-denied")) throw x;
+      /* Security rules not updated yet for one-review-per-name: fall back to the older one-per-device id. */
+      if(rid0!==legacy){
+        /* If the review alone saves, the rules are up to date and only the leaderboard entry was refused. */
+        let alone=false;try{await setDoc(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey:(reviews().find(z=>z.id===rid0)||{}).boardKey||rid(16)});alone=true}catch(y){if(!(y&&y.code==="permission-denied"))throw y}
+        if(!alone){try{await put(legacy)}catch(y){if(!(y&&y.code==="permission-denied"))throw y;await setDoc(doc(db,"crews",crewId,"reviews",legacy),{member:target.id,reviewer:me,reviewerUid:user.uid,...r})}}
+      }
+      else await setDoc(doc(db,"crews",crewId,"reviews",rid0),{member:target.id,reviewer:me,reviewerUid:user.uid,...r,boardKey:(reviews().find(z=>z.id===rid0)||{}).boardKey||rid(16)});
+    }
     savedSig=sig(); ok=true;
     toast(`Saved. ${target.name}'s results are updated.`);
   }catch(x){toast(errText(x),6000)}
