@@ -1483,10 +1483,7 @@ async function recordShare(channel){
    must never wait for the picture. */
 let cardSig="",cardReady=null,cardP=null,cardT=0,shareFilesBroken=false;
 try{shareFilesBroken=localStorage.getItem("rmy-nofiles")==="1"}catch(e){}
-/* Chrome on a computer refuses a share that includes a picture, so the first tap did nothing. Pictures go only
-   from phones and tablets; on a computer the popup sends the message and link. */
-const mobileShare=(()=>{try{return !!(navigator.userAgentData&&navigator.userAgentData.mobile)||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1)}catch(e){return false}})();
-if(!mobileShare) shareFilesBroken=true;
+/* If a browser ever refuses the picture, it's remembered (rmy-nofiles) and the popup sends just the message and link. */
 {const ic=document.querySelector(".inccard");if(ic&&shareFilesBroken)ic.style.display="none"}
 const cardKey=()=>last&&last.avg!=null?JSON.stringify([state.who,state.name,state.qset,(last.rows||[]).map(r=>r.avg),crew&&crew.type,me]):"";
 const inviteCard=()=>{const k=cardKey();if(!k||!window.makeCard)return Promise.resolve(null);
@@ -1505,7 +1502,7 @@ async function shareLink(kind,auto,onBlocked){
     const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
     let withPic=false; try{withPic=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}))}catch(e){}
     try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");const l=$("askLead");if(l&&l.dataset.fail){delete l.dataset.fail;$("askBox").hidden=true;$("endAsk").setAttribute("aria-expanded","false")}return}
-    catch(x){console.warn("share failed",x&&x.name,x&&x.message);if(withPic&&x&&x.name!=="AbortError"){shareFilesBroken=true;try{localStorage.setItem("rmy-nofiles","1")}catch(e){}}if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){const l=$("askLead"),n=$("askNote");if(l)l.dataset.fail="1";onBlocked();if(l)l.textContent="The share popup didn't open. Tap Send the link to try again, or Copy link and paste it into a message.";if(n)n.textContent="";return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
+    catch(x){console.warn("share failed",x&&x.name,x&&x.message);if(withPic&&x&&x.name!=="AbortError"){shareFilesBroken=true;try{localStorage.setItem("rmy-nofiles","1")}catch(e){}}if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){const l=$("askLead"),n=$("askNote");if(l)l.dataset.fail="1";onBlocked();if(l)l.textContent=withPic?"Your browser wouldn't attach the report card. Tap Send the link to send the message and link without it.":"The share popup didn't open. Tap Send the link to try again, or Copy link and paste it into a message.";if(n)n.textContent="";return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
   }
   if(auto) return;
   recordShare(kind==="nudge"?"nudge":"invite");
