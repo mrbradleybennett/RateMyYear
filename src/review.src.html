@@ -816,7 +816,7 @@ const grade=a=>{
   return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"");
 };
 const gcol=g=>`var(--g${g[0]})`;
-/* Sliders score in 5 grades, E up to A. Each is stored as the middle of its grade band (1-10 scale),
+/* Sliders score in 5 grades, E up to A (shown A first). Each is stored as the middle of its grade band (1-10 scale),
    so averages (which can land on a + or -), the wheel and saved reviews keep working. */
 const GSTEPS=["E","D","C","B","A"];
 const GVAL=[2.5,4.75,6.25,7.75,9.25];
@@ -850,8 +850,8 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const $m=id=>document.getElementById(id);
 
 /* ---------- category cards ---------- */
-const qHTML=(key,lo,hi)=>`<div class="q" id="q-${key}"><p id="l-${key}"></p><div class="ends" aria-hidden="true"><span>${lo}</span><span id="e-${key}">${hi}</span></div>
-   <div class="gseg" id="r-${key}" role="radiogroup" aria-labelledby="l-${key}">${GSTEPS.map((g,st)=>`<button type="button" role="radio" aria-checked="false" data-step="${st}" aria-label="${g}${st===0?` (${esc(lo)})`:st===4?` (${esc(hi)})`:""}">${g}</button>`).join("")}</div>
+const qHTML=(key,lo,hi)=>`<div class="q" id="q-${key}"><p id="l-${key}"></p><div class="ends" aria-hidden="true"><span id="e-${key}">${hi}</span><span>${lo}</span></div>
+   <div class="gseg" id="r-${key}" role="radiogroup" aria-labelledby="l-${key}">${GSTEPS.map((g,st)=>[g,st]).reverse().map(([g,st])=>`<button type="button" role="radio" aria-checked="false" data-step="${st}" aria-label="${g}${st===0?` (${esc(lo)})`:st===4?` (${esc(hi)})`:""}">${g}</button>`).join("")}</div>
    <div class="q-ctrl"><button type="button" class="dkchip" id="k-${key}" aria-pressed="false">Don't know</button></div></div>`;
 const host=$m("cats");
 function buildCards(){
@@ -870,8 +870,8 @@ CATS.forEach((c,ci)=>{
     r.addEventListener("click",e=>{const b=e.target.closest("button[data-step]");if(!b)return;const v=GVAL[+b.dataset.step];
       if(state.v[key]===v&&!state.dk[key])delete state.v[key];else state.v[key]=v;delete state.dk[key];syncTop(c);save();render()});
     /* Arrow keys move within the grade buttons, like a radio group. */
-    r.addEventListener("keydown",e=>{const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key];if(!d)return;e.preventDefault();
-      const cur=state.v[key]==null?(d>0?-1:5):toStep(state.v[key]),nx=Math.max(0,Math.min(4,cur+d));state.v[key]=GVAL[nx];delete state.dk[key];syncTop(c);save();render();r.querySelectorAll("button")[nx].focus()});
+    r.addEventListener("keydown",e=>{const d={ArrowLeft:1,ArrowUp:1,ArrowRight:-1,ArrowDown:-1}[e.key];if(!d)return;e.preventDefault();
+      const cur=state.v[key]==null?(d>0?-1:5):toStep(state.v[key]),nx=Math.max(0,Math.min(4,cur+d));state.v[key]=GVAL[nx];delete state.dk[key];syncTop(c);save();render();r.querySelector(`button[data-step="${nx}"]`).focus()});
     k.addEventListener("click",()=>{if(state.dk[key])delete state.dk[key];else state.dk[key]=true;syncTop(c);save();render()});
   });
 });
@@ -1041,7 +1041,7 @@ function render(){
     c.qs.forEach((q,i)=>{$m(`l-${c.id}${i}`).textContent=fill(q[0])});
     ["t",0,1,2].forEach(i=>{
       const key=c.id+i, r=$m("r-"+key), dk=!!state.dk[key], v=state.v[key], st=v==null||dk?-1:toStep(v);
-      r.querySelectorAll("button").forEach((b,bi)=>{const on=bi===st;b.setAttribute("aria-checked",on);b.tabIndex=(st<0?bi===0:on)?0:-1;if(on)b.style.setProperty("--gsel",gcol(GSTEPS[bi]));});
+      r.querySelectorAll("button").forEach((b,i)=>{const bi=+b.dataset.step,on=bi===st;b.setAttribute("aria-checked",on);b.tabIndex=(st<0?i===0:on)?0:-1;if(on)b.style.setProperty("--gsel",gcol(GSTEPS[bi]));});
       $m("k-"+key).setAttribute("aria-pressed",dk);
       $m("q-"+key).classList.toggle("is-dk",dk);
       $m("q-"+key).classList.toggle("unanswered",i!=="t"&&!dk&&v==null&&!!state.revealedTried);
@@ -2488,7 +2488,7 @@ $("doneKeep").onclick=()=>{$("doneAsk").hidden=true;goUnanswered()};
 $("doneAnyway").onclick=()=>{$("doneAsk").hidden=true;doneOk=true;$("doneBtn").click()};
 $("doneBtn").addEventListener("click",async()=>{
   const pr=progress();
-  if(!last||last.avg==null||pr.n===0){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent="Answer at least one question first. Tap a grade from E to A, or Don't know.";a.hidden=false;$("doneAnyway").hidden=true;return}
+  if(!last||last.avg==null||pr.n===0){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent="Answer at least one question first. Tap a grade from A to E, or Don't know.";a.hidden=false;$("doneAnyway").hidden=true;return}
   if(pr.n<pr.t&&!doneOk){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent=`You've answered ${pr.n} of ${pr.t} questions. Unanswered ones are left out of the grades.`;$("doneAnyway").hidden=false;a.hidden=false;a.scrollIntoView({block:"nearest"});return}
   doneOk=false;$("doneAsk").hidden=true;
   const b=$("doneBtn"); b.disabled=true;

@@ -1286,7 +1286,7 @@ $("doneKeep").onclick=()=>{$("doneAsk").hidden=true;goUnanswered()};
 $("doneAnyway").onclick=()=>{$("doneAsk").hidden=true;doneOk=true;$("doneBtn").click()};
 $("doneBtn").addEventListener("click",async()=>{
   const pr=progress();
-  if(!last||last.avg==null||pr.n===0){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent="Answer at least one question first. Tap a grade from E to A, or Don't know.";a.hidden=false;$("doneAnyway").hidden=true;return}
+  if(!last||last.avg==null||pr.n===0){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent="Answer at least one question first. Tap a grade from A to E, or Don't know.";a.hidden=false;$("doneAnyway").hidden=true;return}
   if(pr.n<pr.t&&!doneOk){state.revealedTried=true;render();const a=$("doneAsk");$("doneAskText").textContent=`You've answered ${pr.n} of ${pr.t} questions. Unanswered ones are left out of the grades.`;$("doneAnyway").hidden=false;a.hidden=false;a.scrollIntoView({block:"nearest"});return}
   doneOk=false;$("doneAsk").hidden=true;
   const b=$("doneBtn"); b.disabled=true;
