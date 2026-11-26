@@ -416,8 +416,8 @@ function render(){
   if($m("heroH1").dataset.k!==hk){$m("heroH1").dataset.k=hk;$m("heroH1").innerHTML=HEROES[hk].h;$m("heroTag").textContent=HEROES[hk].t;$m("heroTag").hidden=!HEROES[hk].t;
     const aw=HEROES[hk].awards||[];$m("heroAwards").innerHTML=aw.map((t,i)=>`<span class="pop${i?" low":""}">${t}</span>`).join("");$m("heroAwards").hidden=!aw.length}
   const me=isMe(),w=words();
-  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, three quick questions each.`,"Tap a grade for each question: E (lowest) to A (highest).","Not sure? Tap Don't know and it's left out."].map(t=>`<li>${t}</li>`).join("");
-  $m("nameLabel").textContent=state.who==="mate"?"Mate's name:":state.who==="partner"?"Partner's name:":"Their name:";
+  $m("lede").innerHTML=[`${NUMW[CATS.length]} areas, three quick questions each.`,"Tap a grade for each question: A (highest) to E (lowest).","Not sure? Tap Don't know and it's left out."].map(t=>`<li>${t}</li>`).join("");
+  {const k=reviewKind();$m("nameLabel").textContent=k==="partner"?"Partner name:":k==="mates"?"Mate's name:":"Their name:";}
   {const my=myNameVal(), ps=people().filter(p=>!my||lc(p)!==lc(my)), hit=state.who!=="me"&&state.name&&document.activeElement!==nameEl?ps.find(p=>lc(p)===lc(state.name)):null;
    const cur=state.who==="me"?"me":hit?"p:"+hit:"new";
    $m("whoPick").innerHTML=`<option value="me">Me${my?` (${esc(my)})`:""}</option>`+ps.map(p=>`<option value="p:${esc(p)}">${esc(p)}</option>`).join("")+`<option value="new">+ Someone new…</option>`;

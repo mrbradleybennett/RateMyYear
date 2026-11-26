@@ -1364,7 +1364,11 @@ if(REVIEW_PAGE){
   }
   askBtn.onclick=()=>{
     if(!last||last.avg==null){toast("Answer at least one area first, so there's a review to send.");return}
-    if(crew){if(!me){needMe("");return}shareLink("invite");return}
+    if(crew){
+      if(!me){needMe("");toast("First pick your own name under \"Your name\" in your crew.");return}
+      const showBox=()=>{askBox.hidden=false;askBtn.setAttribute("aria-expanded","true");window.__paintAsk();askBox.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"nearest"})};
+      shareLink("invite",false,showBox).catch(x=>{console.warn("invite share failed",x);showBox();askNote("Couldn't open sharing. Tap Send the link, or Copy link and paste it into a message.",true)});
+      return}
     if(!askBox.hidden){askBox.hidden=true;askBtn.setAttribute("aria-expanded","false");return}
     openAsk();
   };
@@ -1475,7 +1479,7 @@ async function recordShare(channel){
 let inviteCardP=null;
 const inviteCard=()=>{if(!inviteCardP&&window.makeCard&&last&&last.avg!=null) inviteCardP=window.makeCard().catch(()=>null);return inviteCardP||Promise.resolve(null)};
 window.__resetInviteCard=()=>{inviteCardP=null};
-async function shareLink(kind,auto){
+async function shareLink(kind,auto,onBlocked){
   if(!crew){toast("Your crew is still loading. Try again in a moment.");return}
   if(!me){needMe("");return}
   const text=inviteText(kind), link=linkFrom(me);
@@ -1484,7 +1488,7 @@ async function shareLink(kind,auto){
     const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
     const withPic=file&&navigator.canShare&&navigator.canShare({files:[file]});
     try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");return}
-    catch(x){if(x&&x.name==="AbortError")return;if(auto)return}   // auto: the phone wanted a fresh tap, so leave it to the Send button
+    catch(x){if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){onBlocked();const n=$("askNote");if(n){n.textContent="Your link is ready. Tap Send the link, or Copy link and paste it into a message.";n.className="muted"}return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
   }
   if(auto) return;
   recordShare(kind==="nudge"?"nudge":"invite");
