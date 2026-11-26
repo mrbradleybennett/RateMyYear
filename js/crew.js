@@ -1161,7 +1161,7 @@ window.afterRender=function(rows,avg){
   const on=!!(crew&&target&&me), pickFirst=!!(crew&&!target&&REVIEW_PAGE);
   banner.hidden=!on&&!pickFirst;
   if(pickFirst){bannerText.innerHTML=me?"<b>Who are you reviewing?</b> Tap Review next to their name":($("welcomeBox")&&!$("welcomeBox").hidden)?"<b>Type your first name</b> to get started":"<b>Pick your name</b> under Your name first";bannerGrade.textContent="?";bannerGrade.style.setProperty("--g","var(--track)");$("reviewCancel").textContent="Choose"}
-  else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!REVIEW_PAGE;
+  else $("reviewCancel").textContent="Change"; saveBtn.hidden=true; soloBtn.hidden=true; nextBtn.hidden=!REVIEW_PAGE||reviewKind()==="partner"||!!(crew&&crew.type==="partner");
   document.body.classList.toggle("has-bar",on||pickFirst);
   if(on){
     const self=target.id===me, dirty=sig()!==savedSig, g=avg==null?null:grade(avg);
@@ -1263,6 +1263,7 @@ function paintDone(){
   const nb=$("reviewNext"), nh=inRev&&open&&!dirty?`<b>Rate Someone Else</b><small>Pick the next person in your crew, or add someone new</small>`:`<b>Save &amp; Rate Another</b><small>Saves this review and starts the next person</small>`;
   const nh2=crew?nh:`<b>Save &amp; Rate Another</b><small>Keeps this review on this device and starts a new one</small>`;
   if(nb&&nb.innerHTML!==nh2) nb.innerHTML=nh2;
+  if(nb) nb.hidden=!REVIEW_PAGE||reviewKind()==="partner"||(crew&&crew.type==="partner");
 }
 /* A name typed in "Rate someone who isn't here yet" but not added yet: Save & See Results adds them and saves the answers on screen as the review of them. */
 const pendingName=()=>REVIEW_PAGE&&crew&&me&&$("addRateName")?$("addRateName").value.trim().slice(0,40):"";
@@ -1481,6 +1482,12 @@ async function recordShare(channel){
    ready the moment you tap. Phones and browsers only open the share popup straight after a tap, so sharing
    must never wait for the picture. */
 let cardSig="",cardReady=null,cardP=null,cardT=0,shareFilesBroken=false;
+try{shareFilesBroken=localStorage.getItem("rmy-nofiles")==="1"}catch(e){}
+/* Chrome on a computer refuses a share that includes a picture, so the first tap did nothing. Pictures go only
+   from phones and tablets; on a computer the popup sends the message and link. */
+const mobileShare=(()=>{try{return !!(navigator.userAgentData&&navigator.userAgentData.mobile)||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1)}catch(e){return false}})();
+if(!mobileShare) shareFilesBroken=true;
+{const ic=document.querySelector(".inccard");if(ic&&shareFilesBroken)ic.style.display="none"}
 const cardKey=()=>last&&last.avg!=null?JSON.stringify([state.who,state.name,state.qset,(last.rows||[]).map(r=>r.avg),crew&&crew.type,me]):"";
 const inviteCard=()=>{const k=cardKey();if(!k||!window.makeCard)return Promise.resolve(null);
   if(k!==cardSig){cardSig=k;cardReady=null;cardP=window.makeCard().then(b=>{if(cardSig===k)cardReady=b;return b}).catch(()=>null)}
@@ -1498,7 +1505,7 @@ async function shareLink(kind,auto,onBlocked){
     const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
     let withPic=false; try{withPic=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}))}catch(e){}
     try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");const l=$("askLead");if(l&&l.dataset.fail){delete l.dataset.fail;$("askBox").hidden=true;$("endAsk").setAttribute("aria-expanded","false")}return}
-    catch(x){console.warn("share failed",x&&x.name,x&&x.message);if(withPic&&x&&x.name!=="AbortError"&&x.name!=="NotAllowedError")shareFilesBroken=true;if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){const l=$("askLead"),n=$("askNote");if(l)l.dataset.fail="1";onBlocked();if(l)l.textContent="The share popup didn't open. Tap Send the link to try again, or Copy link and paste it into a message.";if(n)n.textContent="";return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
+    catch(x){console.warn("share failed",x&&x.name,x&&x.message);if(withPic&&x&&x.name!=="AbortError"){shareFilesBroken=true;try{localStorage.setItem("rmy-nofiles","1")}catch(e){}}if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){const l=$("askLead"),n=$("askNote");if(l)l.dataset.fail="1";onBlocked();if(l)l.textContent="The share popup didn't open. Tap Send the link to try again, or Copy link and paste it into a message.";if(n)n.textContent="";return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
   }
   if(auto) return;
   recordShare(kind==="nudge"?"nudge":"invite");
