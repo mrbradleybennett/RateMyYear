@@ -116,7 +116,7 @@ const PARTNER_CATS=[
   ["Can you laugh at yourselves together?","Too serious","Laugh it off"]],
   recs:["Share one funny thing with each other every day.","Plan one new thing to do together this month.","Laugh together at your stuff-ups."]},
  {id:"talk",name:"Communication",line:"How well do you talk things through?",lo:"Silent treatment",hi:"Talk it out",qs:[
-  ["Do you really listen to each other?","Talk over each other","All ears"],
+  ["Do you really listen to each other?","On your phone","All ears"],
   ["Do you raise problems calmly and early?","Bottle it up","Talk it through"],
   ["Do you share what's going on for each of you?","Closed books","Open books"]],
   recs:["Phones down, and listen until the other one has finished.","Raise small things early and calmly, before they become big things.","Each night, share one thing on your mind, good or bad."]},
@@ -138,7 +138,7 @@ const PARTNER_CATS=[
  {id:"share",name:"Fair Share",line:"How fairly do you share the load at home?",lo:"One does it all",hi:"Equal partners",qs:[
   ["Are the chores shared fairly?","One does it all","Fifty-fifty"],
   ["Is the mental load (planning, remembering, organising) shared?","One carries it","Shared"],
-  ["Do you both step up without being asked?","Need reminding","Just do it"]],
+  ["Do you both step up without being asked?","Never unpacked the dishwasher","It gets done"]],
   recs:["Agree on two chores each that are always yours.","Split the remembering: birthdays, bills and bookings each get an owner.","Do one job a day before anyone has to ask."]},
  {id:"money",name:"Money & Plans",line:"How sorted are you with money and plans?",lo:"Chaos",hi:"Sorted",qs:[
   ["Are you on the same page with money?","Constant fights","Same page"],
