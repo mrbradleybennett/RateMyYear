@@ -195,6 +195,8 @@ if(state.schema!==3){Object.keys(state.v||{}).forEach(k=>{if(/t$/.test(k))delete
 const LAND=new URLSearchParams(location.search);
 if(["me","family","mate","partner"].includes(LAND.get("who"))){if(state.who!==LAND.get("who"))state.revealed=false;state.who=LAND.get("who");if(state.who!=="me")state.other=state.who;delete state.qset}
 if(state.who==="friend")state.who="mate";
+/* Couple Check-in is always you rating your relationship (who="partner"), with your partner's name alongside. */
+if(state.qset==="partner"&&state.who!=="partner"){if(state.who==="me")state.name="";state.who="partner";state.other="partner";delete state.qset}
 if(!state.dk)state.dk={};
 delete state.mode;delete state.src;delete state.dt;
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
@@ -304,7 +306,14 @@ document.querySelectorAll('input[name=who]').forEach(r=>{
   r.addEventListener("change",()=>{
     /* Rating yourself, the Family / Mates / Couple buttons only change the questions. */
     if(r.value!=="me"){try{localStorage.setItem("rmy-last-type",r.value)}catch(e){}}
-    if(state.who==="me"&&r.value!=="me"&&!document.body.classList.contains("in-crew")){state.qset=setForType(r.value);setRadio("me");save();render();return}
+    const inCrewNow=document.body.classList.contains("in-crew");
+    if(!inCrewNow&&r.value==="partner"){
+      if(state.who!=="partner"){stash();const d=Object.entries(state.drafts||{}).find(([k,x])=>k.startsWith("o:")&&x&&x.who==="partner");
+        if(d){unstash(d[0]);state.name=d[1].name||""}else{unstash("-");state.name=""}
+        state.who="partner";state.other="partner";delete state.qset;nameEl.value=state.name;save();render()}
+      return}
+    if(!inCrewNow&&state.who==="partner"){stash();unstash("me");state.who="me";state.name=myNameVal()||"";nameEl.value="";state.qset=setForType(r.value);setRadio("me");save();render();return}
+    if(state.who==="me"&&r.value!=="me"&&!inCrewNow){state.qset=setForType(r.value);setRadio("me");save();render();return}
     /* Your own review and a review of someone else are kept as separate drafts, so one never pre-fills or overwrites the other. */
     const toMe=r.value==="me", fromMe=state.who==="me";
     if(toMe!==fromMe){stash();if(toMe){unstash("me");state.name=myNameVal()||state.name}else{const n=people()[0]||"";unstash("o:"+lc(n));state.name=n}nameEl.value=toMe?"":state.name}
@@ -421,9 +430,10 @@ function render(){
   {const my=myNameVal(), ps=people().filter(p=>!my||lc(p)!==lc(my)), hit=state.who!=="me"&&state.name&&document.activeElement!==nameEl?ps.find(p=>lc(p)===lc(state.name)):null;
    const cur=state.who==="me"?"me":hit?"p:"+hit:"new";
    $m("whoPick").innerHTML=`<option value="me">Me${my?` (${esc(my)})`:""}</option>`+ps.map(p=>`<option value="p:${esc(p)}">${esc(p)}</option>`).join("")+`<option value="new">+ Someone new…</option>`;
-   $m("whoPick").value=cur; $m("namePair").hidden=cur!=="new"}
+   const couple=state.who==="partner";
+   $m("whoPick").value=cur; $m("whoPick").closest(".namepair").hidden=couple; $m("namePair").hidden=couple?false:cur!=="new"}
   $m("whoMe").setAttribute("aria-pressed",me); $m("whoOther").setAttribute("aria-pressed",!me);
-  nameEl.placeholder=me?"e.g. Brad":(state.who==="mate"?"e.g. Dave":state.who==="partner"?"e.g. Sam":"e.g. Mum");
+  {const k=reviewKind();nameEl.placeholder=me?"e.g. Brad":(k==="mates"?"e.g. Dave":k==="partner"?"e.g. Sam":"e.g. Mum");}
 
   const rows=CATS.map((c,ci)=>{
     $m(`l-${c.id}t`).textContent=fill(c.line);

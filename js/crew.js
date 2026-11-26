@@ -1508,7 +1508,7 @@ async function copyLink(){
    reviews of the same type kept on this device (people you rated before) are added and saved too. */
 async function soloToCrew(){
   const myN=REVIEW_PAGE&&$("myName")?$("myName").value.trim().slice(0,40):"";
-  const selfish=state.who==="me"||state.who==="partner", them=selfish?"":(state.name||"").trim().slice(0,40);
+  const selfish=state.who==="me"||state.who==="partner", them=state.who==="me"?"":(state.name||"").trim().slice(0,40);
   if(!myN||!db||(!selfish&&!them)) return false;
   const set=activeSet();
   const g=await startQuickGroup(myN,them);
