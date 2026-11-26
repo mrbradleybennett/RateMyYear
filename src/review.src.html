@@ -76,6 +76,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .q-val{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;color:var(--green);flex:none}
 .ends{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted)}
 /* Grade buttons: E D C B A, 48px tall, the chosen one filled in its grade colour. */
+.heart{font-style:normal;font-size:.7em;vertical-align:.12em;margin-left:2px}
 .gseg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .gseg button{min-height:48px;padding:0;border-radius:10px;border:1.5px solid var(--muted);background:var(--panel);color:var(--ink);font-family:var(--display);font-size:20px;font-weight:400;cursor:pointer;box-shadow:none}
 .gseg button:hover{border-color:var(--green)}
@@ -473,9 +474,9 @@ button.reviewed{color:var(--green);border-color:var(--green)}
   </header>
   <div class="ratebar review-only" role="radiogroup" aria-label="Which questions?">
     <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
-    <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>Rate yourself or someone in your family</small></span></label>
     <label><input type="radio" name="who" id="who-mate" value="mate"><span><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></span></label>
-    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></span></label>
+    <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>Rate yourself or someone in your family</small></span></label>
+    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Couple Check-in <i class="heart" aria-hidden="true">❤️</i></b><small>Rate your relationship: your Love Report</small></span></label>
   </div>
   <header class="join-only admin-hero">
     <div class="eyebrow">Rate My Year · Join a crew</div>
@@ -797,7 +798,9 @@ const VERDICTS={A:"Absolute legend of a year.",B:"Solid year. A few things to po
 const P={me:{you:"you",your:"your",yourself:"yourself",are:"are"},other:{you:"they",your:"their",yourself:"themselves",are:"are"}};
 const KEY="eoy-review-2026";
 let state={who:"me",name:"",v:{},dk:{}};
-try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v)state=Object.assign(state,s)}catch(e){}
+let firstVisit=true;try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v){state=Object.assign(state,s);firstVisit=false}}catch(e){}
+/* First visit: start on Rate My Mates. */
+if(firstVisit){state.qset="mates";state.other="mate"}
 /* Older saved answers had area scores filled in automatically (everything started at C, or at an old slider
    value), which showed as grades nobody chose. Drop those: area grades now only come from questions you answer. */
 if(state.schema!==3){Object.keys(state.v||{}).forEach(k=>{if(/t$/.test(k))delete state.v[k]});Object.keys(state.dk||{}).forEach(k=>{if(/t$/.test(k))delete state.dk[k]});delete state.legacyT;

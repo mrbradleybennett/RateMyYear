@@ -77,6 +77,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .q-val{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;color:var(--green);flex:none}
 .ends{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted)}
 /* Grade buttons: E D C B A, 48px tall, the chosen one filled in its grade colour. */
+.heart{font-style:normal;font-size:.7em;vertical-align:.12em;margin-left:2px}
 .gseg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .gseg button{min-height:48px;padding:0;border-radius:10px;border:1.5px solid var(--muted);background:var(--panel);color:var(--ink);font-family:var(--display);font-size:20px;font-weight:400;cursor:pointer;box-shadow:none}
 .gseg button:hover{border-color:var(--green)}
@@ -474,9 +475,9 @@ button.reviewed{color:var(--green);border-color:var(--green)}
   </header>
   <div class="ratebar review-only" role="radiogroup" aria-label="Which questions?">
     <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
-    <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>Rate yourself or someone in your family</small></span></label>
     <label><input type="radio" name="who" id="who-mate" value="mate"><span><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></span></label>
-    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></span></label>
+    <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>Rate yourself or someone in your family</small></span></label>
+    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Couple Check-in <i class="heart" aria-hidden="true">❤️</i></b><small>Rate your relationship: your Love Report</small></span></label>
   </div>
   <header class="join-only admin-hero">
     <div class="eyebrow">Rate My Year · Join a crew</div>
@@ -609,7 +610,7 @@ button.reviewed{color:var(--green);border-color:var(--green)}
   </section>
 </div>
 
-<script src="js/app.js?v=b9dcc40c51"></script>
+<script src="js/app.js?v=8bba2a03b8"></script>
 
 <script src="firebase-config.js"></script>
 <script>window.RMY_PAGE="join";</script>

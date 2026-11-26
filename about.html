@@ -185,6 +185,7 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   .benefits{grid-template-columns:1fr}
   .row{grid-template-columns:20px auto 1fr}.row .tag{grid-column:3}
 }
+.heart{font-style:normal;font-size:.7em;vertical-align:.12em;margin-left:2px}
 </style>
 </head>
 <body>
@@ -197,9 +198,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <a id="navCreate" href="mycrew.html">My Crews</a>
     </div></nav>
     <nav class="choicebar two" aria-label="Get started">
-      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
-      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
-      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
+      <a class="main" href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
+      <a href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in <i class="heart" aria-hidden="true">❤️</i></b><small>Rate your relationship: your Love Report</small></a>
     </nav>
   </header>
 
@@ -261,9 +262,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
       <p>Each crew gets its own set of questions and its own wheel. Tap to see the difference.</p>
     </div>
     <div class="toggle" role="group" aria-label="Choose a crew type">
-      <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding you all together</small></button>
-      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Rate yourself or a mate, and find your MVP</small></button>
-      <button type="button" id="tPartner" aria-pressed="false"><b>Couples</b><small>Couple Check-in</small></button>
+      <button type="button" id="tMates" aria-pressed="true"><b>Mates</b><small>Rate yourself or a mate, and find your MVP</small></button>
+      <button type="button" id="tFamily" aria-pressed="false"><b>Families</b><small>See who is holding you all together</small></button>
+      <button type="button" id="tPartner" aria-pressed="false"><b>Couples <i class="heart" aria-hidden="true">❤️</i></b><small>Couple Check-in</small></button>
     </div>
     <div class="kind">
       <div>
@@ -342,9 +343,9 @@ h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;paddin
   <section class="bottom">
     <h2>Ready to <span>find out?</span></h2>
     <nav class="choicebar two" aria-label="Get started" style="width:100%">
-      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
-      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
-      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
+      <a class="main" href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
+      <a href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in <i class="heart" aria-hidden="true">❤️</i></b><small>Rate your relationship: your Love Report</small></a>
     </nav>
   </section>
 
@@ -422,7 +423,7 @@ function showKind(k){
 document.getElementById("tFamily").onclick=()=>showKind("family");
 document.getElementById("tMates").onclick=()=>showKind("mates");
 document.getElementById("tPartner").onclick=()=>showKind("partner");
-showKind("family");
+showKind("mates");
 </script>
 </body>
 </html>

@@ -186,7 +186,9 @@ const VERDICTS={A:"Absolute legend of a year.",B:"Solid year. A few things to po
 const P={me:{you:"you",your:"your",yourself:"yourself",are:"are"},other:{you:"they",your:"their",yourself:"themselves",are:"are"}};
 const KEY="eoy-review-2026";
 let state={who:"me",name:"",v:{},dk:{}};
-try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v)state=Object.assign(state,s)}catch(e){}
+let firstVisit=true;try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v){state=Object.assign(state,s);firstVisit=false}}catch(e){}
+/* First visit: start on Rate My Mates. */
+if(firstVisit){state.qset="mates";state.other="mate"}
 /* Older saved answers had area scores filled in automatically (everything started at C, or at an old slider
    value), which showed as grades nobody chose. Drop those: area grades now only come from questions you answer. */
 if(state.schema!==3){Object.keys(state.v||{}).forEach(k=>{if(/t$/.test(k))delete state.v[k]});Object.keys(state.dk||{}).forEach(k=>{if(/t$/.test(k))delete state.dk[k]});delete state.legacyT;
