@@ -2372,6 +2372,7 @@ window.afterRender=function(rows,avg){
   paintEntry();
   paintDone();
   if(window.__paintAsk) window.__paintAsk();
+  if(window.__prewarmCard&&last&&last.avg!=null) window.__prewarmCard();
   syncPick();
   const on=!!(crew&&target&&me), pickFirst=!!(crew&&!target&&REVIEW_PAGE);
   banner.hidden=!on&&!pickFirst;
@@ -2560,7 +2561,7 @@ if(REVIEW_PAGE){
       :inGroup||askFor()==="me"?["Invite Others To Rate You",`Send your ${crewWord} link. Each person rates you in about 5 minutes, then rates themselves.`]
       :["Invite Others To Rate",`Send the link to ${them||"them"} and anyone else in your ${crewWord}. They rate you, then themselves.`];
     const html=`<b>${t[0]}</b><small>${t[1]}</small>`; if(askBtn.innerHTML!==html) askBtn.innerHTML=html;
-    if(!askBox.hidden){$("askForm").hidden=inGroup;$("askSend").hidden=!inGroup;if(inGroup)$("askLead").textContent=partner?"✓ Your link is ready. Send it to your partner.":"✓ Your link is ready. Send it to your family and friends."}
+    if(!askBox.hidden){$("askForm").hidden=inGroup;$("askSend").hidden=!inGroup;if(inGroup&&!$("askLead").dataset.fail)$("askLead").textContent=partner?"✓ Your link is ready. Send it to your partner.":"✓ Your link is ready. Send it to your family and friends."}
   };
   function openAsk(){
     const who=askFor();
@@ -2692,19 +2693,28 @@ async function recordShare(channel){
 }
 /* Send the invite link from the phone's share sheet (WhatsApp, Messages, email…), or WhatsApp where that isn't available. */
 /* The invite goes with a picture of your report card (made ahead of time, so sharing starts straight away). */
-let inviteCardP=null;
-const inviteCard=()=>{if(!inviteCardP&&window.makeCard&&last&&last.avg!=null) inviteCardP=window.makeCard().catch(()=>null);return inviteCardP||Promise.resolve(null)};
-window.__resetInviteCard=()=>{inviteCardP=null};
+/* The picture is remade (quietly, shortly after you stop answering) whenever the results change, so it is
+   ready the moment you tap. Phones and browsers only open the share popup straight after a tap, so sharing
+   must never wait for the picture. */
+let cardSig="",cardReady=null,cardP=null,cardT=0,shareFilesBroken=false;
+const cardKey=()=>last&&last.avg!=null?JSON.stringify([state.who,state.name,state.qset,(last.rows||[]).map(r=>r.avg),crew&&crew.type,me]):"";
+const inviteCard=()=>{const k=cardKey();if(!k||!window.makeCard)return Promise.resolve(null);
+  if(k!==cardSig){cardSig=k;cardReady=null;cardP=window.makeCard().then(b=>{if(cardSig===k)cardReady=b;return b}).catch(()=>null)}
+  return cardP};
+const readyCard=()=>cardKey()===cardSig?cardReady:null;
+window.__resetInviteCard=()=>{cardSig=""};
+window.__prewarmCard=()=>{clearTimeout(cardT);cardT=setTimeout(()=>{try{inviteCard()}catch(e){}},700)};
 async function shareLink(kind,auto,onBlocked){
   if(!crew){toast("Your crew is still loading. Try again in a moment.");return}
   if(!me){needMe("");return}
   const text=inviteText(kind), link=linkFrom(me);
   if(navigator.share){
-    const blob=kind==="invite"&&(!$("incCard")||$("incCard").checked)?await inviteCard():null;
+    const want=kind==="invite"&&!shareFilesBroken&&(!$("incCard")||$("incCard").checked);
+    const blob=want?readyCard():null; if(want&&!blob) inviteCard();
     const file=blob?new File([blob],"rate-my-year-report-card.png",{type:"image/png"}):null;
-    const withPic=file&&navigator.canShare&&navigator.canShare({files:[file]});
-    try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");return}
-    catch(x){if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){onBlocked();const n=$("askNote");if(n){n.textContent="Your link is ready. Tap Send the link, or Copy link and paste it into a message.";n.className="muted"}return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
+    let withPic=false; try{withPic=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}))}catch(e){}
+    try{await navigator.share(withPic?{files:[file],text:`${text}\n${link}`}:{text:`${text}\n${link}`});recordShare(kind==="nudge"?"nudge":"invite");const l=$("askLead");if(l&&l.dataset.fail){delete l.dataset.fail;$("askBox").hidden=true;$("endAsk").setAttribute("aria-expanded","false")}return}
+    catch(x){console.warn("share failed",x&&x.name,x&&x.message);if(withPic&&x&&x.name!=="AbortError"&&x.name!=="NotAllowedError")shareFilesBroken=true;if(x&&x.name==="AbortError")return;if(auto)return;if(onBlocked){const l=$("askLead"),n=$("askNote");if(l)l.dataset.fail="1";onBlocked();if(l)l.textContent="The share popup didn't open. Tap Send the link to try again, or Copy link and paste it into a message.";if(n)n.textContent="";return}}   // auto: the phone wanted a fresh tap, so leave it to the Send button
   }
   if(auto) return;
   recordShare(kind==="nudge"?"nudge":"invite");
