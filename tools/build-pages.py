@@ -2,7 +2,7 @@
 """Build the review pages from src/review.src.html (the one file you edit).
 
 Outputs:
-  review.html, join.html, mycrew.html   the three pages (same app, different mode)
+  index.html, review.html, join.html, mycrew.html   the pages (index.html is the same as review.html) (same app, different mode)
   js/app.js                            the page script (questions, scoring, report card)
   js/crew.js                           the crew script (Firebase, crews, sharing)
 The scripts are separate files so the browser downloads them once and caches them for all three pages.
@@ -35,7 +35,8 @@ def out(name,text):
     text=text.replace("<!doctype html>\n","<!doctype html>\n"+NOTE,1)
     open(P(name),"w",encoding="utf-8").write(text)
 out("review.html",variant("","","",""))
+out("index.html",variant("","","","").replace("<title>End Of Year Review</title>","<title>Rate My Year · End of Year Performance Review</title>",1))   # the home page opens straight on Rate
 for name,args in {"mycrew.html":("My Crew · Rate My Year","admin-page","My Crew","admin"),
                   "join.html":("Join A Crew · Rate My Year","join-page","Join A Crew","join")}.items():
     out(name,variant(*args))
-print("built review.html, join.html, mycrew.html, js/app.js, js/crew.js")
+print("built index.html, review.html, join.html, mycrew.html, js/app.js, js/crew.js")

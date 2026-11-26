@@ -1,18 +1,18 @@
 <!doctype html>
+<!-- Built from src/review.src.html by tools/build-pages.py. Edit that file, not this one. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="The End of Year Performance Review for families and mates. Rate yourself, get anonymous feedback from your crew, and find out how you really show up.">
+<meta name="description" content="Rate yourself, your mates and your family across the areas of life that matter, and see how your crew sees you.">
 <title>Rate My Year · End of Year Performance Review</title>
-<script>
-/* Old invite links pointed at the home page: send them on to the review page with the crew details. */
-(function(){var q=location.search;if(/[?&]crew=/.test(q)&&/[?&]code=/.test(q))location.replace("review.html"+q+location.hash)})();
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"></noscript>
 <style>
+body{margin:0}
+
+/* Layout: a footy-club report card. One column of category panels, a final report card that grades the year. */
 :root{
   --bg:#eef1ec; --panel:#ffffff; --ink:#14231b; --muted:#5a6b60; --line:#d5ddd6;
   --green:#0f4d32; --gold:#f2b705; --blue:#3f5fb5; --track:#dfe6e0; --soft:#e4ece6;
@@ -29,400 +29,589 @@
   --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
   --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --track:#22362a; --soft:#1a2c22;
   --gA:#23824c; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#f5c533; color-scheme:dark}
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
-.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:56px}
-a{color:inherit}
-.brand{font-family:var(--display);color:var(--green);text-decoration:none;font-size:20px}
-.top{display:flex;flex-direction:column;gap:14px}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:780px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:22px}
+
+header{display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,9vw,68px);line-height:.95;margin:0;color:var(--green);text-wrap:balance}
+h1 span{display:inline-block;background:var(--gold);color:#14231b;padding:0 .18em;transform:rotate(-1.5deg)}
+.lede{margin:0;max-width:60ch;color:var(--muted)}
+ul.steps{padding-left:22px;display:flex;flex-direction:column;gap:4px;font-weight:600}
+
+.setup{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.fam legend{font-weight:700;padding:0;margin-bottom:8px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.seg{display:flex;gap:0;border:1.5px solid var(--green);border-radius:8px;overflow:hidden;width:fit-content;max-width:100%}
+.seg label{position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:9px 20px;font-weight:600;color:var(--green);border-right:1.5px solid var(--green)}
+.seg label:last-child span{border-right:0}
+.seg input:checked + span{background:var(--green);color:var(--panel)}
+.seg input:focus-visible + span{outline:3px solid var(--focus);outline-offset:-4px}
+.namerow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.namerow label{font-weight:700}
+.namerow input{font:inherit;padding:8px 12px;min-height:44px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1;max-width:280px}
+.namerow input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.namepair{display:flex;gap:8px;align-items:center;flex:1 1 220px;max-width:340px}
+.namepair[hidden],.whoseg[hidden]{display:none}
+.whopick{font:inherit;padding:8px 12px;min-height:44px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1}
+.whopick:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.cat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 18px 20px;display:flex;flex-direction:column;gap:16px}
+.cat-head{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.cat-head > div{min-width:0}
+.cat-head h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1;letter-spacing:.01em}
+.oneliner{margin:6px 0 0;font-size:15px;font-style:italic;color:var(--ink)}
+.scale{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:14px;color:var(--muted)}
+.scale b{font-weight:600;color:var(--muted)}
+.grade{font-family:var(--display);font-size:22px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g);transition:background .25s}
+
+.q{display:flex;flex-direction:column;gap:6px}
+/* Tablet and up: Don't know sits beside the grade buttons. */
+@media (min-width:600px){.q{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:6px;align-items:center}.q>p{grid-column:1/-1}.q>.ends,.q>.gseg{grid-column:1}.q>.q-ctrl{grid-column:2;grid-row:3;margin:0}}
+.q>p{margin:0;font-weight:600}
+.q-ctrl{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:2px}
+.q-val{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;color:var(--green);flex:none}
+.ends{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted)}
+/* Grade buttons: E D C B A, 48px tall, the chosen one filled in its grade colour. */
+.gseg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.gseg button{min-height:48px;padding:0;border-radius:10px;border:1.5px solid var(--muted);background:var(--panel);color:var(--ink);font-family:var(--display);font-size:20px;font-weight:400;cursor:pointer;box-shadow:none}
+.gseg button:hover{border-color:var(--green)}
+.gseg button[aria-checked="true"]{background:var(--gsel);border-color:var(--gsel);color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)}
+.gseg button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.q-ctrl{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-top:2px}
+.dkchip{min-height:44px;padding:8px 16px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--ink);font-size:15px;font-weight:600;box-shadow:none}
+.dkchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.q.is-dk .gseg,.q.is-dk .ends{opacity:.4}
+.q.unanswered>p::after{content:" ·  not answered yet";font-weight:500;font-size:14px;color:var(--muted)}
+/* Progress through the questions, stuck to the top while answering. */
+.qprog{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 10px;border-radius:0 0 12px 12px;background:var(--bg);border-bottom:1.5px solid var(--line);font-weight:700;font-size:15px}
+.qprog .bar{flex:1;height:10px;border-radius:5px;background:var(--track);overflow:hidden}.qprog .bar i{display:block;height:100%;background:var(--green);width:0;transition:width .2s}
+.qprog[hidden]{display:none}
+/* The progress bar only shows while the report card is still hidden (answering). */
+body:not(.report-locked) .qprog{display:none}
+.doneask{display:flex;flex-direction:column;gap:10px;padding:14px;border:1.5px solid var(--gold);border-radius:12px;background:var(--panel)}.doneask[hidden]{display:none}
+.doneask .row-btns{display:flex;gap:10px;flex-wrap:wrap}
+.ends span:last-child{text-align:right}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(to right,var(--green) 0 var(--p),var(--track) var(--p) 100%)}
+input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:var(--track)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:4px;background:var(--green)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid var(--panel);box-shadow:0 0 0 1.5px var(--green);margin-top:-8px}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--gold);border:3px solid var(--panel);box-shadow:0 0 0 1.5px var(--green)}
+input[type=range]:focus-visible{outline:3px solid var(--focus);outline-offset:4px;border-radius:4px}
+
+/* Report card */
+.report{background:var(--panel);border:2px solid var(--green);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+/* Header: Self on the left, title in the middle, Crew on the right (single big grade on the left when there's nothing to compare). */
+.report-top{background:var(--green);color:var(--bg);padding:16px 14px;display:grid;grid-template-columns:minmax(0,130px) 1fr minmax(0,130px);grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
+.report-top .rt-row{display:contents}
+#viewSelf,#bigGrade{grid-area:self;justify-self:start} #viewCrew{grid-area:crew;justify-self:end} .report-top .overall-text{grid-area:text}
+#viewSelf{align-items:flex-start;text-align:left} #viewCrew{align-items:flex-end;text-align:right}
+@media (max-width:560px){.report-top{grid-template-columns:1fr 1fr;grid-template-areas:"self crew" "text text"}#bigGrade{grid-column:1/-1;justify-self:center}}
+.report-top .overall-text{align-items:center}.report-top .rkind{align-self:center}
+.rt-row{display:flex;justify-content:center;align-items:flex-start;gap:clamp(24px,8vw,72px);width:100%}
+.hview{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;max-width:130px}
+.hview[hidden],.big[hidden]{display:none}
+.hbig{font-family:var(--display);font-size:clamp(40px,7vw,54px);line-height:1;width:clamp(84px,15vw,104px);height:clamp(84px,15vw,104px);border-radius:14px;background:var(--gold);color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
+#viewCrew .hbig{transform:rotate(3deg)}
+.hview .hl{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.hview .hg{font-family:var(--display);font-size:24px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g,rgba(255,255,255,.15))}
+.hview .hn{font-family:var(--mono);font-weight:700;font-size:18px}.hview small{font-size:13px;opacity:.85;line-height:1.3}
+
+.big{font-family:var(--display);font-size:62px;line-height:1;width:120px;height:120px;border-radius:14px;background:var(--gold);color:#14231b;display:grid;place-items:center;transform:rotate(-3deg);flex:none}
+.overall-text{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.overall-text .eyebrow{color:inherit;opacity:.8}
+.report h2{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1}
+.verdict{font-size:20px;font-weight:700;line-height:1.25;text-wrap:balance}
+.avg{font-family:var(--mono);font-size:14px;opacity:.85}
+.report-body{padding:20px;display:flex;flex-direction:column;gap:22px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:12px}.views[hidden],.gaps[hidden]{display:none}
+.view{background:var(--soft);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;min-width:0}
+.view .vg{font-family:var(--display);font-size:26px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g,var(--track));flex:none}
+.view .vt{display:flex;flex-direction:column;min-width:0}.view .vt b{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
+.view .vt span{font-family:var(--mono);font-weight:700;font-size:20px}.view .vt small{color:var(--muted);font-size:14px;line-height:1.35}
+.gaps{border-left:4px solid var(--gold);background:var(--soft);border-radius:0 10px 10px 0;padding:12px 16px;display:flex;flex-direction:column;gap:6px}
+.gaps h3{margin:0;font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.gaps p{margin:0}.gaps ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:520px){.views{grid-template-columns:1fr}}
+.list h3,.recs h3{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px;color:var(--muted)}
+.list ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--soft);border-radius:8px;padding:10px 12px}
+.list .chip{font-family:var(--display);font-size:14px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
+.list .nm{font-weight:700;min-width:0}
+.list .nm small{display:block;font-weight:500;font-size:13px;color:var(--muted)}
+.list .sc{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
+.recs{display:flex;flex-direction:column;gap:12px}
+.rec{border:1.5px solid var(--line);border-radius:10px;padding:14px 16px}
+.rec h4{margin:0 0 8px;font-size:17px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rec h4 .tag{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--g);border-radius:4px;padding:2px 7px}
+.rec ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#copy,#reset{display:none!important}
+.endbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.endbtn{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px 16px;border-radius:12px;border:2px solid var(--green);background:var(--panel);color:var(--green);text-decoration:none;font-weight:400;box-shadow:none}
+.endbtn[aria-expanded="true"]{outline:3px solid var(--focus);outline-offset:2px}
+.endbtn b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.05}
+.endbtn small{font-size:14px;color:var(--muted);line-height:1.35}
+.endbtn:first-child{background:var(--green);color:var(--panel)}.endbtn:first-child small{color:var(--panel);opacity:.85}
+.gift{font-family:var(--display);font-size:clamp(20px,3vw,26px);color:var(--ink);margin:0}
+.gift b{font-weight:400;background:var(--gold);color:#14231b;padding:0 .2em;border-radius:4px}
+.report-body>.gift{text-align:center}
+.ratecrew-wrap{flex-direction:column;margin-top:14px}.ratecrew{align-items:center;text-align:center;background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold);padding:18px}.ratecrew b{font-family:var(--display);font-size:clamp(22px,3.4vw,30px)}.ratecrew small{font-size:15px;font-weight:600}
+.ltag{display:inline-block;font-size:13px;font-weight:700;background:var(--gold);color:#14231b;padding:2px 8px;border-radius:999px;margin-left:4px;vertical-align:middle}.ltag.low{background:var(--gE);color:#fff}
+.jbackup summary{cursor:pointer;font-weight:700;color:var(--green)}
+details.adv>summary{cursor:pointer;font-weight:700;color:var(--green);min-height:44px;display:flex;align-items:center}
+/* The page heading already says My Crew / Join A Crew, so the box heading isn't repeated. */
+body.admin-page #famH2,body.join-page #famH2{display:none}
+/* Everything tappable is at least 44px tall. */
+button.sm,a.sm,[role="tab"],.whoseg button{min-height:44px}
+/* Dark mode: status pills and notes. */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rstat,:root:not([data-theme="light"]) .crewnote.warn{background:#3a2f0a;color:#f5d77a}:root:not([data-theme="light"]) .rstat.ok,:root:not([data-theme="light"]) .crewnote{background:#163a26;color:#a9e3bf}}
+:root[data-theme="dark"] .rstat,:root[data-theme="dark"] .crewnote.warn{background:#3a2f0a;color:#f5d77a}:root[data-theme="dark"] .rstat.ok,:root[data-theme="dark"] .crewnote{background:#163a26;color:#a9e3bf}
+.endbtn[hidden],#fromField[hidden]{display:none}
+.inccard{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);cursor:pointer}
+.inccard input{width:20px;height:20px;margin:0;accent-color:var(--green)}
+.endbtn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sharebox{display:flex;flex-direction:column;gap:8px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
+.sharebox[hidden]{display:none}.sharebox label{font-weight:700}.sharebox p{margin:0}
+.sharebox .field{display:flex;flex-direction:column;gap:4px}.sharebox .field input{font:inherit;padding:10px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink)}
+.cardwrap{display:flex;justify-content:center}.cardwrap img{width:100%;max-width:360px;height:auto;border-radius:10px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+.sharebtns{display:flex;gap:8px;flex-wrap:wrap}
+.btnlike{display:inline-flex;align-items:center;font-weight:700;text-decoration:none;border-radius:6px;padding:10px 16px;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.sharerow{display:flex;gap:8px}.sharerow input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink)}
+button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:var(--gold);color:#14231b}
+button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+/* One message bar for the whole site, fixed to the bottom so it's always visible (saves, errors, admin confirmations). */
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 32px));
+  background:var(--ink);color:var(--bg);font-size:15px;font-weight:600;line-height:1.35;padding:12px 18px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);text-align:center}
+.toast:empty{display:none}
+.toast.err{background:var(--gE);color:#fff}
+.foot{font-size:14px;color:var(--muted);text-align:center}
+/* Family area */
+.fam{background:var(--panel);border:2px solid var(--green);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.fam-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.fam h2{font-family:var(--display);font-weight:400;font-size:24px;margin:0;line-height:1.05}
+.muted{color:var(--muted);margin:0;font-size:14.5px;max-width:62ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);padding:8px 14px}
+.tabs button[aria-selected="true"]{background:var(--green);color:var(--panel);box-shadow:none}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:14px}
+.field input,.field select{font:inherit;padding:9px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;width:100%}
+.field input:focus-visible,.field select:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.err{color:var(--gE);font-size:14px;font-weight:600;margin:0}
+.members{display:flex;flex-direction:column;gap:8px}
+.member{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--soft);border-radius:8px;padding:10px 12px}
+.member .chip{font-family:var(--display);font-size:14px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
+.member .chip.none{background:var(--track);color:var(--muted);font-family:var(--body);font-size:14px}
+.member .nm{font-weight:700;min-width:0}
+.member .nm small{display:block;font-weight:500;font-size:13px;color:var(--muted)}
+.member .btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.member button{padding:7px 12px;font-size:14px}
+.sm{padding:7px 12px;font-size:14px}
+.results{border:1.5px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.results h3{margin:0;font-size:18px}
+.rtable-wrap{overflow-x:auto}
+.rtable{width:100%;border-collapse:collapse;font-size:14.5px}
+.rtable th{text-align:left;font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:0 8px 6px 0}
+.rtable td{padding:7px 8px 7px 0;border-top:1px solid var(--line)}
+.rtable td.n{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.g-dot{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 4px;border-radius:12px;color:#fff;background:var(--g);font-family:var(--display);font-size:13px;margin-right:6px;vertical-align:middle}
+.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom, 0px));z-index:50;width:min(760px,calc(100% - 24px));background:var(--green);color:var(--panel);border-radius:14px;padding:10px 10px 10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px}
+.banner .btext{flex:1;min-width:0;font-size:15.5px;line-height:1.3}
+.banner .btext b{font-weight:800}
+.banner .bchip{flex:none;min-width:40px;height:40px;padding:0 6px;border-radius:20px;display:grid;place-items:center;font-family:var(--display);font-size:14px;color:#fff;background:var(--g);box-shadow:0 0 0 2px var(--panel)}
+.banner button{flex:none;padding:9px 14px}
+body.has-bar .wrap{padding-bottom:120px}
+.menote{margin:0;background:var(--gold);color:#14231b;font-weight:700;border-radius:8px;padding:10px 14px}
+.attention select{outline:3px solid var(--focus);outline-offset:2px}
+.setup-grid{display:flex;gap:14px 28px;flex-wrap:wrap}
+.seg small{display:block;font-weight:500;opacity:.8;font-size:13px;line-height:1.2}
+[hidden]{display:none!important}
+.crew-box{border-top:2px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.crew-box h3{margin:0;font-size:18px}
+.crew-box[hidden]{display:none}
+.src-block .q>p{font-size:17px}
+.auto{margin:0;font-size:14px;color:var(--muted)}
+details.more summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;font-weight:700;color:var(--green);flex-wrap:wrap}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"";width:8px;height:8px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s;margin:0 4px 0 2px}
+details.more[open] summary::before{transform:rotate(45deg)}
+details.more summary small{font-weight:500;color:var(--muted)}
+details.more summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:4px}
+.more-body{display:flex;flex-direction:column;gap:16px}
+/* All detailed questions show; the old summary question and the expand bar are hidden. */
+.src-block>.q:first-child,details.more>summary{display:none}
+.more-body>button{align-self:flex-start}
+input[type=range]:disabled{cursor:default;opacity:.6}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:16px 24px;align-items:center}
+.hero-text{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+.wheel-wrap{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+#wheel,#wheel2{width:100%;max-width:420px;height:auto;overflow:visible}
+.wheel-wrap figcaption{font-size:13px;color:var(--muted);text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
+.wlegend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-weight:700;color:var(--ink)}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.lg i{width:14px;height:4px;border-radius:2px;background:var(--grp)}
+.g-me{--grp:var(--green)} .g-others{--grp:var(--gold)} .g-life{--grp:var(--blue)}
+.garc{fill:none;stroke:var(--grp);stroke-width:4;stroke-linecap:round}
+.report-wheel{padding-bottom:4px}
+.gscores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.gscore{background:var(--soft);border-radius:10px;padding:12px 14px;border-top:4px solid var(--grp);display:flex;flex-direction:column;gap:4px;min-width:0}
+.gs-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gs-name{font-family:var(--display);font-size:20px;line-height:1}
+.gscore .chip{font-family:var(--display);font-size:14px;min-width:34px;height:34px;padding:0 4px;border-radius:17px;display:grid;place-items:center;color:#fff;background:var(--g)}
+.gscore .chip.none{background:var(--track);color:var(--muted)}
+.gs-num{font-family:var(--mono);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
+.gs-num small{font-size:13px;color:var(--muted);font-weight:500}
+.gs-areas{font-size:13px;color:var(--muted)}
+@media (max-width:520px){.gscores{grid-template-columns:1fr}}
+.group-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:4px solid var(--grp)}
+.group-head h2{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1;color:var(--ink)}
+.group-head span{color:var(--muted);font-size:15px}
+.ring{fill:none;stroke:var(--line);stroke-dasharray:2 3}
+.wtrack{fill:var(--track)}
+.wfill{fill:var(--green);transition:d .3s}
+.wseg{cursor:pointer;outline:none}
+.wseg:hover .wtrack,.wseg:focus-visible .wtrack{fill:var(--line)}
+.wseg:focus-visible .wlabel{text-decoration:underline}
+.wlabel{font-family:var(--body);font-size:15px;font-weight:600;fill:var(--ink)}
+.wnum{font-family:var(--mono);font-weight:700;fill:var(--muted)}
+.wscore{font-family:var(--display);font-size:13px;fill:var(--ink);stroke:var(--bg);stroke-width:3px;paint-order:stroke;pointer-events:none}
+.wscore.muted-t{fill:var(--muted)}
+.wcenter{fill:var(--panel);stroke:var(--line)}
+.wgrade{font-family:var(--display);font-size:20px;fill:var(--green)}
+.cat h2 .num{font-family:var(--mono);font-size:14px;color:var(--muted);margin-right:10px;vertical-align:middle}
+.grade.unknown{color:var(--muted)}
+.src-block{border-radius:10px;padding:14px;border:1.5px solid var(--gold);background:var(--soft);display:flex;flex-direction:column;gap:12px}
+details.more{border-top:0;padding-top:0}
+.none-li{display:block!important;color:var(--muted);background:transparent!important;padding:4px 0!important}
+.stack{display:flex;flex-direction:column;gap:14px}
+.gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1f1f1f;box-shadow:inset 0 0 0 1px #747775;font-weight:600;padding:10px 18px;border-radius:999px}
+.who-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14.5px}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row-btns select{font:inherit;font-size:14px;padding:10px 12px;min-height:44px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);max-width:100%}
+.crew-list{display:flex;gap:8px;flex-wrap:wrap}
+.invite{background:var(--soft);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.invite label{font-weight:700;font-size:14px}
+.invite-row{display:flex;gap:8px;flex-wrap:wrap}
+.invite-row input{flex:1;min-width:0;font:inherit;font-size:14px;font-family:var(--mono);padding:9px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--panel);color:var(--ink)}
+.glines{display:flex;gap:10px;flex-wrap:wrap}
+.gl{display:inline-flex;align-items:center;gap:8px;background:var(--soft);border-radius:8px;padding:6px 10px;border-left:4px solid var(--grp);font-family:var(--mono);font-size:14px}
+.gl b{font-family:var(--body)}
+.results .list h3,.results .recs h3{font-size:13px}
+.manage{margin:-4px 0 4px;padding:12px 14px;border:1.5px solid var(--line);border-top:0;border-radius:0 0 10px 10px;background:var(--panel);display:flex;flex-direction:column;gap:10px}
+.mrow{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;font-size:14px;color:var(--muted)}
+.mrow.confirm{grid-template-columns:1fr;gap:8px;padding:10px;border:1.5px solid var(--gE);border-radius:10px}
+.mrow button{width:100%}
+button.danger{background:transparent;color:var(--gE);box-shadow:inset 0 0 0 1.5px var(--gE)}
+@media (max-width:520px){.mrow{grid-template-columns:1fr;gap:4px}}
+.topnav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .menu{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
 .menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:12px 0;border-bottom:3px solid transparent}
 .menu a:hover{border-bottom-color:var(--line)}
 .menu a[aria-current="page"],.menu a[aria-pressed="true"]{border-bottom-color:var(--gold)}
 .menu a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.invitehint{margin:8px 0 0;font-size:14px;color:var(--muted)}
-.choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none}
-.choicebar.two{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media (max-width:560px){.choicebar.two a small{display:none}.choicebar.two a{min-height:64px;padding:10px 6px}.toggle button small{display:none}}
-.choicebar.two a{flex-direction:column;gap:6px;min-height:84px;padding:14px}
-.choicebar.two a b{font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
-.choicebar.two a small{font-family:var(--body);font-size:15px;font-weight:600;opacity:.9}
-.choicebar a.main{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
-.choicebar a:focus-visible,.toggle button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-h1,h2{font-family:var(--display);font-weight:400;color:var(--green);margin:0;line-height:.98;text-wrap:balance}
-h1{font-size:clamp(40px,8.5vw,76px)}
-h2{font-size:clamp(30px,5.5vw,46px)}
-h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;padding:0 .16em;transform:rotate(-1.5deg)}
-.lede{font-size:clamp(18px,2.4vw,21px);max-width:44ch;margin:0}
-.startbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:18px;padding:16px 22px;border-radius:14px;background:var(--green);color:var(--panel);text-decoration:none;box-shadow:inset 0 -5px 0 var(--gold);max-width:100%}
-.startbtn b{font-family:var(--display);font-weight:400;font-size:clamp(22px,4vw,28px);line-height:1.05}
-.startbtn small{font-size:15px;opacity:.9}
-.startbtn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
-.startnote{margin:10px 0 0;color:var(--muted);font-size:15px}
-@media (max-width:560px){.startbtn{display:flex;width:100%}}
-.hero{display:block}
-.hero-text{display:flex;flex-direction:column;gap:16px}
-.sec{display:flex;flex-direction:column;gap:18px}
-.sec-head{display:flex;flex-direction:column;gap:10px;max-width:60ch}
-.sec-head p{margin:0}
-.gift{font-family:var(--display);font-size:clamp(22px,3.4vw,30px);color:var(--ink);margin:0}
-.gift b{font-weight:400;background:var(--gold);color:#14231b;padding:0 .2em;border-radius:4px}
-
-/* example report card */
-.card{background:var(--panel);border:2px solid var(--green);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,77,50,.12)}
-.card-top{background:#0f4d32;color:#eef1ec;padding:16px 14px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
-.card-top .rt-row{display:contents}.card-top .hview.s{grid-area:self;justify-self:start;align-items:flex-start}.card-top .hview.c{grid-area:crew;justify-self:end;align-items:flex-end}
-.card-text{grid-area:text;display:flex;flex-direction:column;gap:8px;align-items:center}
-.rt-row{display:flex;justify-content:center;gap:clamp(28px,8vw,72px);width:100%}
-.hview{display:flex;flex-direction:column;align-items:center;gap:8px}
-.big.tilt{transform:rotate(3deg)}
-.hview .hl{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:#f2b705}
-.hg{font-family:var(--display);font-size:20px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
-.hview .hn{font-family:var(--mono);font-weight:700}
-.big{font-family:var(--display);font-size:48px;width:96px;height:96px;border-radius:14px;background:#f2b705;color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
-.pill{display:inline-block;background:#f2b705;color:#14231b;font-family:var(--display);font-size:14px;padding:3px 10px;border-radius:999px}
-.card-title{font-family:var(--display);font-size:clamp(22px,3.6vw,30px);line-height:1}
-.card-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
-.gaps{border-left:4px solid var(--gold);background:var(--soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px;grid-column:1/-1}
-.gaps ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
-.gaps b.h{display:block;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
-.lists{display:flex;flex-direction:column;gap:12px}
-.lists h3{margin:0;font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.li{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:8px;padding:7px 10px;font-weight:600}
-.li .c{font-family:var(--display);font-size:13px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g);flex:none}
-.li .s{margin-left:auto;font-family:var(--mono)}
-
-/* wheel */
-.wheel svg{width:100%;height:auto;display:block}
-.ring{fill:none;stroke:var(--line);stroke-dasharray:2 3}
-.wtrack{fill:var(--track)}
-.wlabel{font-family:var(--body);font-size:13px;font-weight:600;fill:var(--ink)}
-.wnum{fill:var(--muted);font-weight:500}
-.wscore{font-family:var(--display);font-size:13px;fill:var(--ink);stroke:var(--panel);stroke-width:3px;paint-order:stroke}
-.wcenter{fill:var(--panel);stroke:var(--line)}
-.wgrade{font-family:var(--display);font-size:20px;fill:var(--green)}
-.garc{fill:none;stroke-width:4;stroke-linecap:round}
-.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-weight:600;font-size:14px}
-.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
-
-/* families / mates */
-.toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.toggle button{font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;padding:14px;border-radius:14px;border:2px solid var(--green);background:var(--panel);color:var(--green)}
-.toggle button b{font-family:var(--display);font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
-.toggle button small{font-size:15px;opacity:.9}
-.toggle button[aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
-.kind{display:grid;grid-template-columns:1fr 1.1fr;gap:24px;align-items:center;background:var(--panel);border-radius:16px;padding:20px;border:1.5px solid var(--line)}
-.kind p#kText{font-size:clamp(19px,2.6vw,23px);font-weight:700;line-height:1.3}
-.perfect{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
-.pf-h{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-#kFor,#kAwards{display:flex;flex-wrap:wrap;gap:10px}
-.pop.award{background:#f2b705;color:#14231b;box-shadow:3px 3px 0 #0f4d32}
-.pop.award.low{background:var(--gE);color:#fff;transform:rotate(1.5deg);box-shadow:3px 3px 0 #0f4d32}
-.pop{font-family:var(--display);font-size:clamp(16px,2.4vw,20px);line-height:1.1;background:var(--gold);color:#14231b;padding:8px 14px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 #0f4d32}
-.pop.alt{background:#0f4d32;color:#f2b705;transform:rotate(1.5deg);box-shadow:3px 3px 0 #f2b705}
-.kind h3{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 8px;color:var(--green)}
-.kind p{margin:0 0 10px}
-.areas{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.areas div{font-size:15px}.areas b{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-right:6px}
-
-/* crew report */
-.crewcard{background:var(--panel);border:2px solid var(--green);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
-.crewcard .ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
-.crewcard .ch b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}
-.crewscore{display:flex;align-items:center;gap:14px;background:#0f4d32;color:#eef1ec;border-radius:12px;padding:12px 16px}
-.crewscore .cc{font-family:var(--display);font-size:24px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;box-shadow:0 0 0 3px #f2b705;flex:none}
-.crewscore b{display:block;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#f2b705}
-.crewscore span{font-family:var(--mono);font-weight:700;font-size:20px}
-.row{display:grid;grid-template-columns:24px auto 1fr auto;gap:12px;align-items:center;background:var(--soft);border-radius:8px;padding:9px 12px}
-.row .rk{font-family:var(--display);color:var(--muted);text-align:center}
-.row .c{font-family:var(--display);font-size:14px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
-.row .n{font-weight:700;display:flex;flex-direction:column}.row .n small{font-weight:500;color:var(--muted);font-size:14px}
-.tag{font-family:var(--display);font-size:13px;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.tag.best{background:#f2b705;color:#14231b}.tag.notice{background:var(--gE);color:#fff}.tag.hold{background:var(--gA);color:#fff}.tag.help{background:var(--gD);color:#fff}
-.improve{border-top:1.5px solid var(--line);padding-top:10px;margin-top:2px;display:flex;flex-direction:column;gap:8px}
-.improve>b{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.imp{border-left:4px solid var(--gD);background:var(--soft);border-radius:0 8px 8px 0;padding:8px 12px;font-size:15px;display:flex;flex-direction:column;gap:2px}
-.imp .area{font-family:var(--display);font-size:14px;color:var(--green)}
-.leftcol{display:flex;flex-direction:column;gap:14px}
-.twocol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
-.twocol>*{min-width:0}
-/* Crew report examples stack on iPad portrait and smaller, so nothing is cut off. */
-@media (max-width:900px){.twocol{grid-template-columns:1fr}}
-.twocol .sec-head{margin-bottom:12px}
-
-/* benefits + note */
-.benefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.benefit{background:var(--panel);border-radius:14px;padding:16px;border-top:5px solid var(--gold);display:flex;flex-direction:column;gap:6px}
-.benefit b{font-family:var(--display);font-weight:400;font-size:19px;line-height:1.1;color:var(--green)}
-.benefit span{font-size:15px;color:var(--muted)}
-.note{background:#fff4d6;color:#3d2e00;border:2px dashed #b88a00;border-radius:16px;padding:20px 22px}
-.note h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 10px;color:#6b4e00}
-.note ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-weight:600}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .note{background:#2a2410;color:#f3e3b0;border-color:#c9a020}:root:not([data-theme="light"]) .note h3{color:#f5c533}}
-.plans{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.plan{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;text-align:center;align-items:center}
-.plan b{font-family:var(--display);font-weight:400;font-size:clamp(15px,1.8vw,18px);line-height:1.1;color:var(--green);white-space:nowrap}
-.plan .who{display:inline-flex;align-items:baseline;gap:5px;background:var(--gold);color:var(--ink);font-size:14px;font-weight:700;padding:5px 12px;border-radius:999px;margin:4px 0;white-space:nowrap}
-.plan .who em{font-style:normal;font-family:var(--display);font-size:22px;line-height:1}
-.plan .price{font-family:var(--display);font-size:32px;line-height:1;color:var(--ink);margin-top:auto;padding-top:6px}
-.plan .rev{font-size:14px;color:var(--muted);font-weight:600;margin-top:-2px}
-.plan .per{font-size:13px;color:var(--muted)}
-.plan.hot{border-color:var(--green);box-shadow:inset 0 -5px 0 var(--gold)}
-@media (max-width:860px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:440px){.plans{grid-template-columns:1fr}}
-.bottom{display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
-.foot{font-size:14px;color:var(--muted);text-align:center}
-
-@media (max-width:760px){
-  .hero,.kind,.twocol,.card-body{grid-template-columns:1fr}
-  .benefits{grid-template-columns:1fr 1fr}
+.menu a[hidden]{display:none}
+.topnav .brand{font-family:var(--display);font-size:18px;color:var(--green);text-decoration:none}
+.topbtn{display:inline-flex;align-items:center;font-weight:700;text-decoration:none;background:var(--green);color:var(--panel);padding:10px 18px;border-radius:999px}
+.topbtn.ghostbtn{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.topbtn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.admin-only{display:none!important}
+body.admin-page .admin-only{display:flex!important}
+body.admin-page .review-only{display:none!important}
+.set-h{font-family:var(--display);font-weight:400;font-size:22px;margin:18px 0 8px;color:var(--green)}
+.join-only{display:none!important}
+body.join-page .join-only{display:flex!important}
+body.join-page .review-only{display:none!important}
+body.join-page #famTitle,body.join-page #famLeave{display:none!important}
+/* Crew housekeeping (which crew, guest status, other crews, leave, admin link) lives on My Crew, not the review page. */
+body.in-crew:not(.admin-page) #famTitle,body.in-crew:not(.admin-page) #famLeave,body.in-crew:not(.admin-page) #famBody .who-row,body.in-crew:not(.admin-page) #toMyCrew{display:none!important}
+.admin-hero{flex-direction:column;gap:12px}
+.adminlink{margin:0;background:var(--soft);border-radius:8px;padding:10px 14px;font-weight:600}
+.adminlink a,.muted a{color:var(--green)}
+.navbtns{display:flex;gap:8px;flex-wrap:wrap}
+.rkind{display:inline-block;align-self:flex-start;background:var(--gold);color:#14231b;font-family:var(--display);font-size:15px;letter-spacing:.02em;padding:4px 10px;border-radius:999px;margin-bottom:8px}
+.qtips{display:flex;flex-direction:column;gap:10px}.qtips li{display:flex;flex-direction:column;gap:2px}
+.qlow{font-size:14px;color:var(--muted)}.qlow b{color:var(--ink);font-family:var(--mono)}.qnote{margin:6px 0 0;font-size:14px}
+.heroawards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}.heroawards[hidden]{display:none}
+.heroawards .pop{font-family:var(--display);font-size:clamp(14px,2vw,17px);line-height:1.1;background:var(--gold);color:#14231b;padding:7px 12px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 var(--green)}
+.heroawards .pop.low{background:var(--gE);color:#fff;transform:rotate(1.5deg)}
+.herotag{font-weight:700;font-size:19px;line-height:1.35;color:var(--green);margin:12px 0 0;max-width:34ch}
+.herotag[hidden]{display:none}
+.whoseg{display:inline-flex;border:2px solid var(--green);border-radius:999px;overflow:hidden;flex:none}
+.whoseg button{font:inherit;font-weight:700;background:transparent;color:var(--green);border:0;border-radius:0;padding:8px 16px;cursor:pointer}
+.whoseg button[aria-pressed="true"]{background:var(--green);color:var(--panel)}
+.ratebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.ratebar span small{display:none}.ratebar span{min-height:64px;padding:10px 8px}}
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
+.ratebar label{position:relative;cursor:pointer;min-width:0}
+.ratebar input{position:absolute;opacity:0;pointer-events:none}
+.ratebar span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:84px;padding:12px 14px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);line-height:1.05;text-wrap:balance}
+.ratebar span b{font-family:var(--display);font-weight:400;font-size:clamp(17px,3.2vw,24px)}
+.ratebar span small{font-size:14px;line-height:1.3;opacity:.85}
+.ratebar input:checked+span,.ratebar label.on>span{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.ratebar input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
+.choicebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#choiceRate{display:none!important}
+.choicebar button,.choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none;cursor:pointer;font-weight:400;text-wrap:balance}
+.choicebar [aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.choicebar button:focus-visible,.choicebar a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+/* Main page entry choice: Rate Me shows the name box; Join A Crew shows crew search. */
+body.entry-rate:not(.crew-ready) .crew-box{display:none}
+body.in-crew #endJoin,body.in-crew #endCreate{display:none}
+body.in-crew:not(.admin-page) .namerow,body.in-crew:not(.admin-page) #famPickHint{display:none!important}
+.boardsec{background:var(--panel);border:2px solid var(--green);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.boardsec[hidden]{display:none}.boardsec h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0;color:var(--green)}.boardsec>p{margin:0}
+.boardwrap{position:relative}.boardwrap.locked .members{filter:blur(7px);pointer-events:none;user-select:none}
+.boardlock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px}
+.boardlock[hidden]{display:none}.boardlock b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}.boardlock span{max-width:36ch}
+.board-h{margin:6px 0 0;font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}
+.member.pick-row{grid-template-columns:1fr auto}.member.board-row.done .nm{opacity:.85}
+.blurred{filter:blur(5px);user-select:none}
+.award{display:inline-block;font-family:var(--display);font-weight:400;font-size:14px;background:var(--gold);color:#14231b;padding:2px 9px;border-radius:999px;transform:rotate(-2deg);margin-left:4px;vertical-align:2px}
+.member.board-row.best{box-shadow:inset 0 0 0 2px var(--gold)}
+.award.low{background:var(--gE);color:#fff;transform:rotate(1.5deg)}
+.award.low.eye{background:var(--gD,#c77d2a)}
+.award .sr-note{font-family:var(--body);font-size:12.5px;font-weight:700;opacity:.9}
+.crewscore{display:flex;align-items:center;gap:14px;background:var(--green);color:var(--panel);border-radius:12px;padding:12px 16px}.crewscore[hidden]{display:none}
+.cs-chip{font-family:var(--display);font-size:26px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;flex:none;box-shadow:0 0 0 3px var(--gold)}
+.cs-txt{display:flex;flex-direction:column;min-width:0}.cs-txt b{font-size:16px;font-weight:800;color:#14231b}
+.cs-num{font-family:var(--mono);font-weight:700;font-size:22px}.cs-txt small{opacity:.85;font-size:14px}.lockline{display:block;margin-top:4px;color:var(--muted)}
+.rstat{display:inline-block;font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;margin-top:2px}.rstat.ok{background:#e3f1e8;color:#14532d}.boardtoggle{cursor:pointer}.boardtoggle input{width:18px;height:18px;vertical-align:-3px}
+.member.board-row{grid-template-columns:auto auto 1fr auto;grid-template-areas:"rank chip nm btns" "rank chip meta btns";row-gap:2px}
+.board-row .rank{grid-area:rank}.board-row .chip{grid-area:chip}.board-row .nm{grid-area:nm;line-height:1.5}.board-row .btns{grid-area:btns}
+.board-row .meta{grid-area:meta;font-weight:500;font-size:13px;color:var(--muted);min-width:0}
+/* Phones: two lines per person: rank, grade and name (with badges); then the counts and the button. */
+@media (max-width:600px){
+  .member.board-row{grid-template-areas:"rank chip nm nm" "rank chip meta btns";column-gap:10px;padding:10px}
+  .board-row .rank{font-size:17px;min-width:16px}
+  .board-row .award{font-size:12px;padding:1px 7px;margin-left:2px}
+  .board-row .youbadge{font-size:11px;padding:1px 6px}
+  .board-row .btns button{padding:6px 10px;font-size:13px;min-height:36px}
 }
-@media (max-width:440px){
-  .big{width:84px;height:84px;font-size:40px}
-  .card-top{grid-template-columns:1fr 1fr;grid-template-areas:"self crew" "text text"}
-  .benefits{grid-template-columns:1fr}
-  .row{grid-template-columns:20px auto 1fr}.row .tag{grid-column:3}
-}
+.board-row .rank{font-family:var(--display);font-size:20px;color:var(--muted);min-width:22px;text-align:center;flex:none}
+.typebox{border:1.5px dashed var(--gold);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.typebox p{margin:0}
+.typebox[hidden]{display:none}
+.danger{border:1.5px solid var(--gE);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.danger[hidden]{display:none}.danger p{margin:0}
+.dangerbtn{background:var(--gE);color:#fff}.dangerline{box-shadow:inset 0 0 0 1.5px var(--gE);color:var(--gE)}
+.crewnote{margin:0;padding:10px 12px;border-radius:8px;background:#e3f1e8;color:#14532d;font-weight:600}.crewnote.warn{background:#fff4d6;color:#6b4e00}.crewnote[hidden]{display:none}
+body.entry-join:not(.in-crew) .namerow,body.entry-join:not(.in-crew) #famPickHint{display:none!important}
+.jres{display:flex;flex-direction:column;gap:6px}
+.jhit{text-align:left;background:var(--soft);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);font-weight:700}
+.jhit.on{box-shadow:inset 0 0 0 2px var(--green);background:var(--panel)}
+.jpick{margin:0;font-size:15px}
+.count{margin:0;font-weight:700;color:var(--green)}
+.bar{height:8px;background:var(--track);border-radius:4px;min-width:60px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--g)}
+.qcat td{font-weight:700;background:var(--soft);padding-left:8px}
+.admin-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.admin-head h3{margin:0;font-family:var(--display);font-weight:400;font-size:20px}
+#adminArea{border-top:2px solid var(--line);padding-top:16px}
+.rtable.score th,.rtable.score td{white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media (max-width:560px){.split{grid-template-columns:1fr}}
+@media (max-width:440px){.big{width:96px;height:96px;font-size:48px}.seg span{padding:9px 14px}}
+/* Save before the report card shows */
+.donebar{display:flex;flex-direction:column;gap:8px;margin:6px 0 2px}.donebar[hidden],#doneBtn[hidden],.donesaved[hidden]{display:none}
+#doneBtn{background:var(--green);color:var(--panel);align-items:center;text-align:center;box-shadow:inset 0 -5px 0 var(--gold);padding:18px 16px}
+#doneBtn small{color:var(--panel);opacity:.85}
+.donesaved{margin:0;text-align:center;font-weight:700;color:var(--green)}
+body.report-locked .report{display:none}
+/* Review first, then ask others */
+.askbox .asklead{margin:0;font-size:18px;font-weight:700;line-height:1.35}
+.askbox .stack{display:flex;flex-direction:column;gap:10px}.askbox [hidden]{display:none!important}
+.welcome{border:2px solid var(--green);border-radius:12px;padding:14px 16px;background:var(--panel);display:flex;flex-direction:column;gap:10px}
+.welcome[hidden],.nextbox[hidden]{display:none}
+.welcome .wtitle{margin:0;font-size:20px;line-height:1.25}.welcome p{margin:0}
+.wform{display:flex;gap:8px;flex-wrap:wrap}
+.wform input{flex:1 1 160px;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink)}
+.nextbox{display:flex;flex-direction:column}
+.revcount{font-weight:700;white-space:nowrap}
+.givecount{white-space:nowrap}
+.myresults{grid-column:1/-1}
+.nrow.myres-wrap{justify-content:flex-start}
+button.reviewed{color:var(--green);border-color:var(--green)}
+.locknote{grid-column:1/-1;margin:4px 0 0;font-size:14px}
+.youbadge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:var(--gold);color:#14231b;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+.nextbox h3{margin:0 0 4px;font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.nrow{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line)}
+.nrow:first-of-type{border-top:0}.nrow>span:first-child{flex:1 1 180px;min-width:0}
+/* Guest crews live on one device: make keeping it with Google hard to miss. */
+.nextbox .keep{margin:10px 0 0;font-size:15px;color:var(--ink);background:var(--soft);border:1.5px solid var(--gold);border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.nextbox .keep .linkbtn{background:var(--gold);color:#14231b;text-decoration:none;padding:10px 16px;border-radius:999px;min-height:44px}
+.linkbtn{background:none;border:0;padding:10px 4px;min-height:44px;color:var(--green);text-decoration:underline;font:inherit;font-weight:700;cursor:pointer}
+.lockline2{color:var(--muted)}
+.addrate .wform{flex:1 1 220px}.nextbox .addrate{border-top:0}
 </style>
 </head>
-<body>
+<body class="entry-rate">
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <div class="wrap">
-
-  <header class="top">
-    <nav aria-label="Main"><div class="menu">
-      <a href="./" aria-current="page">About</a>
-      <a href="review.html">Rate</a>
-      <a id="navCreate" href="mycrew.html">My Crews</a>
-    </div></nav>
-    <nav class="choicebar two" aria-label="Get started">
-      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
-      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
-      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
-    </nav>
+  <nav class="topnav" aria-label="Main">
+    <div class="menu">
+      <a id="navAbout" href="about.html">About</a>
+      <a id="navRate" href="./">Rate</a>
+      <a id="choiceJoin" href="join.html" hidden>Join</a>
+      <a id="choiceCreate" href="mycrew.html">My Crews</a>
+    </div>
+    <button type="button" id="choiceRate" aria-pressed="true" hidden>Rate Me</button>
+  </nav>
+  <header class="admin-only admin-hero">
+    <div class="eyebrow">Rate My Year · Crew admin</div>
+    <h1>My <span>Crew</span></h1>
+    <p class="lede">Set up your crew, send the invite link and see everyone's results. Your crew just open the link and pick their name.</p>
   </header>
-
-  <section class="hero">
+  <div class="ratebar review-only" role="radiogroup" aria-label="Which questions?">
+    <input type="radio" name="who" id="who-me" value="me" class="sr-only" tabindex="-1" aria-hidden="true">
+    <label><input type="radio" name="who" id="who-family" value="family"><span><b>Rate My Family</b><small>Rate yourself or someone in your family</small></span></label>
+    <label><input type="radio" name="who" id="who-mate" value="mate"><span><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></span></label>
+    <label><input type="radio" name="who" id="who-partner" value="partner"><span><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></span></label>
+  </div>
+  <header class="join-only admin-hero">
+    <div class="eyebrow">Rate My Year · Join a crew</div>
+    <h1>Join A <span>Crew</span></h1>
+    <p class="lede">Open the invite link your crew admin sent you and pick your name. No sign-in needed.</p>
+  </header>
+  <header class="hero review-only">
     <div class="hero-text">
       <div class="eyebrow">Rate My Year · Season 2026</div>
-      <h1>Your End of Year <span>Performance Review</span></h1>
-      <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Rate your own year, then send a link and see how your family and friends rate you.</p>
-      <a class="startbtn" href="review.html?who=me"><b>Start My Free Review</b><small>About 5 minutes · 27 quick questions · no sign-up</small></a>
-      <p class="startnote">At the end, tap <b>Invite Others To Rate You</b> to send it on.</p>
-      <p class="invitehint">Got an invite? Tap the link in your message. Lost it? <a href="join.html">Find your crew</a></p>
-    </div>
-  </section>
-
-  <section class="sec">
-    <div class="sec-head">
+      <h1 id="heroH1">End Of Year <span>Review</span></h1>
+      <p class="herotag" id="heroTag" hidden></p>
+      <ul class="lede steps" id="lede"></ul>
       <p class="gift">Feedback is a <b>GIFT</b></p>
-      <p>Every review ends with a report card: your grade, how you rate yourself against how your crew rates you, the biggest gaps, and what to work on next. Here's an example.</p>
     </div>
-    <article class="card" aria-label="Example report card">
-      <div class="card-top">
-        <div class="rt-row">
-          <div class="hview s"><span class="hl">Self</span><span class="big">B+</span><span class="hn">8.1 / 10</span></div>
-          <div class="hview c"><span class="hl">Crew</span><span class="big tilt">C</span><span class="hn">6.3 / 10</span></div>
-        </div>
-        <div class="card-text">
-          <span class="pill">Family Review</span>
-          <div class="card-title">Sam Family Report Card</div>
-          <div style="font-weight:700">Middle of the ladder. Room to climb.</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="leftcol">
-          <div class="wheel"><svg id="cardWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example report card wheel"></svg></div>
-          <div class="improve"><b>How Sam can lift the bottom two</b>
-            <div class="imp" style="border-color:var(--gE)"><span class="area">Cleanliness · E+</span>Clean up as you go: dishes away, clothes off the floor.<br>Do a chore before anyone has to ask.</div>
-            <div class="imp"><span class="area">Action · D</span>Do the worst job first thing each morning.<br>Only say yes to what you'll really do, then write it down and tick it off.</div>
-          </div>
-        </div>
-        <div class="lists">
-          <div class="gaps"><b class="h">Biggest gaps: self vs crew</b><ul><li>Overall, Sam rates himself <b>1.8 higher</b> than the crew does.</li><li><b>Cleanliness</b>: Sam says 8, the crew says 3.5.</li><li><b>Love</b>: the crew rates Sam 2.0 higher than he does.</li></ul></div>
-          <h3>Top 3</h3>
-          <div class="li" style="--g:var(--gA)"><span class="c">A</span>Humour<span class="s">9.0</span></div>
-          <div class="li" style="--g:var(--gA)"><span class="c">A-</span>Love<span class="s">8.6</span></div>
-          <div class="li" style="--g:var(--gB)"><span class="c">B</span>Mates<span class="s">7.6</span></div>
-          <h3>Bottom 3</h3>
-          <div class="li" style="--g:var(--gE)"><span class="c">E+</span>Cleanliness<span class="s">3.5</span></div>
-          <div class="li" style="--g:var(--gD)"><span class="c">D</span>Action<span class="s">4.6</span></div>
-          <div class="li" style="--g:var(--gC)"><span class="c">C-</span>Health<span class="s">5.7</span></div>
-        </div>
-      </div>
-    </article>
+    <figure class="wheel-wrap">
+      <svg id="wheel" viewBox="-235 -140 470 280" role="group" aria-label="Grades for each area. Select an area to jump to its questions."></svg>
+      <figcaption><span class="wlegend"></span><span>Bars fill as you score. Tap an area to jump to it.</span></figcaption>
+      <div class="heroawards" id="heroAwards" hidden></div>
+    </figure>
+  </header>
+
+  <section class="fam" id="fam">
+    <div class="fam-head">
+      <h2 id="famH2">Review My Crew</h2>
+      <button id="famLeave" class="ghost sm" type="button" hidden>Leave crew</button>
+    </div>
+    <div class="namerow review-only">
+      <div class="whoseg" role="group" aria-label="Who are you rating?" hidden><button type="button" id="whoMe" aria-pressed="true">Me</button><button type="button" id="whoOther" aria-pressed="false">Someone else</button></div>
+      <span class="namepair"><label for="myName">Your name:</label><input id="myName" type="text" placeholder="e.g. Brad" autocomplete="given-name" maxlength="40"></span>
+      <span class="namepair"><label for="whoPick">Rating:</label><select id="whoPick" class="whopick"></select></span>
+      <span class="namepair" id="namePair"><label for="name" id="nameLabel">Their name:</label>
+      <input id="name" type="text" placeholder="e.g. Mum" autocomplete="off" maxlength="40"></span>
+      <button type="button" class="ghost sm" id="startOver">Start again</button>
+      <select id="famPick" hidden style="font:inherit;padding:8px 12px;border:1.5px solid var(--muted);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1;max-width:280px"></select>
+    </div>
+    <div class="doneask review-only" id="startAsk" role="alert" hidden><p>Clear every answer in this review and start again?</p><div class="row-btns"><button type="button" class="danger" id="startYes">Yes, clear my answers</button><button type="button" class="ghost" id="startNo">Cancel</button></div></div>
+    <p class="muted review-only" id="famPickHint" hidden></p>
+    <div class="crew-box">
+      <h3 id="famTitle">Your crew</h3>
+      <div id="famBody"><p class="muted">Loading…</p></div>
+    </div>
   </section>
 
-  <section class="sec">
-    <div class="sec-head">
-      <div class="eyebrow">Three kinds of crew review</div>
-      <h2>Families, Mates <span>&amp;</span> Couples</h2>
-      <p>Each crew gets its own set of questions and its own wheel. Tap to see the difference.</p>
-    </div>
-    <div class="toggle" role="group" aria-label="Choose a crew type">
-      <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding you all together</small></button>
-      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Rate yourself or a mate, and find your MVP</small></button>
-      <button type="button" id="tPartner" aria-pressed="false"><b>Couples</b><small>Couple Check-in</small></button>
-    </div>
-    <div class="kind">
-      <div>
-        <h3 id="kTitle">Family Review</h3>
-        <div class="perfect"><span class="pf-h">Awards</span><div id="kAwards"></div></div>
-        <div class="perfect"><span class="pf-h">Perfect for</span><div id="kFor"></div></div>
-        <div class="areas" id="kAreas"></div>
-        <p style="margin-top:14px"><a class="tag hold" id="kGo" href="review.html?who=family" style="text-decoration:none;font-size:15px;padding:8px 14px">Try a Family Review →</a></p>
+  <div class="banner review-only" id="reviewBanner" hidden><span class="bchip" id="reviewBannerGrade">–</span><span class="btext" id="reviewBannerText"></span><button id="reviewCancel" type="button">Change</button></div>
+
+  <div class="qprog review-only" id="qprog" hidden><span id="qprogText">0 of 27 answered</span><span class="bar" aria-hidden="true"><i id="qprogBar"></i></span></div>
+  <main id="cats" class="review-only" style="display:flex;flex-direction:column;gap:22px"></main>
+
+  <div class="donebar review-only" id="doneBar" hidden>
+    <div class="doneask" id="doneAsk" role="alert" hidden><p id="doneAskText"></p><div class="row-btns"><button type="button" id="doneKeep">Keep going</button><button type="button" class="ghost" id="doneAnyway">See results anyway</button></div></div>
+    <button type="button" class="endbtn" id="doneBtn"><b>Save &amp; See My Results</b><small>Your answers stay on this device</small></button>
+    <p class="donesaved" id="doneSaved" hidden>✓ Saved</p>
+  </div>
+
+  <section class="report review-only">
+    <div class="report-top">
+      <div class="rt-row">
+        <div class="hview" id="viewSelf" hidden></div>
+        <div class="big" id="bigGrade">C</div>
+        <div class="hview" id="viewCrew" hidden></div>
       </div>
-      <figure class="wheel" style="margin:0">
-        <svg id="kindWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example wheel for this crew type"></svg>
-        <figcaption class="legend" id="kindLegend"></figcaption>
+      <div class="overall-text">
+        <div class="rkind" id="reviewKind">Personal Review</div>
+        <div class="eyebrow">Rate My Year · 2026</div>
+        <h2 id="reportTitle">Your Report Card</h2>
+        <div class="verdict" id="verdict"></div>
+        <div class="avg" id="avg"></div>
+        <div class="avg" id="revCount" hidden></div>
+      </div>
+    </div>
+    <div class="report-body">
+      <p class="gift">Feedback is a <b>GIFT</b></p>
+      <div class="views" id="views" hidden></div>
+      <figure class="wheel-wrap report-wheel">
+        <svg id="wheel2" viewBox="-235 -140 470 280" role="group" aria-label="Grades for each area"></svg>
+        <figcaption><span class="wlegend"></span></figcaption>
       </figure>
-    </div>
-  </section>
-
-  <section class="sec">
-    <div class="sec-head">
-      <div class="eyebrow">Crew report</div>
-      <h2>Everyone rolls up into a <span>Crew Report</span></h2>
-    </div>
-    <div class="twocol">
-      <div>
-        <div class="sec-head"><p><b>Families:</b> see how well you are functioning as a family unit.</p></div>
-        <div class="crewcard" aria-label="Example family crew report">
-          <div class="ch"><b>The Bennetts</b><span class="eyebrow">Family crew</span></div>
-          <div class="crewscore" style="--g:var(--gB)"><span class="cc">B-</span><div><b>Crew score</b><span>7.2 / 10</span></div></div>
-          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A-</span><span class="n">Mum<small>8.6 / 10 · 4 reviews</small></span><span class="tag best">🏆 Family Award</span></div>
-          <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Nikki<small>7.5 / 10 · 4 reviews</small></span></div>
-          <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C+</span><span class="n">Dad<small>6.6 / 10 · 3 reviews</small></span></div>
-          <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag notice">🤝 Family Support Required · private</span></div>
-          <div class="improve"><b>What the crew could work on together</b>
-            <div class="imp"><span class="area">Cleanliness · D+</span>Clean up as you go: dishes away, clothes off the floor.</div>
-            <div class="imp"><span class="area">Action · C-</span>Do the worst job first thing each morning.</div>
-          </div>
-        </div>
+      <div class="gscores" id="groupScores"></div>
+      <div class="gaps" id="gaps" hidden></div>
+      <div class="split">
+        <div class="list"><h3>Top 3</h3><ol id="top3"></ol></div>
+        <div class="list"><h3>Bottom 3</h3><ol id="bottom3"></ol></div>
       </div>
-      <div>
-        <div class="sec-head"><p><b>Mates:</b> see who's the <b>MVP MATE</b> in your group. Anyone on notice finds out privately.</p></div>
-        <div class="crewcard" aria-label="Example mates leaderboard">
-          <div class="ch"><b>Friday Footy</b><span class="eyebrow">Mates crew</span></div>
-          <div class="crewscore" style="--g:var(--gC)"><span class="cc">C+</span><div><b>Crew score</b><span>6.6 / 10</span></div></div>
-          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 MVP Mate Award</span></div>
-          <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
-          <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
-          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Who's On Notice · private</span></div>
-          <div class="improve"><b>What the crew could work on together</b>
-            <div class="imp"><span class="area">Reliable · D</span>Stop saying maybe. Give a straight yes or no.</div>
-            <div class="imp"><span class="area">Cleanliness · D+</span>Shower, deodorant, clean clothes: every time you head out.</div>
-          </div>
+      <div class="recs">
+        <h3 id="recsTitle">How to lift the bottom two</h3>
+        <div id="recs" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+      <div class="endbar">
+        <button type="button" class="endbtn" id="endAsk" aria-expanded="false"><b>Invite Others To Rate You</b><small>Send a link. They rate you in about 5 minutes, then rate themselves.</small></button>
+        <button type="button" class="endbtn" id="shareBtn" aria-expanded="false" hidden><b>Share Results</b><small>Send a picture of your report card</small></button>
+        <button type="button" class="endbtn" id="endJoin" hidden><b>Got An Invite Link?</b><small>Tap it in your message, or paste it here</small></button>
+        <button type="button" class="endbtn" id="reviewNext" hidden><b>Save &amp; Rate Another</b><small>Saves this review and starts the next person</small></button>
+      </div>
+      <label class="inccard"><input type="checkbox" id="incCard" checked> Include this report card in the message</label>
+      <div class="sharebox askbox" id="askBox" hidden>
+        <p class="asklead" id="askLead"></p>
+        <div id="askForm" class="stack">
+          <div class="field"><label for="askName">Your first name</label><input id="askName" type="text" autocomplete="given-name" maxlength="40" placeholder="e.g. Sam"></div>
+          <div class="field" id="askThemF"><label for="askThem" id="askThemL">Their first name</label><input id="askThem" type="text" autocomplete="off" maxlength="40" placeholder="e.g. Dave"></div>
+          <div class="sharebtns"><button type="button" id="askGo">Send the link</button></div>
         </div>
+        <div class="sharebtns" id="askSend" hidden><button type="button" id="askShare">Send the link</button><button type="button" class="ghost" id="askCopy">Copy link</button></div>
+        <p class="muted" id="askNote"></p>
+      </div>
+      <div class="sharebox" id="shareBox" hidden>
+        <div class="cardwrap"><img id="cardImg" alt="Your report card as a picture" hidden><p class="muted" id="cardMaking">Making your report card picture…</p></div>
+        <div class="field" id="fromField"><label for="shareFrom">From <span class="muted">(your name, so they know who rated them)</span></label><input id="shareFrom" type="text" autocomplete="given-name" maxlength="40" placeholder="e.g. Brad"></div>
+        <div class="sharebtns">
+          <button type="button" id="shareImg">Share Report Card</button>
+          <a id="saveImg" class="ghost btnlike" download="rate-my-year-report-card.png" href="#">Save Report</a>
+        </div>
+        <p class="muted" id="shareNote"></p>
+      </div>
+      <div class="actions">
+        <button id="famSave" type="button" hidden>Save to crew</button>
+        <button id="soloSave" type="button" hidden>Save result</button>
+        <button id="copy" class="ghost sm" type="button" hidden>Copy summary</button>
+        <button id="reset" class="ghost sm" type="button" hidden>Start again</button>
       </div>
     </div>
   </section>
 
-  <section class="sec">
-    <div class="sec-head"><div class="eyebrow">Why do it</div><h2>The <span>benefits</span></h2></div>
-    <div class="benefits">
-      <div class="benefit"><b>Self assessment</b><span>Take an honest look at your year, area by area.</span></div>
-      <div class="benefit"><b>Private feedback</b><span>Your crew rates you, and you see combined scores only, once at least 2 people have reviewed you. Only the crew admin can see individual reviews.</span></div>
-      <div class="benefit"><b>Be a more awesome human</b><span>Get specific ideas for the areas you score lowest on.</span></div>
-      <div class="benefit"><b>Self vs crew</b><span>See how your view of yourself stacks up against how others see you.</span></div>
-    </div>
-  </section>
+  <div class="admin-only ratecrew-wrap"><a class="endbtn ratecrew" id="rateCrew" href="review.html" hidden><b>Rate My Crew</b><small>Review everyone in your crew and see the leaderboard</small></a></div>
+  <p class="foot">Grades: E (lowest) to A (highest). Each area's grade is the average of the questions you answered; unanswered and Don't know questions are left out. Averages can land on a + or −. · <a href="privacy.html">Privacy: who sees what</a> · <a href="join.html">Lost your invite link?</a></p>
 
-  <section class="note" aria-label="A note before you start">
-    <h3>A note before you start</h3>
-    <ul>
-      <li>Some of this feedback MAY come as a shock to some of you.</li>
-      <li>However, this IS how you show up for people.</li>
-      <li>It's a bit of fun, but where there's smoke, there's fire.</li>
-      <li>Take it on the chin, say thank you, and be better.</li>
-    </ul>
+  <section class="boardsec review-only" id="boardSec" hidden>
+    <h2>Crew leaderboard</h2>
+    <p class="muted" id="boardSub"></p>
+    <div class="boardwrap" id="boardWrap"><div class="members" id="boardList"></div><div class="boardlock" id="boardLock" hidden></div></div>
   </section>
-
-  <section class="bottom">
-    <h2>Ready to <span>find out?</span></h2>
-    <nav class="choicebar two" aria-label="Get started" style="width:100%">
-      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
-      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
-      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
-    </nav>
-  </section>
-
-  <section class="sec pricing" aria-labelledby="pricingH">
-    <div class="sec-head"><div class="eyebrow">Pricing · coming soon</div><h2 id="pricingH">Simple <span>pricing</span></h2>
-      <p><b>Everything is free for now.</b> Paid passes for bigger crews are coming. When they arrive, only the person who sets up the crew pays, and everyone they invite joins free.</p></div>
-    <div class="plans">
-      <div class="plan"><b>Self Review</b><span class="who">Just you</span><span class="price">Free</span><span class="per">No sign-up needed</span></div>
-      <div class="plan"><b>360 Review</b><span class="who">Up to <em>4</em> people</span><span class="rev">reviewing you</span><span class="price">Free</span><span class="per">Always free</span></div>
-      <div class="plan hot"><b>Crew Pass</b><span class="who">Up to <em>15</em> people</span><span class="rev">reviewing each other</span><span class="price">$9.99</span><span class="per">AUD per crew, per season</span></div>
-      <div class="plan"><b>Club Pass</b><span class="who">Up to <em>50</em> people</span><span class="rev">reviewing each other</span><span class="price">$29.99</span><span class="per">AUD per crew, per season</span></div>
-      <div class="plan"><b>Big Club Pass</b><span class="who">Up to <em>150</em> people</span><span class="rev">reviewing each other</span><span class="price">$59.99</span><span class="per">AUD per crew, per season</span></div>
-    </div>
-  </section>
-
-  <p class="foot">Rate My Year · ratemyyear.com · <a href="privacy.html">Privacy: who sees what</a> · <a href="join.html">Lost your invite link?</a></p>
 </div>
 
-<script>
-try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("navCreate").textContent="My Crews"}catch(e){}
-/* Example wheels, drawn the same way as on the review page. */
-const SETS={
-  family:{groups:[["Self","var(--green)",["Self Care","Health","Cleanliness"]],["Others","var(--gold)",["Mates","Family & Others","Love"]],["Life","var(--blue)",["Action","Growth Mindset","Humour"]]],
-          title:"Family Review",go:"review.html?who=family",cta:"Try a Family Review →",
-          text:"See who is holding you all together, and say what you've always wanted to say but never could.",
-          perfect:["Families who want to be awesome","A different kind of Christmas"],
-          awards:["🏆 Family Award","🤝 Family Support Required"]},
-  mates:{groups:[["Them","var(--green)",["Vibe","Banter","Generous","Cleanliness"]],["Us","var(--gold)",["Reliable","Loyalty"]],["Life","var(--blue)",["Adventure","Social"]]],
-         title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
-         text:"See who the MVP MATE is. Anyone on notice finds out privately.",
-         perfect:["Groups of mates","Sporting clubs"],
-         awards:["🏆 MVP Mate Award","⚠️ Who's On Notice"]},
-  partner:{groups:[["Heart","var(--green)",["Kindness","Trust","Fun"]],["Connection","var(--gold)",["Communication","Romance","Support","Quality Time"]],["Life","var(--blue)",["Fair Share","Money & Plans"]]],
-         title:"Couple Check-in",go:"review.html?who=partner",cta:"Try a Couple Check-in →",
-         text:"Rate the relationship itself, not each other, and see where you both see things differently.",
-         perfect:["Couples","Date night conversation starter"],
-         awards:["💪 Our Top Qualities","💐 Date Night Required"]}};
-const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
-const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
-const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
-const wedge=(a0,a1,r0,r1)=>{const A0=rad(a0),A1=rad(a1);return `M${pt(r0,A0)} L${pt(r1,A0)} A${r1} ${r1} 0 0 1 ${pt(r1,A1)} L${pt(r0,A1)} A${r0} ${r0} 0 0 0 ${pt(r0,A0)} Z`};
-const arc=(r,a0,a1)=>`M${pt(r,rad(a0))} A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${pt(r,rad(a1))}`;
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function drawWheel(svg,set,vals){
-  const names=set.groups.flatMap(g=>g[2]), n=names.length, st=360/n, hs=st/2;
-  let h="";[4,7,8.5].forEach(v=>{h+=`<circle class="ring" r="${R0+(R-R0)*(v-1)/9}"/>`});
-  let i=0;set.groups.forEach(([gn,col,ids])=>{const i0=i,i1=i+ids.length-1;h+=`<path class="garc" stroke="${col}" d="${arc(R+6,-90+st*i0-hs+GAP,-90+st*i1+hs-GAP)}"/>`;i+=ids.length});
-  names.forEach((nm,k)=>{
-    const mid=-90+st*k,a0=mid-hs+GAP,a1=mid+hs-GAP,v=vals[k],g=grade(v);
-    const lx=(R+17)*Math.cos(rad(mid)),ly=(R+17)*Math.sin(rad(mid)),cx=Math.cos(rad(mid));
-    const anchor=cx>0.3?"start":cx<-0.3?"end":"middle",dy=Math.sin(rad(mid))>0.5?"0.9em":Math.sin(rad(mid))<-0.5?"-0.2em":"0.35em";
-    h+=`<path class="wtrack" d="${wedge(a0,a1,R0,R)}"/><path d="${wedge(a0,a1,R0,R0+(R-R0)*(v-1)/9)}" style="fill:var(--g${g[0]})"/>
-      <text class="wlabel" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" dy="${dy}" text-anchor="${anchor}"><tspan class="wnum">${k+1}</tspan> ${esc(nm)}</text>
-      <text class="wscore" x="${((R-13)*Math.cos(rad(mid))).toFixed(1)}" y="${((R-13)*Math.sin(rad(mid))).toFixed(1)}" dy="0.35em" text-anchor="middle">${g}</text>`;
-  });
-  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-  h+=`<circle class="wcenter" r="${R0-3}"/><text class="wgrade" dy="0.36em" text-anchor="middle">${grade(avg)}</text>`;
-  svg.innerHTML=h;
-}
-const legend=(el,set)=>{el.innerHTML=set.groups.map(([n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")};
-drawWheel(document.getElementById("cardWheel"),SETS.family,[6.1,5.7,3.5,7.6,7.0,8.6,4.6,6.4,9.0]);
-const SAMPLE={family:[7.9,6.8,4.2,8.4,7.7,9.0,6.0,7.3,8.8],mates:[9.0,8.6,6.2,4.1,7.8,9.2,7.0,8.3],partner:[8.4,8.9,7.6,5.2,6.8,8.1,4.6,5.9,7.3]};
-function showKind(k){
-  const s=SETS[k];
-  document.getElementById("tFamily").setAttribute("aria-pressed",k==="family");
-  document.getElementById("tMates").setAttribute("aria-pressed",k==="mates");
-  document.getElementById("tPartner").setAttribute("aria-pressed",k==="partner");
-  document.getElementById("kTitle").textContent=s.title;
-  document.getElementById("kAwards").innerHTML=s.awards.map((t,i)=>`<span class="pop award${i?" low":""}">${esc(t)}</span>`).join("");
-  document.getElementById("kFor").innerHTML=s.perfect.map((t,i)=>`<span class="pop${i%2?" alt":""}">${esc(t)}</span>`).join("");
-  document.getElementById("kAreas").innerHTML=s.groups.map(([n,c,ids])=>`<div><b style="color:${c}">${n}</b>${ids.join(" · ")}</div>`).join("");
-  const go=document.getElementById("kGo");go.href=s.go;go.textContent=s.cta;
-  drawWheel(document.getElementById("kindWheel"),s,SAMPLE[k]);legend(document.getElementById("kindLegend"),s);
-}
-document.getElementById("tFamily").onclick=()=>showKind("family");
-document.getElementById("tMates").onclick=()=>showKind("mates");
-document.getElementById("tPartner").onclick=()=>showKind("partner");
-showKind("family");
-</script>
+<script src="js/app.js?v=e8221c003a"></script>
+
+<script src="firebase-config.js"></script>
+<script type="module" src="js/crew.js?v=ebc0ed1302"></script>
+
 </body>
 </html>

@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="The End of Year Performance Review for families and mates. Rate yourself, get anonymous feedback from your crew, and find out how you really show up.">
+<title>Rate My Year · End of Year Performance Review</title>
+<script>
+/* Old invite links pointed at the home page: send them on to the review page with the crew details. */
+(function(){var q=location.search;if(/[?&]crew=/.test(q)&&/[?&]code=/.test(q))location.replace("review.html"+q+location.hash)})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"></noscript>
+<style>
+:root{
+  --bg:#eef1ec; --panel:#ffffff; --ink:#14231b; --muted:#5a6b60; --line:#d5ddd6;
+  --green:#0f4d32; --gold:#f2b705; --blue:#3f5fb5; --track:#dfe6e0; --soft:#e4ece6;
+  --gA:#1d7a46; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#14231b;
+  --display:"Bowlby One","Arial Black",Impact,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
+  --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --track:#22362a; --soft:#1a2c22;
+  --gA:#23824c; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#f5c533; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1611; --panel:#13221a; --ink:#e8efe9; --muted:#9db0a3; --line:#24382c;
+  --green:#7fd1a2; --gold:#f5c533; --blue:#8ea6ff; --track:#22362a; --soft:#1a2c22;
+  --gA:#23824c; --gB:#3f7a1c; --gC:#8a6700; --gD:#b04f0c; --gE:#c2362b; --focus:#f5c533; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:56px}
+a{color:inherit}
+.brand{font-family:var(--display);color:var(--green);text-decoration:none;font-size:20px}
+.top{display:flex;flex-direction:column;gap:14px}
+.menu{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
+.menu a{font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;text-decoration:none;color:var(--green);padding:12px 0;border-bottom:3px solid transparent}
+.menu a:hover{border-bottom-color:var(--line)}
+.menu a[aria-current="page"],.menu a[aria-pressed="true"]{border-bottom-color:var(--gold)}
+.menu a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.invitehint{margin:8px 0 0;font-size:14px;color:var(--muted)}
+.choicebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.choicebar a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:10px 12px;border-radius:14px;border:2px solid var(--green);color:var(--green);background:var(--panel);font-family:var(--display);font-size:clamp(15px,2.8vw,22px);line-height:1.05;text-decoration:none}
+.choicebar.two{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:560px){.choicebar.two a small{display:none}.choicebar.two a{min-height:64px;padding:10px 6px}.toggle button small{display:none}}
+.choicebar.two a{flex-direction:column;gap:6px;min-height:84px;padding:14px}
+.choicebar.two a b{font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
+.choicebar.two a small{font-family:var(--body);font-size:15px;font-weight:600;opacity:.9}
+.choicebar a.main{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.choicebar a:focus-visible,.toggle button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1,h2{font-family:var(--display);font-weight:400;color:var(--green);margin:0;line-height:.98;text-wrap:balance}
+h1{font-size:clamp(40px,8.5vw,76px)}
+h2{font-size:clamp(30px,5.5vw,46px)}
+h1 span,h2 span{display:inline-block;background:var(--gold);color:#14231b;padding:0 .16em;transform:rotate(-1.5deg)}
+.lede{font-size:clamp(18px,2.4vw,21px);max-width:44ch;margin:0}
+.startbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:18px;padding:16px 22px;border-radius:14px;background:var(--green);color:var(--panel);text-decoration:none;box-shadow:inset 0 -5px 0 var(--gold);max-width:100%}
+.startbtn b{font-family:var(--display);font-weight:400;font-size:clamp(22px,4vw,28px);line-height:1.05}
+.startbtn small{font-size:15px;opacity:.9}
+.startbtn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.startnote{margin:10px 0 0;color:var(--muted);font-size:15px}
+@media (max-width:560px){.startbtn{display:flex;width:100%}}
+.hero{display:block}
+.hero-text{display:flex;flex-direction:column;gap:16px}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:10px;max-width:60ch}
+.sec-head p{margin:0}
+.gift{font-family:var(--display);font-size:clamp(22px,3.4vw,30px);color:var(--ink);margin:0}
+.gift b{font-weight:400;background:var(--gold);color:#14231b;padding:0 .2em;border-radius:4px}
+
+/* example report card */
+.card{background:var(--panel);border:2px solid var(--green);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,77,50,.12)}
+.card-top{background:#0f4d32;color:#eef1ec;padding:16px 14px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"self text crew";gap:18px;align-items:center;text-align:center}
+.card-top .rt-row{display:contents}.card-top .hview.s{grid-area:self;justify-self:start;align-items:flex-start}.card-top .hview.c{grid-area:crew;justify-self:end;align-items:flex-end}
+.card-text{grid-area:text;display:flex;flex-direction:column;gap:8px;align-items:center}
+.rt-row{display:flex;justify-content:center;gap:clamp(28px,8vw,72px);width:100%}
+.hview{display:flex;flex-direction:column;align-items:center;gap:8px}
+.big.tilt{transform:rotate(3deg)}
+.hview .hl{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:#f2b705}
+.hg{font-family:var(--display);font-size:20px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
+.hview .hn{font-family:var(--mono);font-weight:700}
+.big{font-family:var(--display);font-size:48px;width:96px;height:96px;border-radius:14px;background:#f2b705;color:#14231b;display:grid;place-items:center;transform:rotate(-3deg)}
+.pill{display:inline-block;background:#f2b705;color:#14231b;font-family:var(--display);font-size:14px;padding:3px 10px;border-radius:999px}
+.card-title{font-family:var(--display);font-size:clamp(22px,3.6vw,30px);line-height:1}
+.card-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.gaps{border-left:4px solid var(--gold);background:var(--soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px;grid-column:1/-1}
+.gaps ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.gaps b.h{display:block;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
+.lists{display:flex;flex-direction:column;gap:12px}
+.lists h3{margin:0;font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.li{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:8px;padding:7px 10px;font-weight:600}
+.li .c{font-family:var(--display);font-size:13px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g);flex:none}
+.li .s{margin-left:auto;font-family:var(--mono)}
+
+/* wheel */
+.wheel svg{width:100%;height:auto;display:block}
+.ring{fill:none;stroke:var(--line);stroke-dasharray:2 3}
+.wtrack{fill:var(--track)}
+.wlabel{font-family:var(--body);font-size:13px;font-weight:600;fill:var(--ink)}
+.wnum{fill:var(--muted);font-weight:500}
+.wscore{font-family:var(--display);font-size:13px;fill:var(--ink);stroke:var(--panel);stroke-width:3px;paint-order:stroke}
+.wcenter{fill:var(--panel);stroke:var(--line)}
+.wgrade{font-family:var(--display);font-size:20px;fill:var(--green)}
+.garc{fill:none;stroke-width:4;stroke-linecap:round}
+.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-weight:600;font-size:14px}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+/* families / mates */
+.toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.toggle button{font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;padding:14px;border-radius:14px;border:2px solid var(--green);background:var(--panel);color:var(--green)}
+.toggle button b{font-family:var(--display);font-weight:400;font-size:clamp(20px,3.4vw,28px);line-height:1}
+.toggle button small{font-size:15px;opacity:.9}
+.toggle button[aria-pressed="true"]{background:var(--green);color:var(--panel);box-shadow:inset 0 -5px 0 var(--gold)}
+.kind{display:grid;grid-template-columns:1fr 1.1fr;gap:24px;align-items:center;background:var(--panel);border-radius:16px;padding:20px;border:1.5px solid var(--line)}
+.kind p#kText{font-size:clamp(19px,2.6vw,23px);font-weight:700;line-height:1.3}
+.perfect{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.pf-h{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+#kFor,#kAwards{display:flex;flex-wrap:wrap;gap:10px}
+.pop.award{background:#f2b705;color:#14231b;box-shadow:3px 3px 0 #0f4d32}
+.pop.award.low{background:var(--gE);color:#fff;transform:rotate(1.5deg);box-shadow:3px 3px 0 #0f4d32}
+.pop{font-family:var(--display);font-size:clamp(16px,2.4vw,20px);line-height:1.1;background:var(--gold);color:#14231b;padding:8px 14px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 #0f4d32}
+.pop.alt{background:#0f4d32;color:#f2b705;transform:rotate(1.5deg);box-shadow:3px 3px 0 #f2b705}
+.kind h3{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 8px;color:var(--green)}
+.kind p{margin:0 0 10px}
+.areas{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.areas div{font-size:15px}.areas b{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-right:6px}
+
+/* crew report */
+.crewcard{background:var(--panel);border:2px solid var(--green);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.crewcard .ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.crewcard .ch b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--green)}
+.crewscore{display:flex;align-items:center;gap:14px;background:#0f4d32;color:#eef1ec;border-radius:12px;padding:12px 16px}
+.crewscore .cc{font-family:var(--display);font-size:24px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:var(--g);color:#fff;box-shadow:0 0 0 3px #f2b705;flex:none}
+.crewscore b{display:block;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#f2b705}
+.crewscore span{font-family:var(--mono);font-weight:700;font-size:20px}
+.row{display:grid;grid-template-columns:24px auto 1fr auto;gap:12px;align-items:center;background:var(--soft);border-radius:8px;padding:9px 12px}
+.row .rk{font-family:var(--display);color:var(--muted);text-align:center}
+.row .c{font-family:var(--display);font-size:14px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--g)}
+.row .n{font-weight:700;display:flex;flex-direction:column}.row .n small{font-weight:500;color:var(--muted);font-size:14px}
+.tag{font-family:var(--display);font-size:13px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.tag.best{background:#f2b705;color:#14231b}.tag.notice{background:var(--gE);color:#fff}.tag.hold{background:var(--gA);color:#fff}.tag.help{background:var(--gD);color:#fff}
+.improve{border-top:1.5px solid var(--line);padding-top:10px;margin-top:2px;display:flex;flex-direction:column;gap:8px}
+.improve>b{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.imp{border-left:4px solid var(--gD);background:var(--soft);border-radius:0 8px 8px 0;padding:8px 12px;font-size:15px;display:flex;flex-direction:column;gap:2px}
+.imp .area{font-family:var(--display);font-size:14px;color:var(--green)}
+.leftcol{display:flex;flex-direction:column;gap:14px}
+.twocol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.twocol>*{min-width:0}
+/* Crew report examples stack on iPad portrait and smaller, so nothing is cut off. */
+@media (max-width:900px){.twocol{grid-template-columns:1fr}}
+.twocol .sec-head{margin-bottom:12px}
+
+/* benefits + note */
+.benefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.benefit{background:var(--panel);border-radius:14px;padding:16px;border-top:5px solid var(--gold);display:flex;flex-direction:column;gap:6px}
+.benefit b{font-family:var(--display);font-weight:400;font-size:19px;line-height:1.1;color:var(--green)}
+.benefit span{font-size:15px;color:var(--muted)}
+.note{background:#fff4d6;color:#3d2e00;border:2px dashed #b88a00;border-radius:16px;padding:20px 22px}
+.note h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 10px;color:#6b4e00}
+.note ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-weight:600}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .note{background:#2a2410;color:#f3e3b0;border-color:#c9a020}:root:not([data-theme="light"]) .note h3{color:#f5c533}}
+.plans{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.plan{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;text-align:center;align-items:center}
+.plan b{font-family:var(--display);font-weight:400;font-size:clamp(15px,1.8vw,18px);line-height:1.1;color:var(--green);white-space:nowrap}
+.plan .who{display:inline-flex;align-items:baseline;gap:5px;background:var(--gold);color:var(--ink);font-size:14px;font-weight:700;padding:5px 12px;border-radius:999px;margin:4px 0;white-space:nowrap}
+.plan .who em{font-style:normal;font-family:var(--display);font-size:22px;line-height:1}
+.plan .price{font-family:var(--display);font-size:32px;line-height:1;color:var(--ink);margin-top:auto;padding-top:6px}
+.plan .rev{font-size:14px;color:var(--muted);font-weight:600;margin-top:-2px}
+.plan .per{font-size:13px;color:var(--muted)}
+.plan.hot{border-color:var(--green);box-shadow:inset 0 -5px 0 var(--gold)}
+@media (max-width:860px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.plans{grid-template-columns:1fr}}
+.bottom{display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
+.foot{font-size:14px;color:var(--muted);text-align:center}
+
+@media (max-width:760px){
+  .hero,.kind,.twocol,.card-body{grid-template-columns:1fr}
+  .benefits{grid-template-columns:1fr 1fr}
+}
+@media (max-width:440px){
+  .big{width:84px;height:84px;font-size:40px}
+  .card-top{grid-template-columns:1fr 1fr;grid-template-areas:"self crew" "text text"}
+  .benefits{grid-template-columns:1fr}
+  .row{grid-template-columns:20px auto 1fr}.row .tag{grid-column:3}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <nav aria-label="Main"><div class="menu">
+      <a href="about.html" aria-current="page">About</a>
+      <a href="./">Rate</a>
+      <a id="navCreate" href="mycrew.html">My Crews</a>
+    </div></nav>
+    <nav class="choicebar two" aria-label="Get started">
+      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
+      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <div class="eyebrow">Rate My Year · Season 2026</div>
+      <h1>Your End of Year <span>Performance Review</span></h1>
+      <p class="lede">Think you've been a good friend and a good family member? Well, you're about to find out. Rate your own year, then send a link and see how your family and friends rate you.</p>
+      <a class="startbtn" href="review.html?who=me"><b>Start My Free Review</b><small>About 5 minutes · 27 quick questions · no sign-up</small></a>
+      <p class="startnote">At the end, tap <b>Invite Others To Rate You</b> to send it on.</p>
+      <p class="invitehint">Got an invite? Tap the link in your message. Lost it? <a href="join.html">Find your crew</a></p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head">
+      <p class="gift">Feedback is a <b>GIFT</b></p>
+      <p>Every review ends with a report card: your grade, how you rate yourself against how your crew rates you, the biggest gaps, and what to work on next. Here's an example.</p>
+    </div>
+    <article class="card" aria-label="Example report card">
+      <div class="card-top">
+        <div class="rt-row">
+          <div class="hview s"><span class="hl">Self</span><span class="big">B+</span><span class="hn">8.1 / 10</span></div>
+          <div class="hview c"><span class="hl">Crew</span><span class="big tilt">C</span><span class="hn">6.3 / 10</span></div>
+        </div>
+        <div class="card-text">
+          <span class="pill">Family Review</span>
+          <div class="card-title">Sam Family Report Card</div>
+          <div style="font-weight:700">Middle of the ladder. Room to climb.</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="leftcol">
+          <div class="wheel"><svg id="cardWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example report card wheel"></svg></div>
+          <div class="improve"><b>How Sam can lift the bottom two</b>
+            <div class="imp" style="border-color:var(--gE)"><span class="area">Cleanliness · E+</span>Clean up as you go: dishes away, clothes off the floor.<br>Do a chore before anyone has to ask.</div>
+            <div class="imp"><span class="area">Action · D</span>Do the worst job first thing each morning.<br>Only say yes to what you'll really do, then write it down and tick it off.</div>
+          </div>
+        </div>
+        <div class="lists">
+          <div class="gaps"><b class="h">Biggest gaps: self vs crew</b><ul><li>Overall, Sam rates himself <b>1.8 higher</b> than the crew does.</li><li><b>Cleanliness</b>: Sam says 8, the crew says 3.5.</li><li><b>Love</b>: the crew rates Sam 2.0 higher than he does.</li></ul></div>
+          <h3>Top 3</h3>
+          <div class="li" style="--g:var(--gA)"><span class="c">A</span>Humour<span class="s">9.0</span></div>
+          <div class="li" style="--g:var(--gA)"><span class="c">A-</span>Love<span class="s">8.6</span></div>
+          <div class="li" style="--g:var(--gB)"><span class="c">B</span>Mates<span class="s">7.6</span></div>
+          <h3>Bottom 3</h3>
+          <div class="li" style="--g:var(--gE)"><span class="c">E+</span>Cleanliness<span class="s">3.5</span></div>
+          <div class="li" style="--g:var(--gD)"><span class="c">D</span>Action<span class="s">4.6</span></div>
+          <div class="li" style="--g:var(--gC)"><span class="c">C-</span>Health<span class="s">5.7</span></div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head">
+      <div class="eyebrow">Three kinds of crew review</div>
+      <h2>Families, Mates <span>&amp;</span> Couples</h2>
+      <p>Each crew gets its own set of questions and its own wheel. Tap to see the difference.</p>
+    </div>
+    <div class="toggle" role="group" aria-label="Choose a crew type">
+      <button type="button" id="tFamily" aria-pressed="true"><b>Families</b><small>See who is holding you all together</small></button>
+      <button type="button" id="tMates" aria-pressed="false"><b>Mates</b><small>Rate yourself or a mate, and find your MVP</small></button>
+      <button type="button" id="tPartner" aria-pressed="false"><b>Couples</b><small>Couple Check-in</small></button>
+    </div>
+    <div class="kind">
+      <div>
+        <h3 id="kTitle">Family Review</h3>
+        <div class="perfect"><span class="pf-h">Awards</span><div id="kAwards"></div></div>
+        <div class="perfect"><span class="pf-h">Perfect for</span><div id="kFor"></div></div>
+        <div class="areas" id="kAreas"></div>
+        <p style="margin-top:14px"><a class="tag hold" id="kGo" href="review.html?who=family" style="text-decoration:none;font-size:15px;padding:8px 14px">Try a Family Review →</a></p>
+      </div>
+      <figure class="wheel" style="margin:0">
+        <svg id="kindWheel" viewBox="-235 -140 470 280" role="img" aria-label="Example wheel for this crew type"></svg>
+        <figcaption class="legend" id="kindLegend"></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head">
+      <div class="eyebrow">Crew report</div>
+      <h2>Everyone rolls up into a <span>Crew Report</span></h2>
+    </div>
+    <div class="twocol">
+      <div>
+        <div class="sec-head"><p><b>Families:</b> see how well you are functioning as a family unit.</p></div>
+        <div class="crewcard" aria-label="Example family crew report">
+          <div class="ch"><b>The Bennetts</b><span class="eyebrow">Family crew</span></div>
+          <div class="crewscore" style="--g:var(--gB)"><span class="cc">B-</span><div><b>Crew score</b><span>7.2 / 10</span></div></div>
+          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A-</span><span class="n">Mum<small>8.6 / 10 · 4 reviews</small></span><span class="tag best">🏆 Family Award</span></div>
+          <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Nikki<small>7.5 / 10 · 4 reviews</small></span></div>
+          <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C+</span><span class="n">Dad<small>6.6 / 10 · 3 reviews</small></span></div>
+          <div class="row" style="--g:var(--gD)"><span class="rk">4</span><span class="c">D</span><span class="n">Jack<small>4.7 / 10 · 4 reviews</small></span><span class="tag notice">🤝 Family Support Required · private</span></div>
+          <div class="improve"><b>What the crew could work on together</b>
+            <div class="imp"><span class="area">Cleanliness · D+</span>Clean up as you go: dishes away, clothes off the floor.</div>
+            <div class="imp"><span class="area">Action · C-</span>Do the worst job first thing each morning.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><p><b>Mates:</b> see who's the <b>MVP MATE</b> in your group. Anyone on notice finds out privately.</p></div>
+        <div class="crewcard" aria-label="Example mates leaderboard">
+          <div class="ch"><b>Friday Footy</b><span class="eyebrow">Mates crew</span></div>
+          <div class="crewscore" style="--g:var(--gC)"><span class="cc">C+</span><div><b>Crew score</b><span>6.6 / 10</span></div></div>
+          <div class="row" style="--g:var(--gA)"><span class="rk">1</span><span class="c">A</span><span class="n">Jono<small>8.9 / 10 · 6 reviews</small></span><span class="tag best">🏆 MVP Mate Award</span></div>
+          <div class="row" style="--g:var(--gB)"><span class="rk">2</span><span class="c">B</span><span class="n">Dave<small>7.4 / 10 · 6 reviews</small></span></div>
+          <div class="row" style="--g:var(--gC)"><span class="rk">3</span><span class="c">C</span><span class="n">Smithy<small>6.1 / 10 · 5 reviews</small></span></div>
+          <div class="row" style="--g:var(--gE)"><span class="rk">4</span><span class="c">E+</span><span class="n">Gazza<small>3.9 / 10 · 6 reviews</small></span><span class="tag notice">⚠️ Who's On Notice · private</span></div>
+          <div class="improve"><b>What the crew could work on together</b>
+            <div class="imp"><span class="area">Reliable · D</span>Stop saying maybe. Give a straight yes or no.</div>
+            <div class="imp"><span class="area">Cleanliness · D+</span>Shower, deodorant, clean clothes: every time you head out.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><div class="eyebrow">Why do it</div><h2>The <span>benefits</span></h2></div>
+    <div class="benefits">
+      <div class="benefit"><b>Self assessment</b><span>Take an honest look at your year, area by area.</span></div>
+      <div class="benefit"><b>Private feedback</b><span>Your crew rates you, and you see combined scores only, once at least 2 people have reviewed you. Only the crew admin can see individual reviews.</span></div>
+      <div class="benefit"><b>Be a more awesome human</b><span>Get specific ideas for the areas you score lowest on.</span></div>
+      <div class="benefit"><b>Self vs crew</b><span>See how your view of yourself stacks up against how others see you.</span></div>
+    </div>
+  </section>
+
+  <section class="note" aria-label="A note before you start">
+    <h3>A note before you start</h3>
+    <ul>
+      <li>Some of this feedback MAY come as a shock to some of you.</li>
+      <li>However, this IS how you show up for people.</li>
+      <li>It's a bit of fun, but where there's smoke, there's fire.</li>
+      <li>Take it on the chin, say thank you, and be better.</li>
+    </ul>
+  </section>
+
+  <section class="bottom">
+    <h2>Ready to <span>find out?</span></h2>
+    <nav class="choicebar two" aria-label="Get started" style="width:100%">
+      <a class="main" href="review.html?who=family"><b>Rate My Family</b><small>Rate yourself or someone in your family</small></a>
+      <a href="review.html?who=mate"><b>Rate My Mates</b><small>Rate yourself or a mate, and find your MVP</small></a>
+      <a href="review.html?who=partner"><b>Couple Check-in</b><small>Rate your relationship: your Love Report</small></a>
+    </nav>
+  </section>
+
+  <section class="sec pricing" aria-labelledby="pricingH">
+    <div class="sec-head"><div class="eyebrow">Pricing · coming soon</div><h2 id="pricingH">Simple <span>pricing</span></h2>
+      <p><b>Everything is free for now.</b> Paid passes for bigger crews are coming. When they arrive, only the person who sets up the crew pays, and everyone they invite joins free.</p></div>
+    <div class="plans">
+      <div class="plan"><b>Self Review</b><span class="who">Just you</span><span class="price">Free</span><span class="per">No sign-up needed</span></div>
+      <div class="plan"><b>360 Review</b><span class="who">Up to <em>4</em> people</span><span class="rev">reviewing you</span><span class="price">Free</span><span class="per">Always free</span></div>
+      <div class="plan hot"><b>Crew Pass</b><span class="who">Up to <em>15</em> people</span><span class="rev">reviewing each other</span><span class="price">$9.99</span><span class="per">AUD per crew, per season</span></div>
+      <div class="plan"><b>Club Pass</b><span class="who">Up to <em>50</em> people</span><span class="rev">reviewing each other</span><span class="price">$29.99</span><span class="per">AUD per crew, per season</span></div>
+      <div class="plan"><b>Big Club Pass</b><span class="who">Up to <em>150</em> people</span><span class="rev">reviewing each other</span><span class="price">$59.99</span><span class="per">AUD per crew, per season</span></div>
+    </div>
+  </section>
+
+  <p class="foot">Rate My Year · ratemyyear.com · <a href="privacy.html">Privacy: who sees what</a> · <a href="join.html">Lost your invite link?</a></p>
+</div>
+
+<script>
+try{if(localStorage.getItem("rmy-signedin")==="1")document.getElementById("navCreate").textContent="My Crews"}catch(e){}
+/* Example wheels, drawn the same way as on the review page. */
+const SETS={
+  family:{groups:[["Self","var(--green)",["Self Care","Health","Cleanliness"]],["Others","var(--gold)",["Mates","Family & Others","Love"]],["Life","var(--blue)",["Action","Growth Mindset","Humour"]]],
+          title:"Family Review",go:"review.html?who=family",cta:"Try a Family Review →",
+          text:"See who is holding you all together, and say what you've always wanted to say but never could.",
+          perfect:["Families who want to be awesome","A different kind of Christmas"],
+          awards:["🏆 Family Award","🤝 Family Support Required"]},
+  mates:{groups:[["Them","var(--green)",["Vibe","Banter","Generous","Cleanliness"]],["Us","var(--gold)",["Reliable","Loyalty"]],["Life","var(--blue)",["Adventure","Social"]]],
+         title:"Mate Review",go:"review.html?who=mate",cta:"Try a Mate Review →",
+         text:"See who the MVP MATE is. Anyone on notice finds out privately.",
+         perfect:["Groups of mates","Sporting clubs"],
+         awards:["🏆 MVP Mate Award","⚠️ Who's On Notice"]},
+  partner:{groups:[["Heart","var(--green)",["Kindness","Trust","Fun"]],["Connection","var(--gold)",["Communication","Romance","Support","Quality Time"]],["Life","var(--blue)",["Fair Share","Money & Plans"]]],
+         title:"Couple Check-in",go:"review.html?who=partner",cta:"Try a Couple Check-in →",
+         text:"Rate the relationship itself, not each other, and see where you both see things differently.",
+         perfect:["Couples","Date night conversation starter"],
+         awards:["💪 Our Top Qualities","💐 Date Night Required"]}};
+const BANDS=[["A",8.5,10],["B",7,8.5],["C",5.5,7],["D",4,5.5],["E",1,4]];
+const grade=a=>{const [L,lo,hi]=BANDS.find(b=>a>=b[1])||BANDS[4];const t=(Math.min(a,hi)-lo)/(hi-lo);return L+(t>=2/3-1e-9?"+":t<1/3-1e-9?"-":"")};
+const R0=30,R=104,GAP=1.6,rad=d=>d*Math.PI/180,pt=(r,a)=>`${(r*Math.cos(a)).toFixed(2)} ${(r*Math.sin(a)).toFixed(2)}`;
+const wedge=(a0,a1,r0,r1)=>{const A0=rad(a0),A1=rad(a1);return `M${pt(r0,A0)} L${pt(r1,A0)} A${r1} ${r1} 0 0 1 ${pt(r1,A1)} L${pt(r0,A1)} A${r0} ${r0} 0 0 0 ${pt(r0,A0)} Z`};
+const arc=(r,a0,a1)=>`M${pt(r,rad(a0))} A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${pt(r,rad(a1))}`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function drawWheel(svg,set,vals){
+  const names=set.groups.flatMap(g=>g[2]), n=names.length, st=360/n, hs=st/2;
+  let h="";[4,7,8.5].forEach(v=>{h+=`<circle class="ring" r="${R0+(R-R0)*(v-1)/9}"/>`});
+  let i=0;set.groups.forEach(([gn,col,ids])=>{const i0=i,i1=i+ids.length-1;h+=`<path class="garc" stroke="${col}" d="${arc(R+6,-90+st*i0-hs+GAP,-90+st*i1+hs-GAP)}"/>`;i+=ids.length});
+  names.forEach((nm,k)=>{
+    const mid=-90+st*k,a0=mid-hs+GAP,a1=mid+hs-GAP,v=vals[k],g=grade(v);
+    const lx=(R+17)*Math.cos(rad(mid)),ly=(R+17)*Math.sin(rad(mid)),cx=Math.cos(rad(mid));
+    const anchor=cx>0.3?"start":cx<-0.3?"end":"middle",dy=Math.sin(rad(mid))>0.5?"0.9em":Math.sin(rad(mid))<-0.5?"-0.2em":"0.35em";
+    h+=`<path class="wtrack" d="${wedge(a0,a1,R0,R)}"/><path d="${wedge(a0,a1,R0,R0+(R-R0)*(v-1)/9)}" style="fill:var(--g${g[0]})"/>
+      <text class="wlabel" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" dy="${dy}" text-anchor="${anchor}"><tspan class="wnum">${k+1}</tspan> ${esc(nm)}</text>
+      <text class="wscore" x="${((R-13)*Math.cos(rad(mid))).toFixed(1)}" y="${((R-13)*Math.sin(rad(mid))).toFixed(1)}" dy="0.35em" text-anchor="middle">${g}</text>`;
+  });
+  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+  h+=`<circle class="wcenter" r="${R0-3}"/><text class="wgrade" dy="0.36em" text-anchor="middle">${grade(avg)}</text>`;
+  svg.innerHTML=h;
+}
+const legend=(el,set)=>{el.innerHTML=set.groups.map(([n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")};
+drawWheel(document.getElementById("cardWheel"),SETS.family,[6.1,5.7,3.5,7.6,7.0,8.6,4.6,6.4,9.0]);
+const SAMPLE={family:[7.9,6.8,4.2,8.4,7.7,9.0,6.0,7.3,8.8],mates:[9.0,8.6,6.2,4.1,7.8,9.2,7.0,8.3],partner:[8.4,8.9,7.6,5.2,6.8,8.1,4.6,5.9,7.3]};
+function showKind(k){
+  const s=SETS[k];
+  document.getElementById("tFamily").setAttribute("aria-pressed",k==="family");
+  document.getElementById("tMates").setAttribute("aria-pressed",k==="mates");
+  document.getElementById("tPartner").setAttribute("aria-pressed",k==="partner");
+  document.getElementById("kTitle").textContent=s.title;
+  document.getElementById("kAwards").innerHTML=s.awards.map((t,i)=>`<span class="pop award${i?" low":""}">${esc(t)}</span>`).join("");
+  document.getElementById("kFor").innerHTML=s.perfect.map((t,i)=>`<span class="pop${i%2?" alt":""}">${esc(t)}</span>`).join("");
+  document.getElementById("kAreas").innerHTML=s.groups.map(([n,c,ids])=>`<div><b style="color:${c}">${n}</b>${ids.join(" · ")}</div>`).join("");
+  const go=document.getElementById("kGo");go.href=s.go;go.textContent=s.cta;
+  drawWheel(document.getElementById("kindWheel"),s,SAMPLE[k]);legend(document.getElementById("kindLegend"),s);
+}
+document.getElementById("tFamily").onclick=()=>showKind("family");
+document.getElementById("tMates").onclick=()=>showKind("mates");
+document.getElementById("tPartner").onclick=()=>showKind("partner");
+showKind("family");
+</script>
+</body>
+</html>
